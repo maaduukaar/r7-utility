@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конвертер HTML таблиц</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-4xl border border-gray-200">
+        <h1 class="text-3xl font-bold text-center mb-3 text-gray-800">Конвертер HTML-таблиц</h1>
+        <h2 class="text-1xl font-normal text-center mb-6 text-gray-800">Мобильные таблицы для сайта Центра поддержки Р7-Офис</h2>
+        
+        <!-- Textarea для ввода и вывода -->
+        <textarea id="htmlInput" 
+                  class="w-full h-80 p-4 border border-gray-300 rounded-lg bg-gray-50 text-gray-800 font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300" 
+                  placeholder="Вставьте HTML код таблицы..."></textarea>
+
+        <!-- Кнопки управления -->
+        <div class="flex justify-center flex-wrap gap-4 mt-6">
+            <button id="convertBtn" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                Преобразовать
+            </button>
+            <button id="copyBtn" 
+                    class="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                Копировать
+            </button>
+            <button id="clearBtn" 
+                    class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-lg shadow-md transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+                Очистить
+            </button>
+        </div>
+
+        <!-- Сообщения об успехе/ошибке -->
+        <div id="message" class="text-center mt-4 text-sm font-medium"></div>
+    </div>
+
+    <script>
+        // DOM-элементы
+        const htmlInput = document.getElementById('htmlInput');
+        const convertBtn = document.getElementById('convertBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const messageDiv = document.getElementById('message');
+
+        // Основная функция преобразования
+        function convertTable(html) {
+            // Валидация
+            if (!html.trim()) {
+                showMessage('Поле пустое. Вставьте HTML-код таблицы.', 'error');
+                return null;
+            }
+            if (!/<table/i.test(html)) {
+                showMessage('Вставьте корректный HTML-код с тегом <table>.', 'error');
+                return null;
+            }
+
+            // Парсинг HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const originalTable = doc.querySelector('table');
+
+            if (!originalTable) {
+                showMessage('Не удалось найти тег <table>.', 'error');
+                return null;
+            }
+
+            const originalRows = Array.from(originalTable.querySelectorAll('tr'));
+            if (originalRows.length === 0) {
+                showMessage('Таблица пуста. Нечего преобразовывать.', 'info');
+                return null;
+            }
+
+            // --- ОБНОВЛЕННАЯ ЛОГИКА ПРЕОБРАЗОВАНИЯ ---
+
+            // 1. Создаем базовую структуру
+            const wrapper = document.createElement('div');
+            wrapper.id = 'methodParams';
+            const newTable = document.createElement('table');
+            newTable.className = 'table';
+
+            // 2. Создаем thead из первой строки исходной таблицы
+            const thead = document.createElement('thead');
+            const firstOriginalRow = originalRows[0];
+            const headerRow = document.createElement('tr');
+            headerRow.className = 'tablerow';
+            
+            firstOriginalRow.querySelectorAll('td, th').forEach(cell => {
+                const newHeaderCell = document.createElement('td'); // Всегда создаем td для единообразия
+                newHeaderCell.innerHTML = cell.innerHTML;
+                headerRow.appendChild(newHeaderCell);
+            });
+            thead.appendChild(headerRow);
+            newTable.appendChild(thead);
+
+            // 3. Создаем tbody из остальных строк (всех, кроме первой)
+            const tbody = document.createElement('tbody');
+            const bodyRows = originalRows.slice(1);
+
+            bodyRows.forEach(row => {
+                const newRow = document.createElement('tr');
+                newRow.className = 'tablerow';
+                
+                const originalCells = row.querySelectorAll('td, th');
+                
+                originalCells.forEach(cell => {
+                    const newCell = document.createElement('td');
+                    newCell.innerHTML = cell.innerHTML;
+                    newRow.appendChild(newCell);
+                });
+                
+                tbody.appendChild(newRow);
+            });
+            
+            if (tbody.children.length > 0) {
+                newTable.appendChild(tbody);
+            }
+            
+            wrapper.appendChild(newTable);
+
+            // Возвращаем преобразованный HTML
+            return wrapper.outerHTML;
+        }
+
+        // Обработчики событий для кнопок
+        convertBtn.addEventListener('click', () => {
+            const originalHtml = htmlInput.value;
+            const convertedHtml = convertTable(originalHtml);
+            if (convertedHtml) {
+                const formattedHtml = formatHtml(convertedHtml);
+                htmlInput.value = formattedHtml;
+                showMessage('Преобразование успешно!', 'success');
+            }
+        });
+
+        copyBtn.addEventListener('click', () => {
+            if (!htmlInput.value.trim()) {
+                showMessage('Нечего копировать.', 'error');
+                return;
+            }
+            
+            htmlInput.select();
+            try {
+                document.execCommand('copy');
+                showMessage('HTML-код скопирован в буфер обмена!', 'success');
+            } catch (err) {
+                console.error('Не удалось скопировать текст:', err);
+                showMessage('Ошибка копирования. Пожалуйста, скопируйте текст вручную.', 'error');
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            htmlInput.value = '';
+            showMessage('Поле очищено.', 'info');
+        });
+
+        // Функция для отображения сообщений
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = 'text-center mt-4 text-sm font-medium';
+            if (type === 'success') {
+                messageDiv.classList.add('text-green-600');
+            } else if (type === 'error') {
+                messageDiv.classList.add('text-red-600');
+            } else if (type === 'info') {
+                messageDiv.classList.add('text-gray-600');
+            }
+            
+            setTimeout(() => {
+                messageDiv.textContent = '';
+            }, 3000);
+        }
+
+        // Вспомогательная функция для форматирования HTML с отступами
+        // Исправлена ошибка RangeError: Invalid count value: -1
+        function formatHtml(htmlString) {
+            let indent = '  ';
+            let formatted = '';
+            let level = 0;
+            htmlString.replace(/></g, '>\n<').split('\n').forEach(node => {
+                let padding = '';
+                if (node.match(/^<\/\w/)) { // Если это закрывающий тег, уменьшаем уровень
+                    level--;
+                }
+                padding = indent.repeat(Math.max(0, level)); // Используем Math.max, чтобы уровень не стал отрицательным
+                if (node.match(/^<[^\/]/) && !node.match(/.+<\/\w[^>]*>$/)) { // Если это открывающий тег без закрывающего, увеличиваем уровень
+                    formatted += padding + node + '\n';
+                    level++;
+                } else {
+                    formatted += padding + node + '\n';
+                }
+            });
+            return formatted.trim();
+        }
+    </script>
+</body>
+</html>
