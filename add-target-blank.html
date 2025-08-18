@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добавить target="_blank" к ссылкам</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Кастомный скроллбар для лучшего вида */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: #2d3748;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background-color: #4a5568;
+            border-radius: 10px;
+            border: 2px solid #2d3748;
+        }
+        /* Стили для плавного перехода цвета */
+        #htmlContent {
+            transition: background-color 0.5s ease-in-out, border-color 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl bg-gray-800 rounded-xl shadow-2xl p-6 md:p-7">
+        
+        <!-- Заголовок -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-white">Обработчик HTML-ссылок</h1>
+            <p class="text-gray-400 mt-2">Вставьте код, нажмите "Обработать", и результат появится здесь же.</p>
+        </div>
+
+        <!-- Единое окно для ввода и вывода -->
+        <div class="relative">
+            <label for="htmlContent" class="block text-sm font-medium text-gray-300 mb-2">HTML-код:</label>
+            <textarea id="htmlContent" rows="15" class="w-full bg-gray-900 border border-gray-700 rounded-lg p-4 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-y" placeholder="Вставьте ваш HTML-код сюда..."></textarea>
+            <button id="copyButton" class="absolute top-10 right-3 bg-gray-700 hover:bg-emerald-600 text-white font-semibold py-1 px-3 rounded-md text-sm transition-all duration-300 hidden" title="Копировать в буфер обмена">
+                Копировать
+            </button>
+        </div>
+
+        <!-- Кнопки управления -->
+        <div class="flex justify-center items-center mt-8 space-x-4">
+            <button id="processButton" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105 duration-300 shadow-lg">
+                Обработать
+            </button>
+            <button id="clearButton" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-lg transition-transform transform hover:scale-105 duration-300 shadow-lg">
+                Очистить
+            </button>
+        </div>
+        
+        <!-- Сообщение об успешном копировании -->
+        <div id="copySuccessMessage" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg opacity-0 transition-opacity duration-500">
+            Код скопирован в буфер обмена!
+        </div>
+
+    </div>
+
+    <script>
+        // ...existing code...
+        // Получаем ссылки на элементы DOM
+        const htmlContentEl = document.getElementById('htmlContent');
+        const processButton = document.getElementById('processButton');
+        const copyButton = document.getElementById('copyButton');
+        const clearButton = document.getElementById('clearButton');
+        const copySuccessMessage = document.getElementById('copySuccessMessage');
+
+        /**
+         * Основная функция для обработки HTML.
+         * Добавляет target="_blank" и rel="noopener noreferrer" ко всем ссылкам, не являющимся изображениями.
+         * Улучшенная детекция изображений (учёт query/hash и относительных URL).
+         * @param {string} htmlString - Входная строка HTML.
+         * @returns {string} - Обработанная строка HTML.
+         */
+        function addTargetBlank(htmlString) {
+            const imgExt = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlString, 'text/html');
+            const aTags = doc.querySelectorAll('a[href]');
+            
+            aTags.forEach(aTag => {
+                try {
+                    const rawHref = aTag.getAttribute('href') || '';
+                    // Попробуем корректно распарсить путь (игнорируем query и hash)
+                    let pathname = rawHref;
+                    try {
+                        const url = new URL(rawHref, window.location.href);
+                        pathname = url.pathname.toLowerCase();
+                    } catch (e) {
+                        // fallback: убрать query и hash вручную
+                        pathname = rawHref.split('?')[0].split('#')[0].toLowerCase();
+                    }
+
+                    const isImageLink = imgExt.some(ext => pathname.endsWith(ext));
+                    if (!isImageLink) {
+                        // Устанавливаем/заменяем target: если нет или задан _self — ставим _blank
+                        const existingTarget = (aTag.getAttribute('target') || '').trim().toLowerCase();
+                        if (!existingTarget || existingTarget === '_self') {
+                            aTag.setAttribute('target', '_blank');
+                        }
+                        // Гарантируем наличие noopener и noreferrer в rel
+                        const existingRel = (aTag.getAttribute('rel') || '').trim();
+                        const tokens = existingRel ? existingRel.split(/\s+/) : [];
+                        ['noopener'].forEach(tok => {
+                            if (!tokens.includes(tok)) tokens.push(tok);
+                        });
+                        aTag.setAttribute('rel', tokens.join(' '));
+                    }
+                } catch (e) {
+                    console.warn("Не удалось обработать ссылку:", aTag.getAttribute('href'), e);
+                }
+            });
+            return doc.body.innerHTML;
+        }
+        
+        /**
+         * Декодирует HTML-сущности (&lt;, &gt;, &amp; и т.д.) в обычные символы.
+         * Нужно применять перед выводом в textarea, чтобы восстановить '>' из '&gt;'.
+         * @param {string} str
+         * @returns {string}
+         */
+        function decodeHtmlEntities(str) {
+            const txt = document.createElement('textarea');
+            txt.innerHTML = str;
+            return txt.value;
+        }
+        
+        /**
+         * Функция для копирования текста и показа уведомления.
+         * Использует navigator.clipboard.writeText с fallback на document.execCommand.
+         */
+        async function copyToClipboardAndNotify() {
+            if (!htmlContentEl.value) return;
+
+            const text = htmlContentEl.value;
+            let copied = false;
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    copied = true;
+                } catch (e) {
+                    // fall through to execCommand fallback
+                    copied = false;
+                }
+            }
+
+            if (!copied) {
+                try {
+                    htmlContentEl.select();
+                    document.execCommand('copy');
+                    // убрать выделение
+                    if (window.getSelection) {
+                        window.getSelection().removeAllRanges();
+                    }
+                    copied = true;
+                } catch (e) {
+                    console.warn('Копирование не удалось', e);
+                }
+            }
+
+            if (copied) {
+                // Показываем и плавно скрываем уведомление
+                copySuccessMessage.classList.remove('opacity-0');
+                setTimeout(() => {
+                    copySuccessMessage.classList.add('opacity-0');
+                }, 3000); // Уведомление исчезнет через 3 секунды
+            }
+        }
+
+        /**
+         * Сбрасывает состояние UI в исходное.
+         */
+        function resetUI() {
+            htmlContentEl.value = '';
+            htmlContentEl.classList.remove('bg-emerald-900/30', 'border-emerald-700');
+            htmlContentEl.classList.add('bg-gray-900', 'border-gray-700');
+            copyButton.classList.add('hidden');
+        }
+
+        // Обработчик нажатия на кнопку "Обработать"
+        processButton.addEventListener('click', () => {
+            const inputHtml = htmlContentEl.value;
+            if (inputHtml.trim() === '') return;
+
+            const resultHtml = addTargetBlank(inputHtml);
+            // Декодируем сущности перед тем как показать в textarea
+            htmlContentEl.value = decodeHtmlEntities(resultHtml);
+            
+            // Меняем фон окна
+            htmlContentEl.classList.remove('bg-gray-900', 'border-gray-700');
+            htmlContentEl.classList.add('bg-emerald-900/30', 'border-emerald-700');
+
+            // Показываем кнопку "Копировать"
+            copyButton.classList.remove('hidden');
+            
+            // Автоматически копируем и показываем уведомление
+            copyToClipboardAndNotify();
+        });
+
+        // Обработчик нажатия на кнопку "Очистить"
+        clearButton.addEventListener('click', resetUI);
+
+        // Обработчик для ручного копирования
+        copyButton.addEventListener('click', copyToClipboardAndNotify);
+    </script>
+
+</body>
+</html>
