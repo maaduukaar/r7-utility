@@ -1,5 +1,10 @@
 ﻿# R7-Utility
 
+- [Конвертировать обычные таблицы в адаптивные](https://maaduukaar.github.io/r7-utility/table-converter.html)
+- [Добавить target="_blank" всем ссылкам](https://maaduukaar.github.io/r7-utility/add-target-blank.html)
+- [Проверить два списка на расхождения](https://maaduukaar.github.io/r7-utility/list-diff-checker.html)
+
+
 ## Конвертер HTML-таблиц
 
 Простое одностраничное веб-приложение для преобразования HTML-таблиц в формат, необходимый для сайта поддержки Р7-Офис.

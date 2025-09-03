@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сравнение Списков Функций</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto p-4 sm:p-6 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-slate-900">Инструмент сравнения списков</h1>
+            <p class="mt-2 text-slate-600">Вставьте списки в поля ниже, чтобы найти различия.</p>
+        </header>
+
+        <!-- Панели для ввода данных -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <label for="list1" class="block text-lg font-semibold mb-3 text-slate-700">Оригинал</label>
+                <textarea id="list1"
+                    class="w-full h-80 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out resize-none"
+                    placeholder="ХИ2ОБР&#10;ХИ2РАСП&#10;ХИ2ТЕСТ&#10;..."
+                    onfocus="this.select()"></textarea>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <label for="list2" class="block text-lg font-semibold mb-3 text-slate-700">Копия</label>
+                <textarea id="list2"
+                    class="w-full h-80 p-4 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out resize-none"
+                    placeholder="ЧАСТОТА&#10;ЭКСП.РАСП&#10;ЭКСПРАСП&#10;..."
+                    onfocus="this.select()"></textarea>
+            </div>
+        </div>
+
+        <!-- Кнопка для запуска сравнения -->
+        <div class="text-center mb-8">
+            <button id="compareBtn"
+                class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-blue-700 active:scale-95 transition-transform duration-150 ease-in-out shadow-lg">
+                Сравнить списки
+            </button>
+        </div>
+
+        <!-- Секция для вывода результатов -->
+        <div id="results-container" class="space-y-6">
+            <!-- Результаты будут вставлены сюда с помощью JavaScript -->
+        </div>
+    </div>
+
+    <script>
+        // Функция для копирования текста в буфер обмена
+        function copyResult(element) {
+            const textToCopy = element.textContent;
+
+            // Используем document.execCommand для надежности в iframe
+            const textArea = document.createElement("textarea");
+            textArea.value = textToCopy;
+            textArea.style.position = "fixed"; 
+            textArea.style.opacity = "0";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                // Визуальное подтверждение
+                const originalText = element.textContent;
+                const originalClasses = element.className;
+
+                element.textContent = 'Скопировано в буфер обмена!';
+                element.className = originalClasses.replace('bg-slate-100', 'bg-green-200');
+                
+                setTimeout(() => {
+                    element.textContent = originalText;
+                    element.className = originalClasses;
+                }, 2000);
+            } catch (err) {
+                console.error('Не удалось скопировать текст', err);
+                element.textContent = 'Ошибка при копировании!';
+                 setTimeout(() => {
+                    element.textContent = textToCopy;
+                }, 2000);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        document.getElementById('compareBtn').addEventListener('click', () => {
+            const list1Text = document.getElementById('list1').value;
+            const list2Text = document.getElementById('list2').value;
+
+            // Функция для обработки текста
+            const parseFunctions = (text) => {
+                if (!text) return new Set();
+                const functions = text
+                    .split(/[;\n\s]+/) 
+                    .map(fn => fn.trim().replace(/[.,]$/, '').toUpperCase()) // Удаляем точки/запятые в конце
+                    .filter(fn => fn.length > 0);
+                return new Set(functions);
+            };
+
+            const set1 = parseFunctions(list1Text);
+            const set2 = parseFunctions(list2Text);
+
+            const onlyInList1 = [...set1].filter(fn => !set2.has(fn));
+            const onlyInList2 = [...set2].filter(fn => !set1.has(fn));
+            const commonFunctions = [...set1].filter(fn => set2.has(fn));
+
+            const resultsContainer = document.getElementById('results-container');
+            resultsContainer.innerHTML = '';
+
+            if (set1.size === 0 && set2.size === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg shadow-md" role="alert">
+                        <p class="font-bold">Поля для ввода пусты</p>
+                        <p>Пожалуйста, вставьте данные в списки для сравнения.</p>
+                    </div>`;
+                return;
+            }
+
+            if (onlyInList1.length === 0 && onlyInList2.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-lg shadow-md" role="alert">
+                        <p class="font-bold">🎉 Списки полностью идентичны!</p>
+                        <p>Найдено ${commonFunctions.length} общих функций.</p>
+                    </div>`;
+                return;
+            }
+
+            const createResultBlock = (title, items, color) => {
+                if (items.length === 0) return '';
+                const listContent = items.sort().join('; ') + ';';
+                
+                return `
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-lg font-semibold mb-3 border-b pb-2 text-slate-800">
+                            ${title} <span class="text-sm font-normal bg-${color}-100 text-${color}-800 py-1 px-2 rounded-full">${items.length}</span>
+                        </h3>
+                        <div class="bg-slate-100 p-4 rounded-lg text-sm break-words select-all cursor-pointer transition-colors duration-200"
+                             title="Нажмите, чтобы скопировать"
+                             onclick="copyResult(this)">${listContent}</div>
+                    </div>
+                `;
+            };
+
+            let resultsHtml = '';
+            const block1 = createResultBlock('Пропущено в копии', onlyInList1, 'red');
+            const block2 = createResultBlock('Отсутствует в оригинале', onlyInList2, 'emerald');
+            const commonBlock = createResultBlock('Общие для обоих списков', commonFunctions, 'sky');
+
+            if (block1 && block2) {
+                resultsHtml += `<div class="grid grid-cols-1 md:grid-cols-2 gap-6">${block1}${block2}</div>`;
+            } else {
+                resultsHtml += block1 + block2;
+            }
+            
+            if(commonBlock) {
+                 resultsHtml += `<div class="mt-6">${commonBlock}</div>`;
+            }
+
+            resultsContainer.innerHTML = resultsHtml;
+        });
+    </script>
+</body>
+</html>
+
