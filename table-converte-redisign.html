@@ -1,0 +1,257 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Конвертер HTML Таблиц: Шапка в thead</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .code-input {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre;
+            overflow-wrap: normal;
+            overflow-x: scroll;
+        }
+        /* Стилизация скроллбара */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .flash-success {
+            animation: flash 1s ease-out;
+        }
+        @keyframes flash {
+            0% { background-color: #dcfce7; }
+            100% { background-color: white; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-indigo-600 text-white p-4 shadow-md">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                <i class="fas fa-table"></i>
+                HTML Table Fixer
+            </h1>
+            <span class="text-sm opacity-80">Авто-конвертер (tbody -> thead)</span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow p-4 md:p-6 max-w-7xl mx-auto w-full flex flex-col justify-center">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[80vh] min-h-[500px]">
+            
+            <!-- Input Section -->
+            <div class="flex flex-col bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-100 p-3 border-b border-slate-200 flex justify-between items-center">
+                    <label class="font-semibold text-slate-700 flex items-center gap-2">
+                        <i class="fas fa-code"></i> Исходный код
+                    </label>
+                    <button onclick="clearInput()" class="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1 transition">
+                        Очистить
+                    </button>
+                </div>
+                <textarea id="inputHtml" class="flex-grow p-4 w-full h-full resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 code-input text-slate-700" placeholder="Вставьте HTML код таблицы сюда..."></textarea>
+            </div>
+
+            <!-- Controls (Mobile only) -->
+            <div class="flex lg:hidden justify-center items-center">
+                <i class="fas fa-arrow-down text-slate-400 text-2xl"></i>
+            </div>
+
+            <!-- Output Section -->
+            <div class="flex flex-col bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-100 p-3 border-b border-slate-200 flex justify-between items-center">
+                    <label class="font-semibold text-slate-700 flex items-center gap-2">
+                        <i class="fas fa-file-code"></i> Результат
+                    </label>
+                    <div class="flex gap-2 items-center">
+                        <span id="autoCopyStatus" class="text-xs text-indigo-600 font-bold opacity-0 transition-opacity duration-300">
+                            <i class="fas fa-check"></i> Скопировано!
+                        </span>
+                        <button onclick="copyToClipboardManual()" class="ml-2 text-xs bg-white border border-slate-300 hover:bg-slate-50 text-slate-600 px-3 py-1 rounded transition flex items-center gap-1">
+                            <i class="far fa-copy"></i> Копировать вручную
+                        </button>
+                    </div>
+                </div>
+                <textarea id="outputHtml" readonly class="flex-grow p-4 w-full h-full resize-none bg-slate-50 focus:outline-none code-input text-slate-800" placeholder="Результат появится здесь автоматически..."></textarea>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 p-4 text-center text-slate-500 text-sm mt-auto">
+        &copy; 2024 HTML Table Fixer. Вставьте код — получите результат в буфере обмена.
+    </footer>
+
+    <!-- Logic -->
+    <script>
+        const inputArea = document.getElementById('inputHtml');
+        const outputArea = document.getElementById('outputHtml');
+        const statusSpan = document.getElementById('autoCopyStatus');
+
+        // Слушаем ввод данных (вставка или набор текста)
+        inputArea.addEventListener('input', () => {
+            convertAndCopy();
+        });
+
+        function clearInput() {
+            inputArea.value = '';
+            outputArea.value = '';
+            inputArea.focus();
+        }
+
+        function convertAndCopy() {
+            const inputCode = inputArea.value;
+
+            if (!inputCode.trim()) {
+                outputArea.value = "";
+                return;
+            }
+
+            // Парсинг HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(inputCode, 'text/html');
+            const table = doc.querySelector('table');
+
+            if (!table) {
+                // Если нет таблицы, просто не обновляем выход или пишем статус, 
+                // но чтобы не спамить ошибками при наборе, можно просто ждать валидный HTML.
+                // Для UX оставим как есть или выведем сообщение, если кода много, а таблицы нет.
+                if (inputCode.length > 20) {
+                     outputArea.value = "<!-- Жду валидный тег <table>... -->";
+                }
+                return;
+            }
+
+            const tbody = table.querySelector('tbody');
+            if (!tbody) {
+                outputArea.value = "<!-- Ошибка: Тег <tbody> не найден -->";
+                return;
+            }
+
+            const firstRow = tbody.querySelector('tr');
+            if (!firstRow) {
+                outputArea.value = "<!-- Ошибка: В <tbody> нет строк -->";
+                return;
+            }
+
+            // Создаем thead если нет
+            let thead = table.querySelector('thead');
+            if (!thead) {
+                thead = doc.createElement('thead');
+                table.insertBefore(thead, tbody);
+            }
+
+            // Создаем новую строку заголовка
+            const headerRow = doc.createElement('tr');
+            
+            // Копируем атрибуты строки
+            Array.from(firstRow.attributes).forEach(attr => {
+                headerRow.setAttribute(attr.name, attr.value);
+            });
+
+            // Переносим ячейки
+            Array.from(firstRow.children).forEach(cell => {
+                const th = doc.createElement('th');
+                th.innerHTML = cell.innerHTML;
+                Array.from(cell.attributes).forEach(attr => {
+                    th.setAttribute(attr.name, attr.value);
+                });
+                headerRow.appendChild(th);
+            });
+
+            // Собираем
+            thead.appendChild(headerRow);
+            tbody.removeChild(firstRow);
+
+            // Форматируем
+            const resultHTML = formatHTML(table.outerHTML);
+            outputArea.value = resultHTML;
+
+            // АВТОМАТИЧЕСКОЕ КОПИРОВАНИЕ
+            copyToClipboard(resultHTML);
+        }
+
+        async function copyToClipboard(text) {
+            try {
+                // Пытаемся использовать Clipboard API
+                await navigator.clipboard.writeText(text);
+                showSuccess();
+            } catch (err) {
+                // Фолбек для старых браузеров или если API заблокирован
+                try {
+                    outputArea.select();
+                    document.execCommand('copy');
+                    // Снимаем выделение, чтобы не мешать визуально, если пользователь продолжает печатать
+                    if (document.activeElement !== inputArea) {
+                         window.getSelection().removeAllRanges();
+                    }
+                    showSuccess();
+                } catch (e) {
+                    console.error("Не удалось скопировать автоматически", e);
+                }
+            }
+        }
+
+        function copyToClipboardManual() {
+            const text = outputArea.value;
+            if(!text) return;
+            copyToClipboard(text);
+        }
+
+        let timeoutId;
+        function showSuccess() {
+            // Визуальный эффект на поле вывода
+            outputArea.parentElement.classList.add('flash-success');
+            setTimeout(() => {
+                outputArea.parentElement.classList.remove('flash-success');
+            }, 300);
+
+            // Текст "Скопировано"
+            statusSpan.style.opacity = '1';
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                statusSpan.style.opacity = '0';
+            }, 2000);
+        }
+
+        // Простая функция форматирования
+        function formatHTML(html) {
+            let formatted = '';
+            let indent = '';
+            const tab = '  ';
+            
+            html.split(/>\s*</).forEach(function(node) {
+                if (node.match( /^\/\w/ )) {
+                    indent = indent.substring(tab.length);
+                }
+                formatted += indent + '<' + node + '>\r\n';
+                if (node.match( /^<?\w[^>]*[^\/]$/ ) && !node.startsWith("input") && !node.startsWith("img") && !node.startsWith("br")) { 
+                    indent += tab;              
+                }
+            });
+            return formatted.substring(1, formatted.length-3);
+        }
+    </script>
+</body>
+</html>
