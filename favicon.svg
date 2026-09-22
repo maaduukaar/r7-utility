@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <!-- Насыщенные официальные градиенты Р7-Офис -->
+    <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF3E4D" />
+      <stop offset="100%" stop-color="#E51927" />
+    </linearGradient>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3196FF" />
+      <stop offset="100%" stop-color="#126FEA" />
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#36D455" />
+      <stop offset="100%" stop-color="#17A833" />
+    </linearGradient>
+    <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9A56FF" />
+      <stop offset="100%" stop-color="#6916E0" />
+    </linearGradient>
+
+    <!-- Мягкая естественная тень под плиткой -->
+    <filter id="tileShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="1.2" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.14" />
+      <feDropShadow dx="0" dy="0.4" stdDeviation="0.4" flood-color="#000000" flood-opacity="0.06" />
+    </filter>
+  </defs>
+
+  <!-- Белая подложка со скругленными углами во весь размер плитки -->
+  <rect x="1.5" y="1.5" width="61" height="61" rx="15" fill="#FFFFFF" stroke="rgba(0,0,0,0.06)" stroke-width="0.8" filter="url(#tileShadow)" />
+
+  <!-- 4 крупных ромба до самых краёв (поворот на 45 градусов) -->
+  <g transform="rotate(45 32 32)">
+    <!-- Верхний: Красный -->
+    <rect x="11.5" y="11.5" width="19.2" height="19.2" rx="4.4" fill="url(#redGrad)" />
+    <!-- Правый: Зеленый -->
+    <rect x="33.3" y="11.5" width="19.2" height="19.2" rx="4.4" fill="url(#greenGrad)" />
+    <!-- Левый: Синий -->
+    <rect x="11.5" y="33.3" width="19.2" height="19.2" rx="4.4" fill="url(#blueGrad)" />
+    <!-- Нижний: Фиолетовый -->
+    <rect x="33.3" y="33.3" width="19.2" height="19.2" rx="4.4" fill="url(#purpleGrad)" />
+  </g>
+</svg>
