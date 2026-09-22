@@ -174,10 +174,12 @@
             <div id="mainSearchContainer" class="w-full bg-white rounded-2xl shadow-apple-float border border-apple-border transition-all duration-300 relative overflow-hidden group">
                 
                 <div class="flex items-center px-5 h-16 sm:h-[72px] gap-3">
-                    <!-- Иконка слева -->
-                    <div class="text-apple-tertiary flex items-center justify-center w-6 text-base">
-                        <i id="inputIcon" class="fa-solid fa-link transition-transform duration-300"></i>
-                    </div>
+                    <!-- Иконка-переключатель режимов: Статьи ⟷ Рубрики -->
+                    <button id="modeToggleBtn" type="button"
+                        class="text-apple-tertiary hover:text-apple-text active:scale-90 transition-all flex items-center justify-center w-8 h-8 -ml-1 rounded-xl hover:bg-black/5 cursor-pointer focus:outline-none shrink-0"
+                        title="Режим: Статьи (кликните для переключения на Рубрики)">
+                        <i id="inputIcon" class="fa-regular fa-file-lines text-base transition-transform duration-300"></i>
+                    </button>
 
                     <!-- Инпут -->
                     <input type="text" id="headlineInput" autofocus
@@ -187,10 +189,10 @@
                         class="w-full bg-transparent text-lg sm:text-xl text-apple-text placeholder:text-apple-tertiary font-normal focus:outline-none tracking-tight">
                 </div>
 
-                <!-- Строка для обновления старого полного слага (появляется только в режиме слага) -->
+                <!-- Строка для обновления старого полного слага или ввода суффикса раздела -->
                 <div id="slugUrlSubbar" class="px-4 sm:px-5 py-2.5 bg-apple-bg/60 border-t border-apple-borderSubtle hidden items-center gap-2.5 text-xs">
-                    <div class="text-apple-tertiary flex items-center justify-center w-5 text-[11px] shrink-0" title="Иерархический слаг">
-                        <i class="fa-solid fa-folder-tree"></i>
+                    <div id="subbarIconContainer" class="text-apple-tertiary flex items-center justify-center w-5 text-[11px] shrink-0" title="Иерархический слаг">
+                        <i id="subbarIcon" class="fa-solid fa-folder-tree"></i>
                     </div>
                     <div class="flex-grow flex items-center min-w-0 relative">
                         <input type="text" id="hierarchicalSlugInput"
@@ -480,8 +482,11 @@ def wp_slugify(text: str) -> str:
 
         // Состояние приложения
         let state = {
-            mode: 'input', // 'input' (редактирование заголовка) или 'slug' (показ готового слага)
+            mode: 'input', // 'input' (редактирование заголовка/рубрики) или 'slug' (показ готового слага)
+            generatorType: 'post', // 'post' (статьи) или 'category' (рубрики)
             savedTitle: '',
+            baseCategorySlug: '', // Чистый слаг заголовка/рубрики без суффикса
+            sectionSuffix: '', // Суффикс раздела (сохраняется при Del / Backspace, очищается только по крестику или перезагрузке)
             currentSlug: '',
             typingTimeout: null,
             returnedFromSlug: false
@@ -490,11 +495,15 @@ def wp_slugify(text: str) -> str:
         // DOM элементы
         const headlineInput = document.getElementById('headlineInput');
         const mainSearchContainer = document.getElementById('mainSearchContainer');
+        const modeToggleBtn = document.getElementById('modeToggleBtn');
         const inputIcon = document.getElementById('inputIcon');
         const slugUrlSubbar = document.getElementById('slugUrlSubbar');
+        const subbarIconContainer = document.getElementById('subbarIconContainer');
+        const subbarIcon = document.getElementById('subbarIcon');
         const hierarchicalSlugInput = document.getElementById('hierarchicalSlugInput');
         const clearHierarchicalBtn = document.getElementById('clearHierarchicalBtn');
         const copyHierarchicalBtn = document.getElementById('copyHierarchicalBtn');
+        const copyHierarchicalIcon = document.getElementById('copyHierarchicalIcon');
         const whisperContainer = document.getElementById('whisperContainer');
         const whisperText = document.getElementById('whisperText');
 
@@ -607,22 +616,39 @@ def wp_slugify(text: str) -> str:
 
         /**
          * Надёжное универсальное копирование текста в буфер обмена
-         * Работает на file:///, http://, https://, в iframe и во всех браузерах
+         * Работает на file:///, http://, https://, в iframe и во всех браузерах,
+         * при этом СТРОГО сохраняет фокус и положение каретки активного элемента ввода.
          */
         function copyTextToClipboard(text) {
             if (!text) return false;
 
+            // 1. Сохраняем активный элемент и точные координаты курсора / выделения
+            const prevActive = document.activeElement;
+            let prevStart = null;
+            let prevEnd = null;
+            try {
+                if (prevActive && 'selectionStart' in prevActive) {
+                    prevStart = prevActive.selectionStart;
+                    prevEnd = prevActive.selectionEnd;
+                }
+            } catch (e) {}
+
             let success = false;
 
-            // 1. Быстрый синхронный execCommand через активный инпут, если в нем уже нужное значение
-            if (document.activeElement === headlineInput && headlineInput.value === text) {
+            // 2. Современный Clipboard API (асинхронный, вообще не трогает DOM и фокус)
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                navigator.clipboard.writeText(text).catch(() => {});
+            }
+
+            // 3. Синхронный execCommand через активный headlineInput, если он уже в фокусе
+            if (prevActive === headlineInput && headlineInput.value === text) {
                 try {
                     headlineInput.select();
                     success = document.execCommand('copy');
                 } catch (e) {}
             }
 
-            // 2. Если не сработало, создаем временный textarea для execCommand
+            // 4. Fallback через временный textarea (для file:/// или старых браузеров)
             if (!success) {
                 try {
                     const temp = document.createElement('textarea');
@@ -642,9 +668,14 @@ def wp_slugify(text: str) -> str:
                 }
             }
 
-            // 3. Дополнительно вызываем современный Clipboard API
-            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-                navigator.clipboard.writeText(text).catch(() => {});
+            // 5. ГАРАНТИРОВАННОЕ восстановление фокуса и курсора
+            if (prevActive && typeof prevActive.focus === 'function' && document.activeElement !== prevActive) {
+                try {
+                    prevActive.focus();
+                    if (prevStart !== null && prevEnd !== null && typeof prevActive.setSelectionRange === 'function') {
+                        prevActive.setSelectionRange(prevStart, prevEnd);
+                    }
+                } catch (e) {}
             }
 
             return success;
@@ -735,6 +766,119 @@ def wp_slugify(text: str) -> str:
         }
 
         /**
+         * Обновление оформления строки ввода в режиме редактирования ('input')
+         */
+        function updateInputModeUI() {
+            if (state.generatorType === 'category') {
+                inputIcon.className = 'fa-regular fa-folder text-base text-apple-tertiary transition-transform duration-300';
+                headlineInput.placeholder = 'Вставьте название рубрики...';
+                modeToggleBtn.title = 'Режим: Рубрики (кликните для переключения на Статьи)';
+            } else {
+                inputIcon.className = 'fa-regular fa-file-lines text-base text-apple-tertiary transition-transform duration-300';
+                headlineInput.placeholder = 'Вставьте заголовок статьи...';
+                modeToggleBtn.title = 'Режим: Статьи (кликните для переключения на Рубрики)';
+            }
+        }
+
+        /**
+         * Обновление оформления подбара в режиме слага ('slug')
+         */
+        function updateSubbarView(type = state.generatorType) {
+            if (!subbarIconContainer || !subbarIcon || !hierarchicalSlugInput || !copyHierarchicalBtn) return;
+            if (type === 'category') {
+                subbarIconContainer.title = 'Суффикс раздела';
+                subbarIcon.className = 'fa-solid fa-tags';
+                hierarchicalSlugInput.placeholder = 'Вставьте суффикс раздела...';
+                copyHierarchicalBtn.title = 'Копировать слаг рубрики с суффиксом';
+            } else {
+                subbarIconContainer.title = 'Иерархический слаг';
+                subbarIcon.className = 'fa-solid fa-folder-tree';
+                hierarchicalSlugInput.placeholder = 'Вставьте старый полный слаг...';
+                copyHierarchicalBtn.title = 'Копировать обновленный слаг';
+            }
+        }
+
+        let categorySuffixDebounceTimer = null;
+
+        /**
+         * Применение суффикса раздела к базовому слагу рубрики
+         * autoCopy: копировать ли сразу в буфер обмена (true при создании слага, paste, Enter; false при typing)
+         */
+        function applyCategorySuffix(autoCopy = true) {
+            if (!state.baseCategorySlug) {
+                state.baseCategorySlug = wpSlugify(state.savedTitle || headlineInput.value);
+            }
+            const suffix = state.sectionSuffix ? wpSlugify(state.sectionSuffix) : '';
+            if (suffix) {
+                state.currentSlug = `${state.baseCategorySlug}-${suffix}`;
+            } else {
+                state.currentSlug = state.baseCategorySlug;
+            }
+            headlineInput.value = state.currentSlug;
+            adjustInputWidth();
+
+            if (autoCopy) {
+                clearTimeout(categorySuffixDebounceTimer);
+                categorySuffixDebounceTimer = null;
+                copyTextToClipboard(state.currentSlug);
+            } else {
+                clearTimeout(categorySuffixDebounceTimer);
+                categorySuffixDebounceTimer = setTimeout(() => {
+                    copyTextToClipboard(state.currentSlug);
+                    triggerHierarchicalCopiedFeedback();
+                }, 350);
+            }
+        }
+
+        /**
+         * Переключение типа генератора (Статьи ⟷ Рубрики)
+         */
+        function toggleGeneratorType() {
+            state.generatorType = state.generatorType === 'post' ? 'category' : 'post';
+            
+            if (state.mode === 'input') {
+                updateInputModeUI();
+                adjustInputWidth();
+                headlineInput.focus();
+            } else if (state.mode === 'slug') {
+                updateSubbarView(state.generatorType);
+                if (state.generatorType === 'category') {
+                    if (!state.baseCategorySlug) {
+                        state.baseCategorySlug = wpSlugify(state.savedTitle || headlineInput.value);
+                    }
+                    applyCategorySuffix();
+                    if (state.sectionSuffix) {
+                        hierarchicalSlugInput.value = state.sectionSuffix;
+                        clearHierarchicalBtn.classList.remove('hidden');
+                    } else {
+                        hierarchicalSlugInput.value = '';
+                        clearHierarchicalBtn.classList.add('hidden');
+                    }
+                } else {
+                    state.currentSlug = state.baseCategorySlug || wpSlugify(state.savedTitle);
+                    headlineInput.value = state.currentSlug;
+                    copyTextToClipboard(state.currentSlug);
+                    hierarchicalSlugInput.value = '';
+                    clearHierarchicalBtn.classList.add('hidden');
+                    adjustInputWidth();
+                }
+                const itemTypeName = state.generatorType === 'category' ? 'рубрику' : 'заголовок';
+                const backspaceHintHtml = `<span class="text-apple-secondary select-none">Нажмите <button type="button" id="backspaceBtn" class="kbd-btn backspace-btn" title="Редактировать ${itemTypeName}">⌫&nbsp;Backspace</button> для правки</span>`;
+                showSequentialWhisper(
+                    `<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Режим: ${state.generatorType === 'category' ? 'Рубрики' : 'Статьи'}</span>`,
+                    backspaceHintHtml,
+                    2000,
+                    1000
+                );
+            }
+        }
+
+        modeToggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleGeneratorType();
+        });
+
+        /**
          * Переключение в режим СЛАГА (результат)
          */
         function switchToSlugMode() {
@@ -742,9 +886,29 @@ def wp_slugify(text: str) -> str:
             if (!raw) return;
 
             state.savedTitle = raw;
-            state.currentSlug = wpSlugify(raw);
+            state.baseCategorySlug = wpSlugify(raw);
             state.mode = 'slug';
             state.returnedFromSlug = false;
+
+            // Настройка подбара и вычисление слага в зависимости от режима
+            updateSubbarView(state.generatorType);
+
+            if (state.generatorType === 'category') {
+                const suffix = state.sectionSuffix ? wpSlugify(state.sectionSuffix) : '';
+                if (suffix) {
+                    state.currentSlug = `${state.baseCategorySlug}-${suffix}`;
+                    hierarchicalSlugInput.value = suffix;
+                    clearHierarchicalBtn.classList.remove('hidden');
+                } else {
+                    state.currentSlug = state.baseCategorySlug;
+                    hierarchicalSlugInput.value = '';
+                    clearHierarchicalBtn.classList.add('hidden');
+                }
+            } else {
+                state.currentSlug = state.baseCategorySlug;
+                hierarchicalSlugInput.value = '';
+                clearHierarchicalBtn.classList.add('hidden');
+            }
 
             // Обновление интерфейса
             headlineInput.value = state.currentSlug;
@@ -752,12 +916,13 @@ def wp_slugify(text: str) -> str:
             headlineInput.classList.remove('font-normal', 'text-apple-text');
 
             inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
+            modeToggleBtn.title = state.generatorType === 'category'
+                ? 'Слаг рубрики готов (кликните для переключения режима)'
+                : 'Слаг статьи готов (кликните для переключения режима)';
             
-            // Показываем строку для старого слага и сбрасываем ее состояние
+            // Показываем строку подбара
             slugUrlSubbar.classList.remove('hidden');
             slugUrlSubbar.classList.add('flex');
-            hierarchicalSlugInput.value = '';
-            clearHierarchicalBtn.classList.add('hidden');
             copyHierarchicalIcon.className = 'fa-regular fa-copy text-xs';
             copyHierarchicalBtn.classList.remove('text-apple-green');
 
@@ -769,7 +934,8 @@ def wp_slugify(text: str) -> str:
             copyTextToClipboard(state.currentSlug);
 
             // HTML невидимой кнопки Backspace в подсказке
-            const backspaceHintHtml = '<span class="text-apple-secondary select-none">Нажмите <button type="button" id="backspaceBtn" class="kbd-btn backspace-btn" title="Редактировать заголовок">⌫&nbsp;Backspace</button> для правки</span>';
+            const itemTypeName = state.generatorType === 'category' ? 'рубрику' : 'заголовок';
+            const backspaceHintHtml = `<span class="text-apple-secondary select-none">Нажмите <button type="button" id="backspaceBtn" class="kbd-btn backspace-btn" title="Редактировать ${itemTypeName}">⌫&nbsp;Backspace</button> для правки</span>`;
 
             // Последовательный показ подсказок: сначала "Скопировано в буфер" (3 сек), затем Backspace через 1 сек
             showSequentialWhisper(
@@ -789,7 +955,7 @@ def wp_slugify(text: str) -> str:
         const BACKSPACE_RETURN_HINT_HTML = '<span class="text-apple-secondary select-none">Нажмите <button type="button" id="enterBtn" class="kbd-btn enter-btn" title="Создать слаг">↵&nbsp;Enter</button> для создания слага • <button type="button" id="delBtn" class="kbd-btn del-btn" title="Очистить поле">⌦&nbsp;Del</button> для очистки</span>';
 
         /**
-         * Переключение обратно в режим РЕДАКТИРОВАНИЯ заголовка
+         * Переключение обратно в режим РЕДАКТИРОВАНИЯ заголовка / рубрики
          * fromBackspace: признак того, что возврат совершен по клавише или кнопке Backspace
          */
         function switchToInputMode(fromBackspace = false) {
@@ -802,11 +968,15 @@ def wp_slugify(text: str) -> str:
             headlineInput.classList.remove('code-font', 'font-medium', 'text-apple-blue');
             headlineInput.classList.add('font-normal', 'text-apple-text');
 
-            inputIcon.className = 'fa-solid fa-link text-apple-tertiary transition-transform';
+            updateInputModeUI();
             slugUrlSubbar.classList.add('hidden');
             slugUrlSubbar.classList.remove('flex');
-            hierarchicalSlugInput.value = '';
-            clearHierarchicalBtn.classList.add('hidden');
+            
+            // Внимание: state.sectionSuffix НЕ сбрасывается! Сбрасывается только в режиме статей
+            if (state.generatorType === 'post') {
+                hierarchicalSlugInput.value = '';
+                clearHierarchicalBtn.classList.add('hidden');
+            }
 
             if (headlineInput.value.trim()) {
                 showWhisper(fromBackspace ? BACKSPACE_RETURN_HINT_HTML : ENTER_HINT_HTML);
@@ -852,13 +1022,14 @@ def wp_slugify(text: str) -> str:
                     switchToInputMode(true);
                 }
             } else if (e.key === 'Delete') {
-                // Клавиша Del очищает поле в режиме ввода
+                // Клавиша Del очищает поле в режиме ввода (суффикс раздела не сбрасывается!)
                 if (state.mode === 'input') {
                     const isAllSelected = headlineInput.selectionStart === 0 && headlineInput.selectionEnd === headlineInput.value.length;
                     if (isAllSelected || state.returnedFromSlug) {
                         e.preventDefault();
                         headlineInput.value = '';
                         state.savedTitle = '';
+                        state.baseCategorySlug = '';
                         state.returnedFromSlug = false;
                         hideWhisper();
                         adjustInputWidth();
@@ -870,6 +1041,7 @@ def wp_slugify(text: str) -> str:
                 } else {
                     headlineInput.value = '';
                     state.savedTitle = '';
+                    state.baseCategorySlug = '';
                     state.returnedFromSlug = false;
                     hideWhisper();
                     adjustInputWidth();
@@ -893,6 +1065,7 @@ def wp_slugify(text: str) -> str:
                 e.stopPropagation();
                 headlineInput.value = '';
                 state.savedTitle = '';
+                state.baseCategorySlug = '';
                 state.returnedFromSlug = false;
                 hideWhisper();
                 headlineInput.focus();
@@ -919,11 +1092,13 @@ def wp_slugify(text: str) -> str:
                 state.mode = 'input';
                 headlineInput.classList.remove('code-font', 'font-medium', 'text-apple-blue');
                 headlineInput.classList.add('font-normal', 'text-apple-text');
-                inputIcon.className = 'fa-solid fa-link text-apple-tertiary transition-transform';
+                updateInputModeUI();
                 slugUrlSubbar.classList.add('hidden');
                 slugUrlSubbar.classList.remove('flex');
-                hierarchicalSlugInput.value = '';
-                clearHierarchicalBtn.classList.add('hidden');
+                if (state.generatorType === 'post') {
+                    hierarchicalSlugInput.value = '';
+                    clearHierarchicalBtn.classList.add('hidden');
+                }
                 whisperText.innerHTML = '';
                 whisperText.classList.remove('opacity-100', 'translate-y-0');
                 whisperText.classList.add('opacity-0', '-translate-y-1');
@@ -947,6 +1122,15 @@ def wp_slugify(text: str) -> str:
         headlineInput.addEventListener('paste', () => {
             if (state.mode === 'slug') {
                 state.mode = 'input';
+                headlineInput.classList.remove('code-font', 'font-medium', 'text-apple-blue');
+                headlineInput.classList.add('font-normal', 'text-apple-text');
+                updateInputModeUI();
+                slugUrlSubbar.classList.add('hidden');
+                slugUrlSubbar.classList.remove('flex');
+                if (state.generatorType === 'post') {
+                    hierarchicalSlugInput.value = '';
+                    clearHierarchicalBtn.classList.add('hidden');
+                }
             }
             setTimeout(() => {
                 adjustInputWidth();
@@ -1000,58 +1184,125 @@ def wp_slugify(text: str) -> str:
             }, 1500);
         }
 
-        // Вставка старого полного слага: мгновенная замена последнего сегмента и автокопирование в буфер
+        // Вставка в поле подбара (старый слаг в статьях / суффикс в рубриках)
         hierarchicalSlugInput.addEventListener('paste', (e) => {
-            e.preventDefault();
-            const pasted = (e.clipboardData || window.clipboardData).getData('text');
-            if (!pasted || !state.currentSlug) return;
+            if (state.generatorType === 'category') {
+                e.preventDefault();
+                const pasted = (e.clipboardData || window.clipboardData).getData('text');
+                const clean = wpSlugify(pasted);
+                hierarchicalSlugInput.value = clean;
+                state.sectionSuffix = clean;
+                if (clean) {
+                    clearHierarchicalBtn.classList.remove('hidden');
+                } else {
+                    clearHierarchicalBtn.classList.add('hidden');
+                }
+                applyCategorySuffix();
+                triggerHierarchicalCopiedFeedback();
+                const itemTypeName = state.generatorType === 'category' ? 'рубрику' : 'заголовок';
+                const backspaceHintHtml = `<span class="text-apple-secondary select-none">Нажмите <button type="button" id="backspaceBtn" class="kbd-btn backspace-btn" title="Редактировать ${itemTypeName}">⌫&nbsp;Backspace</button> для правки</span>`;
+                showSequentialWhisper(
+                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Обновлено и скопировано!</span>',
+                    backspaceHintHtml,
+                    2500,
+                    1000
+                );
+            } else {
+                e.preventDefault();
+                const pasted = (e.clipboardData || window.clipboardData).getData('text');
+                if (!pasted || !state.currentSlug) return;
 
-            const updated = updateHierarchicalPath(pasted, state.currentSlug);
-            hierarchicalSlugInput.value = updated;
-            clearHierarchicalBtn.classList.remove('hidden');
+                const updated = updateHierarchicalPath(pasted, state.currentSlug);
+                hierarchicalSlugInput.value = updated;
+                clearHierarchicalBtn.classList.remove('hidden');
 
-            copyTextToClipboard(updated);
-            triggerHierarchicalCopiedFeedback();
-            adjustInputWidth();
-            requestAnimationFrame(() => {
-                hierarchicalSlugInput.scrollLeft = 0;
-            });
+                copyTextToClipboard(updated);
+                triggerHierarchicalCopiedFeedback();
+                adjustInputWidth();
+                requestAnimationFrame(() => {
+                    hierarchicalSlugInput.scrollLeft = 0;
+                });
+            }
         });
 
         // Ввод текста вручную
         hierarchicalSlugInput.addEventListener('input', () => {
-            if (hierarchicalSlugInput.value.trim()) {
-                clearHierarchicalBtn.classList.remove('hidden');
+            if (state.generatorType === 'category') {
+                const raw = hierarchicalSlugInput.value;
+                const cleanSuffix = wpSlugify(raw);
+                state.sectionSuffix = cleanSuffix;
+                if (raw.trim()) {
+                    clearHierarchicalBtn.classList.remove('hidden');
+                } else {
+                    clearHierarchicalBtn.classList.add('hidden');
+                }
+                // При вводе с клавиатуры обновляем слаг сразу, а копирование дебаунсим, чтобы не перебивать фокус
+                applyCategorySuffix(false);
             } else {
-                clearHierarchicalBtn.classList.add('hidden');
+                if (hierarchicalSlugInput.value.trim()) {
+                    clearHierarchicalBtn.classList.remove('hidden');
+                } else {
+                    clearHierarchicalBtn.classList.add('hidden');
+                }
+                adjustInputWidth();
             }
-            adjustInputWidth();
         });
 
-        // Клавиатура в поле старого слага: Enter для обновления/копирования, Esc для очистки/возврата
+        // Завершение редактирования суффикса при потере фокуса
+        hierarchicalSlugInput.addEventListener('blur', () => {
+            if (state.generatorType === 'category' && categorySuffixDebounceTimer) {
+                clearTimeout(categorySuffixDebounceTimer);
+                categorySuffixDebounceTimer = null;
+                copyTextToClipboard(state.currentSlug);
+            }
+        });
+
+        // Клавиатура в поле подбара: Enter для обновления/копирования, Esc для очистки/возврата
         hierarchicalSlugInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                if (hierarchicalSlugInput.value.trim() && state.currentSlug) {
-                    const updated = updateHierarchicalPath(hierarchicalSlugInput.value, state.currentSlug);
-                    hierarchicalSlugInput.value = updated;
-                    copyTextToClipboard(updated);
+                if (state.generatorType === 'category') {
+                    applyCategorySuffix(true);
                     triggerHierarchicalCopiedFeedback();
-                    adjustInputWidth();
+                } else {
+                    if (hierarchicalSlugInput.value.trim() && state.currentSlug) {
+                        const updated = updateHierarchicalPath(hierarchicalSlugInput.value, state.currentSlug);
+                        hierarchicalSlugInput.value = updated;
+                        copyTextToClipboard(updated);
+                        triggerHierarchicalCopiedFeedback();
+                        adjustInputWidth();
+                    }
                 }
             } else if (e.key === 'Escape') {
-                if (hierarchicalSlugInput.value) {
-                    hierarchicalSlugInput.value = '';
-                    clearHierarchicalBtn.classList.add('hidden');
-                    adjustInputWidth();
+                if (state.generatorType === 'category') {
+                    if (hierarchicalSlugInput.value) {
+                        hierarchicalSlugInput.value = '';
+                        state.sectionSuffix = '';
+                        clearHierarchicalBtn.classList.add('hidden');
+                        applyCategorySuffix(true);
+                        hierarchicalSlugInput.focus();
+                    } else {
+                        switchToInputMode();
+                    }
                 } else {
-                    switchToInputMode();
+                    if (hierarchicalSlugInput.value) {
+                        hierarchicalSlugInput.value = '';
+                        clearHierarchicalBtn.classList.add('hidden');
+                        adjustInputWidth();
+                    } else {
+                        switchToInputMode();
+                    }
                 }
             }
         });
 
-        // Кнопка копирования обновленного пути
+        // Кнопка копирования обновленного пути / слага
         copyHierarchicalBtn.addEventListener('click', () => {
+            if (state.generatorType === 'category') {
+                copyTextToClipboard(state.currentSlug || headlineInput.value);
+                triggerHierarchicalCopiedFeedback();
+                return;
+            }
             const val = hierarchicalSlugInput.value.trim();
             if (!val && state.currentSlug) {
                 copyTextToClipboard(state.currentSlug);
@@ -1067,10 +1318,15 @@ def wp_slugify(text: str) -> str:
             }
         });
 
-        // Кнопка очистки поля старого слага
+        // Кнопка очистки поля подбара (крестик)
         clearHierarchicalBtn.addEventListener('click', () => {
             hierarchicalSlugInput.value = '';
             clearHierarchicalBtn.classList.add('hidden');
+            if (state.generatorType === 'category') {
+                // Очистка суффикса по крестику
+                state.sectionSuffix = '';
+                applyCategorySuffix();
+            }
             hierarchicalSlugInput.focus();
             adjustInputWidth();
         });
