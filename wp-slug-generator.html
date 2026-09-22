@@ -483,7 +483,8 @@ def wp_slugify(text: str) -> str:
             mode: 'input', // 'input' (редактирование заголовка) или 'slug' (показ готового слага)
             savedTitle: '',
             currentSlug: '',
-            typingTimeout: null
+            typingTimeout: null,
+            returnedFromSlug: false
         };
 
         // DOM элементы
@@ -743,6 +744,7 @@ def wp_slugify(text: str) -> str:
             state.savedTitle = raw;
             state.currentSlug = wpSlugify(raw);
             state.mode = 'slug';
+            state.returnedFromSlug = false;
 
             // Обновление интерфейса
             headlineInput.value = state.currentSlug;
@@ -783,14 +785,19 @@ def wp_slugify(text: str) -> str:
         // HTML невидимой кнопки Enter в подсказке
         const ENTER_HINT_HTML = '<span class="text-apple-secondary select-none">Нажмите <button type="button" id="enterBtn" class="kbd-btn enter-btn" title="Создать слаг">↵&nbsp;Enter</button> для создания слага</span>';
 
+        // HTML подсказки при возврате по Backspace (Enter для создания слага или Del для очистки поля)
+        const BACKSPACE_RETURN_HINT_HTML = '<span class="text-apple-secondary select-none">Нажмите <button type="button" id="enterBtn" class="kbd-btn enter-btn" title="Создать слаг">↵&nbsp;Enter</button> для создания слага • <button type="button" id="delBtn" class="kbd-btn del-btn" title="Очистить поле">⌦&nbsp;Del</button> для очистки</span>';
+
         /**
          * Переключение обратно в режим РЕДАКТИРОВАНИЯ заголовка
+         * fromBackspace: признак того, что возврат совершен по клавише или кнопке Backspace
          */
-        function switchToInputMode() {
+        function switchToInputMode(fromBackspace = false) {
             if (state.mode === 'input') return;
 
             clearWhisperTimers();
             state.mode = 'input';
+            state.returnedFromSlug = fromBackspace;
             headlineInput.value = state.savedTitle;
             headlineInput.classList.remove('code-font', 'font-medium', 'text-apple-blue');
             headlineInput.classList.add('font-normal', 'text-apple-text');
@@ -802,12 +809,15 @@ def wp_slugify(text: str) -> str:
             clearHierarchicalBtn.classList.add('hidden');
 
             if (headlineInput.value.trim()) {
-                showWhisper(ENTER_HINT_HTML);
+                showWhisper(fromBackspace ? BACKSPACE_RETURN_HINT_HTML : ENTER_HINT_HTML);
             } else {
                 hideWhisper();
             }
 
             headlineInput.focus();
+            if (fromBackspace) {
+                headlineInput.select();
+            }
             adjustInputWidth();
         }
 
@@ -830,7 +840,7 @@ def wp_slugify(text: str) -> str:
 
         // --- Обработчики событий ввода ---
 
-        // Отслеживание клавиатуры (Enter / Backspace / Esc)
+        // Отслеживание клавиатуры (Enter / Backspace / Esc / Del)
         headlineInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -839,21 +849,35 @@ def wp_slugify(text: str) -> str:
                 // Если мы в режиме слага, Backspace возвращает к исходному заголовку!
                 if (state.mode === 'slug') {
                     e.preventDefault();
-                    switchToInputMode();
+                    switchToInputMode(true);
+                }
+            } else if (e.key === 'Delete') {
+                // Клавиша Del очищает поле в режиме ввода
+                if (state.mode === 'input') {
+                    const isAllSelected = headlineInput.selectionStart === 0 && headlineInput.selectionEnd === headlineInput.value.length;
+                    if (isAllSelected || state.returnedFromSlug) {
+                        e.preventDefault();
+                        headlineInput.value = '';
+                        state.savedTitle = '';
+                        state.returnedFromSlug = false;
+                        hideWhisper();
+                        adjustInputWidth();
+                    }
                 }
             } else if (e.key === 'Escape') {
                 if (state.mode === 'slug') {
-                    switchToInputMode();
+                    switchToInputMode(true);
                 } else {
                     headlineInput.value = '';
                     state.savedTitle = '';
+                    state.returnedFromSlug = false;
                     hideWhisper();
                     adjustInputWidth();
                 }
             }
         });
 
-        // Клик по кнопкам-клавишам в строке подсказок (Enter и Backspace)
+        // Клик по кнопкам-клавишам в строке подсказок (Enter, Del и Backspace)
         whisperContainer.addEventListener('click', (e) => {
             const enterBtn = e.target.closest('#enterBtn, .enter-btn');
             if (enterBtn) {
@@ -863,11 +887,24 @@ def wp_slugify(text: str) -> str:
                 return;
             }
 
+            const delBtn = e.target.closest('#delBtn, .del-btn');
+            if (delBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                headlineInput.value = '';
+                state.savedTitle = '';
+                state.returnedFromSlug = false;
+                hideWhisper();
+                headlineInput.focus();
+                adjustInputWidth();
+                return;
+            }
+
             const backspaceBtn = e.target.closest('#backspaceBtn, .backspace-btn, .kbd-btn');
             if (backspaceBtn && state.mode === 'slug') {
                 e.preventDefault();
                 e.stopPropagation();
-                switchToInputMode();
+                switchToInputMode(true);
                 return;
             }
         });
@@ -898,9 +935,10 @@ def wp_slugify(text: str) -> str:
             if (val) {
                 clearTimeout(typingDebounceTimer);
                 typingDebounceTimer = setTimeout(() => {
-                    showWhisper(ENTER_HINT_HTML);
+                    showWhisper(state.returnedFromSlug ? BACKSPACE_RETURN_HINT_HTML : ENTER_HINT_HTML);
                 }, 300);
             } else {
+                state.returnedFromSlug = false;
                 hideWhisper();
             }
         });
