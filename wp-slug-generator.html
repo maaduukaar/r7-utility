@@ -1,41 +1,40 @@
 <!DOCTYPE html>
-<html lang="ru" class="dark">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WordPress Cyrillic Slug Generator — Транслитерация по стандарту Cyr-To-Lat / ISO 9</title>
-    <meta name="description" content="Генератор слагов WordPress в точном соответствии с правилами плагина Cyr-To-Lat и стандарта ISO 9 (ГОСТ 7.79-2000). Интерактивная справка, правила и готовый код.">
+    <title>WordPress Slug — Минималистичный генератор слагов (Cyr-To-Lat)</title>
+    <meta name="description" content="Минималистичный генератор слагов WordPress по стандарту Cyr-To-Lat (ISO 9). Элегантный стиль Apple, мгновенная работа.">
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'SF Pro Text', 'SF Pro Display', 'Inter', 'Helvetica Neue', 'sans-serif'],
+                        mono: ['SF Mono', 'JetBrains Mono', 'Fira Code', 'Menlo', 'monospace']
+                    },
                     colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            200: '#c7d2fe',
-                            300: '#a5b4fc',
-                            400: '#818cf8',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            800: '#3730a3',
-                            900: '#312e81',
-                            950: '#1e1b4b'
-                        },
-                        wp: {
-                            blue: '#21759b',
-                            dark: '#0073aa',
-                            accent: '#00a0d2'
+                        apple: {
+                            bg: '#f5f5f7',
+                            surface: '#ffffff',
+                            text: '#1d1d1f',
+                            secondary: '#86868b',
+                            tertiary: '#a1a1a6',
+                            border: 'rgba(0, 0, 0, 0.08)',
+                            borderSubtle: 'rgba(0, 0, 0, 0.04)',
+                            blue: '#0071e3',
+                            blueHover: '#0077ed',
+                            green: '#34c759'
                         }
                     },
-                    fontFamily: {
-                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+                    boxShadow: {
+                        'apple-sm': '0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02)',
+                        'apple-md': '0 4px 20px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03)',
+                        'apple-float': '0 12px 36px rgba(0, 0, 0, 0.07), 0 2px 6px rgba(0, 0, 0, 0.04)',
+                        'apple-focus': '0 0 0 4px rgba(0, 113, 227, 0.15)'
                     }
                 }
             }
@@ -45,509 +44,286 @@
     <!-- Google Fonts & Font Awesome Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0b0f19;
-            color: #f1f5f9;
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
         }
-        
+
         .code-font {
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'SF Mono', 'JetBrains Mono', monospace;
         }
 
-        /* Кастомный глассморфизм и неоновые акценты */
-        .glass-card {
-            background: rgba(17, 24, 39, 0.75);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+        /* Нежный медленный фейд для подсказок */
+        .whisper-fade {
+            transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .glass-card-subtle {
-            background: rgba(30, 41, 59, 0.5);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+        /* Мягкие переходы Apple */
+        .smooth-transition {
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .glow-brand {
-            box-shadow: 0 0 35px -5px rgba(99, 102, 241, 0.35);
+        /* Стиль клавиатурных клавиш (KBD) и кнопки-клавиши */
+        kbd, .kbd-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px 6px;
+            font-size: 11px;
+            font-weight: 500;
+            line-height: 1;
+            font-family: inherit;
+            color: #555558;
+            background-color: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+            margin: 0 1px;
+            vertical-align: baseline;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Кнопка-клавиша Backspace: визуально не выдает себя (тот же вид), только курсор указывает на интерактивность */
+        .kbd-btn {
+            cursor: pointer;
+            outline: none;
+            transition: none;
+        }
+
+        .kbd-btn:hover,
+        .kbd-btn:active,
+        .kbd-btn:focus {
+            background-color: rgba(0, 0, 0, 0.05) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+            color: #555558 !important;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05) !important;
+            outline: none !important;
+            transform: none !important;
         }
 
         /* Кастомный скроллбар */
         ::-webkit-scrollbar {
-            width: 7px;
-            height: 7px;
+            width: 6px;
+            height: 6px;
         }
         ::-webkit-scrollbar-track {
-            background: #0f172a;
+            background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 10px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-
-        /* Анимации */
-        @keyframes pulseBorder {
-            0%, 100% { border-color: rgba(99, 102, 241, 0.4); }
-            50% { border-color: rgba(99, 102, 241, 0.9); }
-        }
-        .pulse-border {
-            animation: pulseBorder 2s infinite ease-in-out;
+            background: rgba(0, 0, 0, 0.25);
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+<body class="min-h-screen flex flex-col justify-between selection:bg-apple-blue selection:text-white">
 
-    <!-- Фоновые градиентные пятна для глубины -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div class="absolute -top-40 left-1/4 w-96 h-96 bg-brand-600/15 rounded-full blur-3xl"></div>
-        <div class="absolute top-1/3 -right-20 w-80 h-80 bg-cyan-600/10 rounded-full blur-3xl"></div>
-        <div class="absolute bottom-10 left-1/3 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl"></div>
-    </div>
+    <!-- Верхняя панель управления (Header в стиле macOS Menu Bar) -->
+    <header class="w-full max-w-6xl mx-auto px-6 py-6 flex items-center justify-between z-30">
+        <!-- Логотип / Название -->
+        <button id="navHomeBtn" class="flex items-center gap-2 text-apple-text hover:opacity-75 transition-opacity group">
+            <i class="fa-brands fa-wordpress text-lg text-apple-text group-hover:scale-105 transition-transform"></i>
+            <span class="text-xs font-semibold tracking-tight text-apple-text">WP Slug</span>
+            <span class="text-[10px] text-apple-secondary font-medium tracking-wide bg-black/[0.04] px-2 py-0.5 rounded-full border border-black/[0.04]">ISO 9</span>
+        </button>
 
-    <!-- Header -->
-    <header class="border-b border-slate-800/80 glass-card sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-indigo-700 flex items-center justify-center text-white shadow-lg shadow-brand-500/20 ring-1 ring-white/20">
-                    <i class="fa-brands fa-wordpress text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                        <span>WP Cyrillic Slug Generator</span>
-                        <span class="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30 tracking-wider">Cyr-To-Lat • ISO 9</span>
-                    </h1>
-                    <p class="text-xs text-slate-400 hidden sm:block">Эталонный алгоритм генерации ярлыков (slug) для русскоязычного WordPress</p>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-2 sm:gap-3">
-                <a href="#reference" class="text-xs text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800 transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-book-open text-brand-400"></i>
-                    <span class="hidden md:inline">Справка о стандартах</span>
-                </a>
-                <a href="#code-samples" class="text-xs text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-800 transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-code text-cyan-400"></i>
-                    <span class="hidden md:inline">Код логики</span>
-                </a>
-                <a href="https://github.com/maaduukaar/r7-utility" target="_blank" rel="noopener noreferrer" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 transition flex items-center gap-1.5">
-                    <i class="fa-brands fa-github"></i>
-                    <span>Repo</span>
-                </a>
-            </div>
-        </div>
+        <!-- Навигация: Справка / Код -->
+        <nav class="flex items-center gap-1.5 bg-white/70 backdrop-blur-md p-1 rounded-full shadow-apple-sm border border-apple-border">
+            <button id="navGeneratorBtn" class="px-3.5 py-1 text-xs font-medium rounded-full bg-apple-text text-white shadow-sm transition-all flex items-center gap-1.5">
+                <span>Генератор</span>
+            </button>
+            <button id="navDocsBtn" class="px-3.5 py-1 text-xs font-medium rounded-full text-apple-secondary hover:text-apple-text transition-all flex items-center gap-1.5">
+                <i class="fa-regular fa-compass text-[11px]"></i>
+                <span>Справка</span>
+            </button>
+            <button id="navCodeBtn" class="px-3.5 py-1 text-xs font-medium rounded-full text-apple-secondary hover:text-apple-text transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-code text-[11px]"></i>
+                <span>Код</span>
+            </button>
+        </nav>
     </header>
 
-    <!-- Главный контейнер -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-10">
+    <!-- ОСНОВНОЙ КОНТЕНТ -->
+    <main class="flex-grow flex items-center justify-center px-5 w-full relative">
 
-        <!-- Верхний блок: Интерактивный генератор -->
-        <section class="glass-card rounded-2xl p-6 sm:p-8 shadow-2xl relative">
+        <!-- ========================================================================= -->
+        <!-- РЕЖИМ 1: МИНИМАЛИСТИЧНЫЙ СПОТЛАЙТ-ГЕНЕРАТОР (APPLE STYLE)                 -->
+        <!-- ========================================================================= -->
+        <div id="viewGenerator" class="w-full py-12 flex flex-col items-center justify-center relative" style="max-width: 580px; transition: max-width 0.22s cubic-bezier(0.16, 1, 0.3, 1);">
+
+            <!-- Контекстные подсказки (двухстрочный нежный фейд) -->
+            <div id="whisperContainer" class="h-[38px] flex flex-col items-center justify-end gap-1 pointer-events-none mb-2 select-none">
+                <div id="whisperLine1" class="whisper-fade text-xs font-medium tracking-tight opacity-0 -translate-y-1 flex items-center justify-center pointer-events-auto cursor-default"></div>
+                <div id="whisperLine2" class="whisper-fade text-[11px] text-apple-secondary font-medium tracking-tight opacity-0 -translate-y-1 flex items-center justify-center pointer-events-auto cursor-default"></div>
+            </div>
+
+            <!-- Главная поисковая полоса (Spotlight Input Bar) -->
+            <div id="mainSearchContainer" class="w-full bg-white rounded-2xl shadow-apple-float border border-apple-border transition-all duration-300 relative overflow-hidden group">
+                
+                <div class="flex items-center px-5 h-16 sm:h-[72px] gap-3">
+                    <!-- Иконка слева -->
+                    <div class="text-apple-tertiary flex items-center justify-center w-6 text-base">
+                        <i id="inputIcon" class="fa-solid fa-link transition-transform duration-300"></i>
+                    </div>
+
+                    <!-- Инпут -->
+                    <input type="text" id="headlineInput" autofocus
+                        placeholder="Вставьте заголовок статьи..."
+                        autocomplete="off"
+                        spellcheck="false"
+                        class="w-full bg-transparent text-lg sm:text-xl text-apple-text placeholder:text-apple-tertiary font-normal focus:outline-none tracking-tight">
+                </div>
+
+                <!-- Строка слагового предпросмотра URL (появляется только в режиме слага) -->
+                <div id="slugUrlSubbar" class="px-5 py-2.5 bg-apple-bg/60 border-t border-apple-borderSubtle hidden items-center justify-between gap-4 text-xs">
+                    <div class="text-apple-secondary truncate code-font text-[11px] tracking-tight">
+                        <span class="text-apple-tertiary">https://support.r7-office.ru/</span><span id="subbarSlugText" class="text-apple-blue font-semibold"></span>
+                    </div>
+                    <button id="copyFullUrlBtn" class="text-[11px] text-apple-secondary hover:text-apple-text transition-colors flex items-center gap-1.5 font-medium whitespace-nowrap shrink-0">
+                        <i class="fa-regular fa-copy text-[10px]"></i>
+                        <span>Копировать URL</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- РЕЖИМ 2: ДОКУМЕНТАЦИЯ И СПРАВКА (APPLE HIG / MINIMAL READ MODE)           -->
+        <!-- ========================================================================= -->
+        <div id="viewDocs" class="w-full max-w-3xl py-10 space-y-10 hidden smooth-transition">
             
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
+            <!-- Заголовок справки с кнопкой возврата -->
+            <div class="flex items-center justify-between pb-6 border-b border-apple-border">
                 <div>
-                    <h2 class="text-xl sm:text-2xl font-bold text-white flex items-center gap-2.5">
-                        <i class="fa-solid fa-wand-magic-sparkles text-brand-400"></i>
-                        <span>Генерация слага в реальном времени</span>
-                    </h2>
-                    <p class="text-sm text-slate-400 mt-1">
-                        Вводите заголовок статьи или страницы — слаг формируется строго по канонической логике Cyr-To-Lat + WordPress Core.
-                    </p>
+                    <h2 class="text-2xl font-semibold tracking-tight text-apple-text">Стандарты и логика</h2>
+                    <p class="text-xs text-apple-secondary mt-1">Как устроен алгоритм Cyr-To-Lat и правила транслитерации ISO 9</p>
                 </div>
-
-                <!-- Переключатель режима: Одиночный / Пакетный -->
-                <div class="inline-flex p-1 bg-slate-900/90 border border-slate-700/70 rounded-xl self-start md:self-auto">
-                    <button id="modeSingleBtn" class="px-4 py-1.5 text-xs font-semibold rounded-lg transition-all duration-200 bg-brand-600 text-white shadow-md">
-                        <i class="fa-solid fa-heading mr-1.5"></i>Одиночный заголовок
-                    </button>
-                    <button id="modeBatchBtn" class="px-4 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 text-slate-400 hover:text-slate-200">
-                        <i class="fa-solid fa-list-check mr-1.5"></i>Пакетный режим
-                    </button>
-                </div>
+                <button id="docsBackBtn" class="px-4 py-1.5 text-xs font-medium rounded-full bg-white shadow-apple-sm border border-apple-border text-apple-secondary hover:text-apple-text transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-arrow-left text-[10px]"></i>
+                    <span>К генератору</span>
+                    <kbd class="ml-1 text-[9px]">Esc</kbd>
+                </button>
             </div>
 
-            <!-- Режим 1: Одиночный заголовок -->
-            <div id="singleModeSection" class="mt-6 space-y-6">
-                
-                <!-- Поле ввода -->
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <label for="inputTitle" class="text-sm font-semibold text-slate-300 flex items-center gap-2">
-                            <span>Заголовок статьи / страницы:</span>
-                            <span class="text-xs font-normal text-slate-500">(поддерживает кириллицу, спецсимволы, кавычки, скобки)</span>
-                        </label>
-                        <div class="flex items-center gap-2">
-                            <button id="sampleBtn" class="text-xs text-brand-400 hover:text-brand-300 transition flex items-center gap-1 font-medium">
-                                <i class="fa-regular fa-lightbulb"></i>
-                                <span>Пример из тикета (Р7 + SSO)</span>
-                            </button>
-                            <span class="text-slate-600">•</span>
-                            <button id="clearSingleBtn" class="text-xs text-slate-400 hover:text-rose-400 transition">
-                                <i class="fa-solid fa-rotate-left mr-1"></i>Очистить
-                            </button>
-                        </div>
+            <!-- Разделы справки в виде чистых белых карточек -->
+            <div class="space-y-6">
+
+                <!-- Карточка 1: Почему «й» ➔ «j» -->
+                <div class="bg-white rounded-2xl p-6 shadow-apple-sm border border-apple-border space-y-2.5">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-lg bg-apple-bg flex items-center justify-center text-xs font-bold text-apple-text code-font">J</span>
+                        <h3 class="text-sm font-semibold text-apple-text tracking-tight">Почему буква «й» транслитерируется как «j»?</h3>
                     </div>
-                    
-                    <div class="relative">
-                        <input type="text" id="inputTitle" autofocus
-                            placeholder="Например: Настройка SSO в связке Р7-Диск (SP) и Keycloak (IdP)" 
-                            class="w-full bg-slate-900/90 border border-slate-700 text-white rounded-xl px-4 py-3.5 text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition shadow-inner placeholder:text-slate-500 font-medium">
-                        <span id="charCounter" class="absolute right-3.5 top-4 text-xs text-slate-500">0 симв.</span>
-                    </div>
+                    <p class="text-xs text-apple-secondary leading-relaxed font-normal">
+                        В англо-ориентированных правилах (например, МВД РФ для загранпаспортов) звук «й» передается как «i» или «y». Однако в международном стандарте <strong>ISO 9</strong> и <strong>ГОСТ 7.79-2000 (Система B)</strong> соблюдается принцип однозначного соответствия:
+                    </p>
+                    <ul class="text-xs text-apple-secondary space-y-1.5 pl-4 list-disc font-normal">
+                        <li>Латинская буква <strong>«y»</strong> строго зарезервирована за гласной <strong>«ы»</strong> (<em>бык ➔ byk</em>).</li>
+                        <li>Согласный звук <strong>«й»</strong> по славянской традиции передается буквой <strong>«j»</strong> (<em>настройка ➔ nastrojka</em>).</li>
+                        <li>Знаки <strong>«ъ»</strong> и <strong>«ь»</strong> полностью опускаются.</li>
+                    </ul>
                 </div>
 
-                <!-- Результат: Готовый слаг -->
-                <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-700/80 rounded-xl p-5 shadow-lg space-y-4">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold uppercase tracking-wider text-brand-300 px-2.5 py-1 rounded bg-brand-950/80 border border-brand-800/60">
-                                Результат (WordPress Slug / post_name)
-                            </span>
-                            <span id="matchNotification" class="text-xs font-medium text-emerald-400 hidden items-center gap-1">
-                                <i class="fa-solid fa-check-double"></i> 100% совпадение с эталоном
-                            </span>
-                        </div>
-
-                        <!-- Кнопки действий -->
-                        <div class="flex items-center gap-2">
-                            <button id="copySlugBtn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-semibold rounded-lg transition-all duration-150 flex items-center gap-2 shadow-lg shadow-emerald-900/30">
-                                <i class="fa-regular fa-copy"></i>
-                                <span>Копировать слаг</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Поле вывода слага -->
-                    <div class="relative group">
-                        <div id="slugOutput" class="code-font text-lg sm:text-xl text-emerald-300 bg-slate-950/90 border border-slate-800 rounded-lg p-4 break-all select-all font-semibold tracking-wide min-h-[60px] flex items-center">
-                            nastrojka-sso-v-svyazke-r7-disk-sp-i-keycloak-idp
-                        </div>
-                    </div>
-
-                    <!-- Виртуальная строка адреса браузера (URL Preview) -->
-                    <div class="pt-2 border-t border-slate-800/80 flex items-center gap-2 text-xs text-slate-400">
-                        <i class="fa-solid fa-globe text-slate-500"></i>
-                        <span class="text-slate-500">Предпросмотр URL:</span>
-                        <div class="code-font text-slate-300 truncate bg-slate-900/90 px-2.5 py-1 rounded border border-slate-800 flex-1">
-                            <span class="text-slate-500">https://support.r7-office.ru/</span><span id="urlPreviewSlug" class="text-brand-300 font-semibold">nastrojka-sso-v-svyazke-r7-disk-sp-i-keycloak-idp</span><span class="text-slate-500">/</span>
-                        </div>
-                        <button id="copyUrlBtn" title="Копировать полный URL" class="text-slate-400 hover:text-white px-2 py-1 bg-slate-800 rounded hover:bg-slate-700 transition">
-                            <i class="fa-solid fa-link text-xs"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Детализация трансформации (Token Breakdown) -->
-                <div class="glass-card-subtle rounded-xl p-4 border border-slate-800">
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-                            <i class="fa-solid fa-microchip text-indigo-400"></i>
-                            <span>Пошаговый разбор преобразования слов и символов:</span>
+                <!-- Карточка 2: WordPress Core & sanitize_title -->
+                <div class="bg-white rounded-2xl p-6 shadow-apple-sm border border-apple-border space-y-2.5">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-lg bg-apple-bg flex items-center justify-center text-xs text-apple-text">
+                            <i class="fa-brands fa-wordpress-simple"></i>
                         </span>
-                        <span class="text-[11px] text-slate-500">Кликните на токен для подробностей</span>
+                        <h3 class="text-sm font-semibold text-apple-text tracking-tight">Как работает связка Cyr-To-Lat и ядра WordPress</h3>
+                    </div>
+                    <p class="text-xs text-apple-secondary leading-relaxed font-normal">
+                        WordPress «из коробки» не поддерживает транслитерацию кириллицы: встроенная функция <code>remove_accents()</code> умеет очищать только западноевропейские диакритические знаки (é ➔ e). Без плагина кириллические заголовки превращаются в процентный код (<em>%d0%bd...</em>).
+                    </p>
+                    <p class="text-xs text-apple-secondary leading-relaxed font-normal">
+                        Плагин <strong>Cyr-To-Lat</strong> перехватывает хук <code>sanitize_title</code> до очистки, меняет буквы по таблице ISO 9, после чего стандартный <code>sanitize_title_with_dashes()</code> ядра удаляет скобки, кавычки и заменяет пробелы на дефисы.
+                    </p>
+                </div>
+
+                <!-- Карточка 3: Интерактивная карта букв (Алфавит) -->
+                <div class="bg-white rounded-2xl p-6 shadow-apple-sm border border-apple-border space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-sm font-semibold text-apple-text tracking-tight">Таблица соответствия символов (ISO 9 B)</h3>
+                        <span class="text-[11px] text-apple-tertiary">Кликните букву для копирования</span>
                     </div>
 
-                    <div id="tokenChipsContainer" class="flex flex-wrap gap-2">
-                        <!-- Динамически заполняется скриптом -->
+                    <div id="appleAlphabetGrid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                        <!-- Динамически заполняется через JS -->
                     </div>
                 </div>
 
-                <!-- Быстрые настройки -->
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                    <label class="flex items-center gap-2.5 text-xs text-slate-300 bg-slate-900/60 p-3 rounded-lg border border-slate-800 cursor-pointer hover:border-slate-700 transition">
-                        <input type="checkbox" id="optStrictWP" checked class="w-4 h-4 rounded text-brand-600 bg-slate-800 border-slate-700 focus:ring-brand-500 focus:ring-offset-slate-900">
-                        <span>Стандартное схлопывание дефисов (<code>--</code> ➔ <code>-</code>)</span>
-                    </label>
-                    <label class="flex items-center gap-2.5 text-xs text-slate-300 bg-slate-900/60 p-3 rounded-lg border border-slate-800 cursor-pointer hover:border-slate-700 transition">
-                        <input type="checkbox" id="optTrimEdges" checked class="w-4 h-4 rounded text-brand-600 bg-slate-800 border-slate-700 focus:ring-brand-500 focus:ring-offset-slate-900">
-                        <span>Обрезать дефисы по краям (<code>trim</code>)</span>
-                    </label>
-                    <label class="flex items-center gap-2.5 text-xs text-slate-300 bg-slate-900/60 p-3 rounded-lg border border-slate-800 cursor-pointer hover:border-slate-700 transition">
-                        <input type="checkbox" id="optKeepUnderscores" class="w-4 h-4 rounded text-brand-600 bg-slate-800 border-slate-700 focus:ring-brand-500 focus:ring-offset-slate-900">
-                        <span>Сохранять <code>_</code> (по умолчанию заменяются на <code>-</code>)</span>
-                    </label>
+                <!-- Ссылки на первоисточники -->
+                <div class="pt-4 flex flex-wrap gap-4 text-xs text-apple-secondary">
+                    <a href="https://wordpress.org/plugins/cyr2lat/" target="_blank" rel="noopener noreferrer" class="hover:text-apple-blue transition-colors flex items-center gap-1">
+                        <span>Cyr-To-Lat на WordPress.org</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                    </a>
+                    <span>•</span>
+                    <a href="https://github.com/mihdan/cyr2lat" target="_blank" rel="noopener noreferrer" class="hover:text-apple-blue transition-colors flex items-center gap-1">
+                        <span>Исходный код (GitHub)</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                    </a>
+                    <span>•</span>
+                    <a href="https://developer.wordpress.org/reference/functions/sanitize_title_with_dashes/" target="_blank" rel="noopener noreferrer" class="hover:text-apple-blue transition-colors flex items-center gap-1">
+                        <span>Справка sanitize_title_with_dashes</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                    </a>
                 </div>
 
             </div>
 
-            <!-- Режим 2: Пакетный режим (Batch) -->
-            <div id="batchModeSection" class="mt-6 space-y-6 hidden">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <label for="batchInput" class="text-sm font-semibold text-slate-300">
-                                Вставьте список заголовков (по одному на строку):
-                            </label>
-                            <button id="batchSampleBtn" class="text-xs text-brand-400 hover:text-brand-300 transition">
-                                Заполнить демо-списком
-                            </button>
-                        </div>
-                        <textarea id="batchInput" rows="10" 
-                            placeholder="Настройка SSO в связке Р7-Диск (SP) и Keycloak (IdP)&#10;Установка и настройка Сервера Документов&#10;Интеграция с Nextcloud через плагин (версия 1.4)&#10;Как восстановить пароль администратора?" 
-                            class="w-full bg-slate-900/90 border border-slate-700 text-white rounded-xl p-4 text-sm code-font focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition shadow-inner placeholder:text-slate-600 resize-y"></textarea>
-                    </div>
+        </div>
 
-                    <div class="flex flex-col">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm font-semibold text-slate-300">
-                                Сгенерированные слаги (<span id="batchCount">0</span>):
-                            </span>
-                            <div class="flex items-center gap-2">
-                                <button id="copyBatchSlugsBtn" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded-md font-medium transition">
-                                    <i class="fa-regular fa-copy mr-1"></i>Копировать только слаги
-                                </button>
-                                <button id="copyBatchTsvBtn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1 rounded-md border border-slate-700 transition">
-                                    <i class="fa-solid fa-table mr-1"></i>TSV (Excel)
-                                </button>
-                            </div>
-                        </div>
-                        <textarea id="batchOutput" rows="10" readonly
-                            placeholder="Здесь появятся слаги..." 
-                            class="w-full flex-1 bg-slate-950/90 border border-slate-800 text-emerald-300 rounded-xl p-4 text-sm code-font focus:outline-none transition shadow-inner resize-y"></textarea>
-                    </div>
-                </div>
-            </div>
-
-        </section>
-
-        <!-- Блок: Интерактивная таблица алфавита ISO 9 / Cyr-To-Lat -->
-        <section class="glass-card rounded-2xl p-6 sm:p-8 space-y-6">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <!-- ========================================================================= -->
+        <!-- РЕЖИМ 3: ЧИСТЫЙ КОД (APPLE DEVELOPER STYLE)                               -->
+        <!-- ========================================================================= -->
+        <div id="viewCode" class="w-full max-w-3xl py-10 space-y-8 hidden smooth-transition">
+            
+            <div class="flex items-center justify-between pb-6 border-b border-apple-border">
                 <div>
-                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-table-cells text-cyan-400"></i>
-                        <span>Алфавитная карта транслитерации (ISO 9:1995 / ГОСТ 7.79-2000, Система B)</span>
-                    </h3>
-                    <p class="text-xs text-slate-400 mt-1">
-                        Именно эта таблица используется плагином Cyr-To-Lat в качестве эталонной.
-                    </p>
+                    <h2 class="text-2xl font-semibold tracking-tight text-apple-text">Реализация логики</h2>
+                    <p class="text-xs text-apple-secondary mt-1">Готовые сниппеты для вставки в ваши проекты</p>
                 </div>
-
-                <!-- Быстрый фильтр по таблице -->
-                <div class="relative min-w-[220px]">
-                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-xs text-slate-500"></i>
-                    <input type="text" id="alphabetFilter" placeholder="Поиск буквы или звука..." 
-                        class="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg pl-8 pr-3 py-2 text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500">
-                </div>
+                <button id="codeBackBtn" class="px-4 py-1.5 text-xs font-medium rounded-full bg-white shadow-apple-sm border border-apple-border text-apple-secondary hover:text-apple-text transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-arrow-left text-[10px]"></i>
+                    <span>К генератору</span>
+                    <kbd class="ml-1 text-[9px]">Esc</kbd>
+                </button>
             </div>
 
-            <!-- Сетка букв -->
-            <div id="alphabetGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2.5">
-                <!-- Заполняется динамически через JS -->
+            <!-- Вкладки языков -->
+            <div class="flex items-center gap-2">
+                <button class="code-selector-btn px-4 py-1.5 text-xs font-semibold rounded-lg bg-white shadow-apple-sm border border-apple-border text-apple-text" data-lang="js">
+                    JavaScript
+                </button>
+                <button class="code-selector-btn px-4 py-1.5 text-xs font-medium rounded-lg text-apple-secondary hover:text-apple-text transition-all" data-lang="php">
+                    PHP (WordPress)
+                </button>
+                <button class="code-selector-btn px-4 py-1.5 text-xs font-medium rounded-lg text-apple-secondary hover:text-apple-text transition-all" data-lang="py">
+                    Python
+                </button>
             </div>
 
-            <div class="p-3.5 bg-slate-900/70 border border-slate-800 rounded-xl text-xs text-slate-400 flex items-start gap-2.5">
-                <i class="fa-solid fa-circle-info text-brand-400 mt-0.5 text-sm"></i>
-                <div class="space-y-1">
-                    <p><strong class="text-slate-200">Особое внимание:</strong> Буква <strong>«й»</strong> конвертируется в <strong>«j»</strong> (традиция ISO 9 / славянской латиницы), буква <strong>«щ»</strong> — в <strong>«shh»</strong> (в некоторых форках «shch»), а мягкий и твердый знаки (<strong>«ь»</strong>, <strong>«ъ»</strong>) полностью удаляются в пустую строку.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Блок: Справка о стандартах и история функции (Deep Dive) -->
-        <section id="reference" class="glass-card rounded-2xl p-6 sm:p-8 space-y-8">
-            <div>
-                <h3 class="text-2xl font-bold text-white flex items-center gap-2.5">
-                    <i class="fa-solid fa-graduation-cap text-amber-400"></i>
-                    <span>Всё о стандартах транслитерации и архитектуре слагов</span>
-                </h3>
-                <p class="text-sm text-slate-400 mt-1">
-                    Почему слаг выглядит именно так, чем стандарты отличаются друг от друга и как устроен этот механизм в WP.
-                </p>
-            </div>
-
-            <!-- Информационные карточки сеткой -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                
-                <!-- Карточка 1: Почему «й» превращается в «j»? -->
-                <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-5 space-y-3">
-                    <div class="w-9 h-9 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-base border border-indigo-500/30">
-                        J
-                    </div>
-                    <h4 class="text-base font-bold text-white">Почему «й» ➔ «j», а не «y» или «i»?</h4>
-                    <p class="text-xs text-slate-400 leading-relaxed">
-                        В англо-ориентированных транслитерациях (например, МВД для загранпаспортов) «й» часто пишут как «i» или «y» (<em>Mayak, Tolstoy</em>). Но в международном стандарте <strong>ISO 9</strong> и <strong>ГОСТ 7.79-2000</strong> (Система B) принят строгий лингвистический принцип: каждой букве соответствует свой уникальный звук латиницы без диакритики.
-                    </p>
-                    <p class="text-xs text-slate-400 leading-relaxed">
-                        Поскольку буква <strong>«Y»</strong> зарезервирована за <strong>«Ы»</strong> (<em>бык ➔ byk</em>), для согласного звука <strong>«Й»</strong> используется классическая славянская буква <strong>«J»</strong> (как в чешском, польском, сербском). Отсюда: <em>«Настройка» ➔ «nastrojka»</em>.
-                    </p>
-                </div>
-
-                <!-- Карточка 2: История Rus-To-Lat и Cyr-To-Lat -->
-                <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-5 space-y-3">
-                    <div class="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-base border border-emerald-500/30">
-                        <i class="fa-solid fa-clock-rotate-left"></i>
-                    </div>
-                    <h4 class="text-base font-bold text-white">История: Rus-To-Lat ➔ Cyr-To-Lat</h4>
-                    <p class="text-xs text-slate-400 leading-relaxed">
-                        В конце 2000-х годов разработчик <strong>Антон Скоробогатов</strong> создал концепт <em>Rus-To-Lat</em>. Позже <strong>Сергей Бирюков</strong> (ключевой контрибьютор русской локализации WordPress) превратил его в официальный плагин <strong>Cyr-To-Lat</strong> на WordPress.org.
-                    </p>
-                    <p class="text-xs text-slate-400 leading-relaxed">
-                        Позже проект развивали <strong>Михаил Кобзарев</strong> (mihdan) и <strong>Ивижан Стефан Стипич</strong> (Cyr to Lat Enhanced). За более чем 15 лет этот плагин установлен на сотнях тысяч сайтов и стал непререкаемым стандартом генерации ЧПУ в Рунете.
-                    </p>
-                </div>
-
-                <!-- Карточка 3: Архитектурный курьез ядра WordPress -->
-                <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-5 space-y-3">
-                    <div class="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-base border border-amber-500/30">
-                        <i class="fa-brands fa-wordpress"></i>
-                    </div>
-                    <h4 class="text-base font-bold text-white">Почему ядро WP само не транслитерирует?</h4>
-                    <p class="text-xs text-slate-400 leading-relaxed">
-                        В ядре WordPress есть встроенная функция <code>remove_accents()</code>. Но она поддерживает исключительно романские/европейские акценты (<em>é ➔ e, ü ➔ u, ñ ➔ n</em>). Кириллицу она игнорирует.
-                    </p>
-                    <p class="text-xs text-slate-400 leading-relaxed">
-                        Если плагин транслитерации не установлен, то вызов <code>sanitize_title_with_dashes()</code> превращает русские слова в громоздкий процентный код (<em>%d0%bd%d0%b0...</em>), который ломает короткие читаемые ссылки в документациях и статьях.
-                    </p>
-                </div>
-
-            </div>
-
-            <!-- Сравнительная таблица популярных систем транслитерации -->
-            <div class="space-y-3">
-                <h4 class="text-base font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-code-compare text-indigo-400"></i>
-                    <span>Сравнение систем транслитерации русского языка</span>
-                </h4>
-
-                <div class="overflow-x-auto rounded-xl border border-slate-800">
-                    <table class="w-full text-left text-xs border-collapse">
-                        <thead>
-                            <tr class="bg-slate-900/90 text-slate-300 border-b border-slate-800">
-                                <th class="p-3.5 font-semibold">Буква</th>
-                                <th class="p-3.5 font-semibold text-emerald-400">Cyr-To-Lat / ISO 9 B (WP)</th>
-                                <th class="p-3.5 font-semibold text-slate-400">Загранпаспорт (МВД РФ)</th>
-                                <th class="p-3.5 font-semibold text-slate-400">BGN/PCGN (США/Британия)</th>
-                                <th class="p-3.5 font-semibold text-slate-400">Яндекс / Поисковый SEO</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-800 text-slate-300">
-                            <tr class="hover:bg-slate-800/40">
-                                <td class="p-3 font-bold text-white">Й, й</td>
-                                <td class="p-3 font-mono font-bold text-emerald-400">j</td>
-                                <td class="p-3 font-mono">i</td>
-                                <td class="p-3 font-mono">y</td>
-                                <td class="p-3 font-mono">y / i</td>
-                            </tr>
-                            <tr class="hover:bg-slate-800/40">
-                                <td class="p-3 font-bold text-white">Щ, щ</td>
-                                <td class="p-3 font-mono font-bold text-emerald-400">shh (в форках shch)</td>
-                                <td class="p-3 font-mono">shch</td>
-                                <td class="p-3 font-mono">shch</td>
-                                <td class="p-3 font-mono">sch / shch</td>
-                            </tr>
-                            <tr class="hover:bg-slate-800/40">
-                                <td class="p-3 font-bold text-white">Ы, ы</td>
-                                <td class="p-3 font-mono font-bold text-emerald-400">y</td>
-                                <td class="p-3 font-mono">y</td>
-                                <td class="p-3 font-mono">y</td>
-                                <td class="p-3 font-mono">y</td>
-                            </tr>
-                            <tr class="hover:bg-slate-800/40">
-                                <td class="p-3 font-bold text-white">Ц, ц</td>
-                                <td class="p-3 font-mono font-bold text-emerald-400">ts</td>
-                                <td class="p-3 font-mono">ts</td>
-                                <td class="p-3 font-mono">ts</td>
-                                <td class="p-3 font-mono">c / ts</td>
-                            </tr>
-                            <tr class="hover:bg-slate-800/40">
-                                <td class="p-3 font-bold text-white">Х, х</td>
-                                <td class="p-3 font-mono font-bold text-emerald-400">h</td>
-                                <td class="p-3 font-mono">kh</td>
-                                <td class="p-3 font-mono">kh</td>
-                                <td class="p-3 font-mono">kh / h</td>
-                            </tr>
-                            <tr class="hover:bg-slate-800/40">
-                                <td class="p-3 font-bold text-white">Ъ, ъ / Ь, ь</td>
-                                <td class="p-3 font-mono font-bold text-emerald-400">&empty; (удаляются)</td>
-                                <td class="p-3 font-mono">&empty; (игнорируются)</td>
-                                <td class="p-3 font-mono">" (кавычка)</td>
-                                <td class="p-3 font-mono">&empty; (удаляются)</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Авторитетные ссылки и документация -->
-            <div class="space-y-3 pt-4 border-t border-slate-800">
-                <h4 class="text-sm font-bold text-slate-200 flex items-center gap-2">
-                    <i class="fa-solid fa-arrow-up-right-from-square text-cyan-400"></i>
-                    <span>Первоисточники и официальная документация</span>
-                </h4>
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                    <a href="https://wordpress.org/plugins/cyr2lat/" target="_blank" rel="noopener noreferrer" 
-                        class="p-3 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-xl transition flex items-center gap-3">
-                        <i class="fa-brands fa-wordpress text-lg text-sky-400"></i>
-                        <div class="truncate">
-                            <div class="text-xs font-semibold text-white">Cyr-To-Lat на WP.org</div>
-                            <div class="text-[11px] text-slate-500 truncate">Официальный репозиторий плагина</div>
-                        </div>
-                    </a>
-                    <a href="https://github.com/mihdan/cyr2lat" target="_blank" rel="noopener noreferrer" 
-                        class="p-3 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-xl transition flex items-center gap-3">
-                        <i class="fa-brands fa-github text-lg text-slate-300"></i>
-                        <div class="truncate">
-                            <div class="text-xs font-semibold text-white">GitHub: mihdan/cyr2lat</div>
-                            <div class="text-[11px] text-slate-500 truncate">Исходный код и таблицы замен</div>
-                        </div>
-                    </a>
-                    <a href="https://developer.wordpress.org/reference/functions/sanitize_title_with_dashes/" target="_blank" rel="noopener noreferrer" 
-                        class="p-3 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-xl transition flex items-center gap-3">
-                        <i class="fa-solid fa-book text-lg text-amber-400"></i>
-                        <div class="truncate">
-                            <div class="text-xs font-semibold text-white">sanitize_title_with_dashes()</div>
-                            <div class="text-[11px] text-slate-500 truncate">Справка WP Code Reference</div>
-                        </div>
-                    </a>
-                </div>
-            </div>
-
-        </section>
-
-        <!-- Блок: Готовый код логики (PHP / JS / Python) -->
-        <section id="code-samples" class="glass-card rounded-2xl p-6 sm:p-8 space-y-6">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                        <i class="fa-solid fa-laptop-code text-emerald-400"></i>
-                        <span>Готовая реализация логики для ваших проектов</span>
-                    </h3>
-                    <p class="text-xs text-slate-400 mt-1">
-                        Используйте этот код в скриптах миграции, CLI-утилитах или темах WordPress.
-                    </p>
-                </div>
-
-                <!-- Табы языков -->
-                <div class="flex items-center gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-xl self-start sm:self-auto">
-                    <button class="code-tab-btn px-3 py-1 text-xs font-semibold rounded-lg transition bg-brand-600 text-white" data-lang="js">
-                        JavaScript / TS
-                    </button>
-                    <button class="code-tab-btn px-3 py-1 text-xs font-medium rounded-lg transition text-slate-400 hover:text-white" data-lang="php">
-                        PHP (WordPress)
-                    </button>
-                    <button class="code-tab-btn px-3 py-1 text-xs font-medium rounded-lg transition text-slate-400 hover:text-white" data-lang="py">
-                        Python 3
-                    </button>
-                </div>
-            </div>
-
-            <!-- Контейнер с кодом -->
-            <div class="relative group">
-                <button id="copyCodeBtn" class="absolute top-3.5 right-3.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg border border-slate-700 transition flex items-center gap-1.5 shadow-md z-10">
-                    <i class="fa-regular fa-copy"></i>
-                    <span>Скопировать код</span>
+            <!-- Блок кода -->
+            <div class="bg-white rounded-2xl shadow-apple-sm border border-apple-border p-6 relative group overflow-hidden">
+                <button id="copySnippetBtn" class="absolute top-4 right-4 px-3 py-1.5 bg-apple-bg hover:bg-black/5 text-apple-text rounded-lg text-xs font-medium border border-apple-border transition-all flex items-center gap-1.5">
+                    <i class="fa-regular fa-copy text-[11px]"></i>
+                    <span>Копировать</span>
                 </button>
 
-                <!-- JS код -->
-                <pre id="codeBlockJs" class="code-font text-xs sm:text-sm text-slate-300 bg-slate-950 p-5 rounded-xl border border-slate-800 overflow-x-auto leading-relaxed"><code>// Эталонная реализация WordPress Cyr-To-Lat для JavaScript / TypeScript
+                <pre id="snippetJs" class="code-font text-xs text-apple-text overflow-x-auto leading-relaxed"><code>// Эталонная реализация WordPress Cyr-To-Lat на JavaScript
 const CYR_TO_LAT_MAP = {
   'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'YO',
   'Ж': 'ZH', 'З': 'Z', 'И': 'I', 'Й': 'J', 'К': 'K', 'Л': 'L', 'М': 'M',
@@ -559,44 +335,33 @@ const CYR_TO_LAT_MAP = {
   'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'j', 'к': 'k', 'л': 'l', 'м': 'm',
   'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
   'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shh',
-  'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
-
-  // Дополнительные символы (украинский / белорусский):
-  'Є': 'YE', 'є': 'ye', 'І': 'I', 'і': 'i', 'Ї': 'YI', 'ї': 'yi',
-  'Ґ': 'G', 'ґ': 'g', 'Ў': 'U', 'ў': 'u'
+  'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya'
 };
 
 function wpSlugify(text) {
   if (!text) return '';
 
-  // 1. Посимвольная транслитерация (ISO 9 / Cyr-To-Lat)
   let transliterated = '';
   for (const char of text) {
     transliterated += CYR_TO_LAT_MAP[char] !== undefined ? CYR_TO_LAT_MAP[char] : char;
   }
 
-  // 2. Логика WordPress sanitize_title_with_dashes
-  return transliterated
+  const clean = transliterated
     .toLowerCase()
-    .replace(/[._/]/g, '-')          // точки, слэши, подчеркивания в дефис
-    .replace(/[^a-z0-9 -]/g, '')     // удаление скобок, кавычек и спецсимволов
+    .replace(/[._/]/g, '-')
+    .replace(/[^a-z0-9 -]/g, '')
     .trim()
-    .replace(/\s+/g, '-')            // пробелы в дефис
-    .replace(/-+/g, '-')             // схлопывание повторных дефисов
-    .replace(/^-+|-+$/g, '');        // обрезка дефисов по краям
-}
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
 
-// Пример использования:
-console.log(wpSlugify('Настройка SSO в связке Р7-Диск (SP) и Keycloak (IdP)'));
-// Вывод: "nastrojka-sso-v-svyazke-r7-disk-sp-i-keycloak-idp"</code></pre>
+  return clean ? clean + '/' : '';
+}</code></pre>
 
-                <!-- PHP код -->
-                <pre id="codeBlockPhp" class="code-font text-xs sm:text-sm text-slate-300 bg-slate-950 p-5 rounded-xl border border-slate-800 overflow-x-auto leading-relaxed hidden"><code>&lt;?php
-/**
- * Функция транслитерации и генерации слага в стиле Cyr-To-Lat
- */
-function custom_wp_slugify( string $title ): string {
-    $iso9_table = [
+                <pre id="snippetPhp" class="code-font text-xs text-apple-text overflow-x-auto leading-relaxed hidden"><code>&lt;?php
+// Реализация для functions.php вашей темы или плагина
+function custom_cyr_slugify( string $title ): string {
+    $table = [
         'А' => 'A',  'Б' => 'B',  'В' => 'V',  'Г' => 'G',  'Д' => 'D',
         'Е' => 'E',  'Ё' => 'YO', 'Ж' => 'ZH', 'З' => 'Z',  'И' => 'I',
         'Й' => 'J',  'К' => 'K',  'Л' => 'L',  'М' => 'M',  'Н' => 'N',
@@ -612,16 +377,9 @@ function custom_wp_slugify( string $title ): string {
         'у' => 'u',  'ф' => 'f',  'х' => 'h',  'ц' => 'ts', 'ч' => 'ch',
         'ш' => 'sh', 'щ' => 'shh','ъ' => '',   'ы' => 'y',  'ь' => '',
         'э' => 'e',  'ю' => 'yu', 'я' => 'ya',
-
-        'Є' => 'YE', 'є' => 'ye', 'І' => 'I',  'і' => 'i',
-        'Ї' => 'YI', 'ї' => 'yi', 'Ґ' => 'G',  'ґ' => 'g',
-        'Ў' => 'U',  'ў' => 'u',
     ];
 
-    // 1. Замена символов
-    $title = strtr( $title, $iso9_table );
-
-    // 2. Нормализация по правилам sanitize_title_with_dashes
+    $title = strtr( $title, $table );
     $title = strip_tags( $title );
     $title = mb_strtolower( $title, 'UTF-8' );
     $title = str_replace( [ '.', '/', '_' ], '-', $title );
@@ -629,11 +387,11 @@ function custom_wp_slugify( string $title ): string {
     $title = preg_replace( '/\s+/', '-', $title );
     $title = preg_replace( '/-+/', '-', $title );
 
-    return trim( $title, '-' );
+    $clean = trim( $title, '-' );
+    return $clean ? $clean . '/' : '';
 }</code></pre>
 
-                <!-- Python код -->
-                <pre id="codeBlockPy" class="code-font text-xs sm:text-sm text-slate-300 bg-slate-950 p-5 rounded-xl border border-slate-800 overflow-x-auto leading-relaxed hidden"><code>import re
+                <pre id="snippetPy" class="code-font text-xs text-apple-text overflow-x-auto leading-relaxed hidden"><code>import re
 
 CYR_TO_LAT_MAP = {
     'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'YO',
@@ -646,54 +404,33 @@ CYR_TO_LAT_MAP = {
     'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'j', 'к': 'k', 'л': 'l', 'м': 'm',
     'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
     'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shh',
-    'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
-
-    'Є': 'YE', 'є': 'ye', 'І': 'I', 'і': 'i', 'Ї': 'YI', 'ї': 'yi',
-    'Ґ': 'G', 'ґ': 'g', 'Ў': 'U', 'ў': 'u'
+    'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya'
 }
 
 def wp_slugify(text: str) -> str:
     if not text:
         return ""
-    
-    # 1. Транслитерация
     translit = "".join(CYR_TO_LAT_MAP.get(ch, ch) for ch in text)
-    
-    # 2. Нормализация WordPress
     slug = translit.lower()
     slug = re.sub(r"[._/]", "-", slug)
     slug = re.sub(r"[^a-z0-9 -]", "", slug)
     slug = re.sub(r"\s+", "-", slug)
     slug = re.sub(r"-+", "-", slug)
-    return slug.strip("-")
-
-# Проверка
-print(wp_slugify("Настройка SSO в связке Р7-Диск (SP) и Keycloak (IdP)"))
-# nastrojka-sso-v-svyazke-r7-disk-sp-i-keycloak-idp</code></pre>
+    clean = slug.strip("-")
+    return f"{clean}/" if clean else ""</code></pre>
             </div>
-        </section>
+
+        </div>
 
     </main>
 
-    <!-- Подвал -->
-    <footer class="border-t border-slate-800/80 glass-card mt-12 py-6 text-center text-xs text-slate-500">
-        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p>WP Cyrillic Slug Generator • Утилита для порталов Р7-Офис и WordPress</p>
-            <div class="flex items-center gap-4">
-                <a href="https://maaduukaar.github.io/r7-utility/" class="text-slate-400 hover:text-white transition">Все утилиты R7-Utility</a>
-                <span>•</span>
-                <a href="https://support.r7-office.ru" target="_blank" rel="noopener noreferrer" class="text-slate-400 hover:text-white transition">support.r7-office.ru</a>
-            </div>
-        </div>
+    <!-- Нижняя ненавязчивая строка статуса -->
+    <footer class="w-full max-w-6xl mx-auto px-6 py-6 flex items-center justify-between text-[11px] text-apple-tertiary">
+        <span>R7-Utility • WordPress Slug Generator</span>
+        <span><a href="https://wordpress.org/plugins/cyr2lat/" target="_blank" rel="noopener noreferrer" class="hover:text-apple-secondary transition-colors" title="Плагин Cyr-To-Lat на WordPress.org">Cyr-To-Lat</a> • ISO 9 (ГОСТ 7.79-2000 B)</span>
     </footer>
 
-    <!-- Всплывающее уведомление (Toast) -->
-    <div id="toastNotification" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-2 bg-emerald-600 text-white px-4 py-2.5 rounded-xl shadow-2xl font-medium text-xs">
-        <i class="fa-solid fa-circle-check text-base"></i>
-        <span id="toastText">Скопировано в буфер обмена!</span>
-    </div>
-
-    <!-- Логика приложения -->
+    <!-- Логика и скрипты приложения -->
     <script>
         // Таблица транслитерации ISO 9 / Cyr-To-Lat
         const CYR_TO_LAT_MAP = {
@@ -713,424 +450,531 @@ print(wp_slugify("Настройка SSO в связке Р7-Диск (SP) и Ke
             'ш': 'sh', 'щ': 'shh','ъ': '',   'ы': 'y',  'ь': '',
             'э': 'e',  'ю': 'yu', 'я': 'ya',
 
-            // Расширенная кириллица
             'Є': 'YE', 'є': 'ye', 'І': 'I',  'і': 'i',
             'Ї': 'YI', 'ї': 'yi', 'Ґ': 'G',  'ґ': 'g',
             'Ў': 'U',  'ў': 'u'
         };
 
-        // Буквы для алфавитной сетки с описанием
         const ALPHABET_LIST = [
-            { ru: 'А а', lat: 'a', desc: 'Простая замена' },
-            { ru: 'Б б', lat: 'b', desc: 'Простая замена' },
-            { ru: 'В в', lat: 'v', desc: 'Простая замена' },
-            { ru: 'Г г', lat: 'g', desc: 'Простая замена' },
-            { ru: 'Д д', lat: 'd', desc: 'Простая замена' },
-            { ru: 'Е е', lat: 'e', desc: 'Простая замена' },
-            { ru: 'Ё ё', lat: 'yo', desc: 'Диграф' },
-            { ru: 'Ж ж', lat: 'zh', desc: 'Диграф' },
-            { ru: 'З з', lat: 'z', desc: 'Простая замена' },
-            { ru: 'И и', lat: 'i', desc: 'Простая замена' },
-            { ru: 'Й й', lat: 'j', desc: 'Особенность ISO 9' },
-            { ru: 'К к', lat: 'k', desc: 'Простая замена' },
-            { ru: 'Л л', lat: 'l', desc: 'Простая замена' },
-            { ru: 'М м', lat: 'm', desc: 'Простая замена' },
-            { ru: 'Н н', lat: 'n', desc: 'Простая замена' },
-            { ru: 'О о', lat: 'o', desc: 'Простая замена' },
-            { ru: 'П п', lat: 'p', desc: 'Простая замена' },
-            { ru: 'Р р', lat: 'r', desc: 'Простая замена' },
-            { ru: 'С с', lat: 's', desc: 'Простая замена' },
-            { ru: 'Т т', lat: 't', desc: 'Простая замена' },
-            { ru: 'У у', lat: 'u', desc: 'Простая замена' },
-            { ru: 'Ф ф', lat: 'f', desc: 'Простая замена' },
-            { ru: 'Х х', lat: 'h', desc: 'Латинская h' },
-            { ru: 'Ц ц', lat: 'ts', desc: 'Диграф' },
-            { ru: 'Ч ч', lat: 'ch', desc: 'Диграф' },
-            { ru: 'Ш ш', lat: 'sh', desc: 'Диграф' },
-            { ru: 'Щ щ', lat: 'shh', desc: 'Триграф (shh)' },
-            { ru: 'Ъ ъ', lat: '∅', desc: 'Удаляется' },
-            { ru: 'Ы ы', lat: 'y', desc: 'Гласная y' },
-            { ru: 'Ь ь', lat: '∅', desc: 'Удаляется' },
-            { ru: 'Э э', lat: 'e', desc: 'Простая замена' },
-            { ru: 'Ю ю', lat: 'yu', desc: 'Диграф' },
-            { ru: 'Я я', lat: 'ya', desc: 'Диграф' }
+            { ru: 'А', lat: 'a' }, { ru: 'Б', lat: 'b' }, { ru: 'В', lat: 'v' }, { ru: 'Г', lat: 'g' },
+            { ru: 'Д', lat: 'd' }, { ru: 'Е', lat: 'e' }, { ru: 'Ё', lat: 'yo' }, { ru: 'Ж', lat: 'zh' },
+            { ru: 'З', lat: 'z' }, { ru: 'И', lat: 'i' }, { ru: 'Й', lat: 'j' }, { ru: 'К', lat: 'k' },
+            { ru: 'Л', lat: 'l' }, { ru: 'М', lat: 'm' }, { ru: 'Н', lat: 'n' }, { ru: 'О', lat: 'o' },
+            { ru: 'П', lat: 'p' }, { ru: 'Р', lat: 'r' }, { ru: 'С', lat: 's' }, { ru: 'Т', lat: 't' },
+            { ru: 'У', lat: 'u' }, { ru: 'Ф', lat: 'f' }, { ru: 'Х', lat: 'h' }, { ru: 'Ц', lat: 'ts' },
+            { ru: 'Ч', lat: 'ch' }, { ru: 'Ш', lat: 'sh' }, { ru: 'Щ', lat: 'shh' }, { ru: 'Ъ', lat: '∅' },
+            { ru: 'Ы', lat: 'y' }, { ru: 'Ь', lat: '∅' }, { ru: 'Э', lat: 'e' }, { ru: 'Ю', lat: 'yu' },
+            { ru: 'Я', lat: 'ya' }
         ];
 
-        // Элементы интерфейса
-        const inputTitle = document.getElementById('inputTitle');
-        const slugOutput = document.getElementById('slugOutput');
-        const urlPreviewSlug = document.getElementById('urlPreviewSlug');
-        const charCounter = document.getElementById('charCounter');
-        const matchNotification = document.getElementById('matchNotification');
-        const tokenChipsContainer = document.getElementById('tokenChipsContainer');
-        const copySlugBtn = document.getElementById('copySlugBtn');
-        const copyUrlBtn = document.getElementById('copyUrlBtn');
-        const sampleBtn = document.getElementById('sampleBtn');
-        const clearSingleBtn = document.getElementById('clearSingleBtn');
+        // Состояние приложения
+        let state = {
+            mode: 'input', // 'input' (редактирование заголовка) или 'slug' (показ готового слага)
+            savedTitle: '',
+            currentSlug: '',
+            typingTimeout: null
+        };
 
-        // Опции
-        const optStrictWP = document.getElementById('optStrictWP');
-        const optTrimEdges = document.getElementById('optTrimEdges');
-        const optKeepUnderscores = document.getElementById('optKeepUnderscores');
+        // DOM элементы
+        const headlineInput = document.getElementById('headlineInput');
+        const mainSearchContainer = document.getElementById('mainSearchContainer');
+        const inputIcon = document.getElementById('inputIcon');
+        const slugUrlSubbar = document.getElementById('slugUrlSubbar');
+        const subbarSlugText = document.getElementById('subbarSlugText');
+        const copyFullUrlBtn = document.getElementById('copyFullUrlBtn');
+        const whisperLine1 = document.getElementById('whisperLine1');
+        const whisperLine2 = document.getElementById('whisperLine2');
 
-        // Пакетный режим
-        const modeSingleBtn = document.getElementById('modeSingleBtn');
-        const modeBatchBtn = document.getElementById('modeBatchBtn');
-        const singleModeSection = document.getElementById('singleModeSection');
-        const batchModeSection = document.getElementById('batchModeSection');
-        const batchInput = document.getElementById('batchInput');
-        const batchOutput = document.getElementById('batchOutput');
-        const batchCount = document.getElementById('batchCount');
-        const batchSampleBtn = document.getElementById('batchSampleBtn');
-        const copyBatchSlugsBtn = document.getElementById('copyBatchSlugsBtn');
-        const copyBatchTsvBtn = document.getElementById('copyBatchTsvBtn');
+        // Элементы переключения представлений
+        const navGeneratorBtn = document.getElementById('navGeneratorBtn');
+        const navDocsBtn = document.getElementById('navDocsBtn');
+        const navCodeBtn = document.getElementById('navCodeBtn');
+        const navHomeBtn = document.getElementById('navHomeBtn');
+        const docsBackBtn = document.getElementById('docsBackBtn');
+        const codeBackBtn = document.getElementById('codeBackBtn');
 
-        // Код блоки и табы
-        const codeTabBtns = document.querySelectorAll('.code-tab-btn');
-        const codeBlockJs = document.getElementById('codeBlockJs');
-        const codeBlockPhp = document.getElementById('codeBlockPhp');
-        const codeBlockPy = document.getElementById('codeBlockPy');
-        const copyCodeBtn = document.getElementById('copyCodeBtn');
+        const viewGenerator = document.getElementById('viewGenerator');
+        const viewDocs = document.getElementById('viewDocs');
+        const viewCode = document.getElementById('viewCode');
 
-        // Поиск по алфавиту
-        const alphabetFilter = document.getElementById('alphabetFilter');
-        const alphabetGrid = document.getElementById('alphabetGrid');
+        // Алфавитная сетка
+        const appleAlphabetGrid = document.getElementById('appleAlphabetGrid');
 
-        // Тост
-        const toastNotification = document.getElementById('toastNotification');
-        const toastText = document.getElementById('toastText');
-        let toastTimeout = null;
+        // Код сниппеты
+        const codeSelectorBtns = document.querySelectorAll('.code-selector-btn');
+        const snippetJs = document.getElementById('snippetJs');
+        const snippetPhp = document.getElementById('snippetPhp');
+        const snippetPy = document.getElementById('snippetPy');
+        const copySnippetBtn = document.getElementById('copySnippetBtn');
 
         /**
-         * Основная функция формирования WordPress Slug
+         * Алгоритм транслитерации и генерации слага
          */
-        function wpSlugify(text, options = {}) {
+        function wpSlugify(text) {
             if (!text) return '';
 
-            const strictWP = options.strictWP ?? true;
-            const trimEdges = options.trimEdges ?? true;
-            const keepUnderscores = options.keepUnderscores ?? false;
-
-            // 1. Посимвольная транслитерация (ISO 9)
             let transliterated = '';
             for (const char of text) {
                 transliterated += CYR_TO_LAT_MAP[char] !== undefined ? CYR_TO_LAT_MAP[char] : char;
             }
 
-            // 2. Приведение к нижнему регистру
-            let res = transliterated.toLowerCase();
+            const clean = transliterated
+                .toLowerCase()
+                .replace(/[._/]/g, '-')
+                .replace(/[^a-z0-9 -]/g, '')
+                .trim()
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-+|-+$/g, '');
 
-            // 3. Замена точек, слэшей и (опционально) подчеркиваний
-            if (keepUnderscores) {
-                res = res.replace(/[./]/g, '-');
-                res = res.replace(/[^a-z0-9 _-]/g, '');
-            } else {
-                res = res.replace(/[._/]/g, '-');
-                res = res.replace(/[^a-z0-9 -]/g, '');
+            return clean ? clean + '/' : '';
+        }
+
+        /**
+         * Динамическое расширение поля ввода под длину текста
+         * вплоть до краёв экрана минус 20px с каждой стороны (max-width: calc(100vw - 40px))
+         */
+        function adjustInputWidth() {
+            if (!headlineInput || !viewGenerator) return;
+
+            if (!window.textRuler) {
+                window.textRuler = document.createElement('span');
+                window.textRuler.style.visibility = 'hidden';
+                window.textRuler.style.position = 'absolute';
+                window.textRuler.style.top = '-9999px';
+                window.textRuler.style.left = '-9999px';
+                window.textRuler.style.whiteSpace = 'pre';
+                window.textRuler.style.pointerEvents = 'none';
+                window.textRuler.style.padding = '0';
+                window.textRuler.style.margin = '0';
+                window.textRuler.style.border = '0';
+                document.body.appendChild(window.textRuler);
             }
 
-            // 4. Замена пробелов на дефис
-            res = res.replace(/\s+/g, '-');
+            const compStyle = window.getComputedStyle(headlineInput);
+            window.textRuler.style.fontSize = compStyle.fontSize;
+            window.textRuler.style.fontFamily = compStyle.fontFamily;
+            window.textRuler.style.fontWeight = compStyle.fontWeight;
+            window.textRuler.style.letterSpacing = compStyle.letterSpacing;
 
-            // 5. Схлопывание дефисов
-            if (strictWP) {
-                res = res.replace(/-+/g, '-');
+            const currentText = headlineInput.value || headlineInput.placeholder || '';
+            window.textRuler.textContent = currentText;
+
+            const textWidth = window.textRuler.getBoundingClientRect().width;
+            
+            // Внутренние отступы поля: иконка (24px) + отступы (40px) + зазор (12px) + запас для каретки (44px) = ~120px
+            const requiredWidth = Math.ceil(textWidth + 120);
+
+            const defaultWidth = 580;
+            // До краёв экрана минус 20 пикселей с каждой стороны (итого 40px отступ)
+            const clientWidth = document.documentElement.clientWidth || window.innerWidth;
+            const maxAllowedWidth = Math.max(320, clientWidth - 40);
+
+            const targetWidth = Math.max(defaultWidth, requiredWidth);
+            const finalWidth = Math.min(targetWidth, maxAllowedWidth);
+
+            viewGenerator.style.maxWidth = finalWidth + 'px';
+        }
+
+        /**
+         * Надёжное универсальное копирование текста в буфер обмена
+         * Работает на file:///, http://, https://, в iframe и во всех браузерах
+         */
+        function copyTextToClipboard(text) {
+            if (!text) return false;
+
+            let success = false;
+
+            // 1. Быстрый синхронный execCommand через активный инпут, если в нем уже нужное значение
+            if (document.activeElement === headlineInput && headlineInput.value === text) {
+                try {
+                    headlineInput.select();
+                    success = document.execCommand('copy');
+                } catch (e) {}
             }
 
-            // 6. Обрезка по краям
-            if (trimEdges) {
-                res = res.replace(/^-+|-+$/g, '');
-            }
-
-            return res;
-        }
-
-        /**
-         * Показ визуального разбора по словам (Tokens)
-         */
-        function renderTokenBreakdown(originalText, finalSlug) {
-            if (!originalText.trim()) {
-                tokenChipsContainer.innerHTML = '<span class="text-xs text-slate-500 italic">Введите заголовок выше, чтобы увидеть пошаговую трансформацию</span>';
-                return;
-            }
-
-            const words = originalText.trim().split(/\s+/);
-            tokenChipsContainer.innerHTML = '';
-
-            words.forEach(word => {
-                const translitWord = wpSlugify(word, { trimEdges: false });
-                const chip = document.createElement('div');
-                chip.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 font-mono shadow-sm';
-                
-                // Проверяем, было ли изменение
-                const hasCyrillic = /[А-Яа-яЁё]/.test(word);
-                const hasSpecial = /[^A-Za-z0-9А-Яа-яЁё]/.test(word);
-
-                chip.innerHTML = `
-                    <span class="text-slate-400 font-sans">${escapeHtml(word)}</span>
-                    <i class="fa-solid fa-arrow-right text-[9px] text-slate-600"></i>
-                    <span class="${hasCyrillic ? 'text-emerald-400 font-bold' : hasSpecial ? 'text-amber-400' : 'text-slate-200'}">
-                        ${escapeHtml(translitWord || '∅')}
-                    </span>
-                `;
-                tokenChipsContainer.appendChild(chip);
-            });
-        }
-
-        /**
-         * Обновление одиночного режима
-         */
-        function updateSingleSlug() {
-            const rawTitle = inputTitle.value;
-            charCounter.textContent = `${rawTitle.length} симв.`;
-
-            const opts = {
-                strictWP: optStrictWP.checked,
-                trimEdges: optTrimEdges.checked,
-                keepUnderscores: optKeepUnderscores.checked
-            };
-
-            const slug = wpSlugify(rawTitle, opts);
-
-            slugOutput.textContent = slug || '...';
-            urlPreviewSlug.textContent = slug || 'vash-slug';
-
-            // Проверка совпадения с эталоном из вопроса пользователя
-            const targetSample = 'nastrojka-sso-v-svyazke-r7-disk-sp-i-keycloak-idp';
-            if (slug === targetSample) {
-                matchNotification.classList.remove('hidden');
-                matchNotification.classList.add('flex');
-            } else {
-                matchNotification.classList.add('hidden');
-                matchNotification.classList.remove('flex');
-            }
-
-            renderTokenBreakdown(rawTitle, slug);
-        }
-
-        /**
-         * Обновление пакетного режима
-         */
-        function updateBatchSlug() {
-            const lines = batchInput.value.split('\n');
-            const opts = {
-                strictWP: optStrictWP.checked,
-                trimEdges: optTrimEdges.checked,
-                keepUnderscores: optKeepUnderscores.checked
-            };
-
-            const slugs = lines.map(line => line.trim() ? wpSlugify(line, opts) : '');
-            batchOutput.value = slugs.join('\n');
-            batchCount.textContent = lines.filter(l => l.trim()).length;
-        }
-
-        /**
-         * Отрисовка сетки алфавита
-         */
-        function renderAlphabet(filterQuery = '') {
-            alphabetGrid.innerHTML = '';
-            const q = filterQuery.toLowerCase().trim();
-
-            const filtered = ALPHABET_LIST.filter(item => {
-                if (!q) return true;
-                return item.ru.toLowerCase().includes(q) || item.lat.toLowerCase().includes(q) || item.desc.toLowerCase().includes(q);
-            });
-
-            filtered.forEach(item => {
-                const isSpecial = item.lat === 'j' || item.lat === 'shh' || item.lat === '∅';
-                const card = document.createElement('div');
-                card.className = `p-3 rounded-xl border flex flex-col justify-between transition hover:scale-105 cursor-pointer ${
-                    isSpecial ? 'bg-indigo-950/40 border-indigo-700/60 shadow-indigo-900/20 shadow-md' : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
-                }`;
-                card.title = `Кликните, чтобы вставить «${item.ru[0]}» в поле ввода`;
-                card.onclick = () => {
-                    inputTitle.value += item.ru[0];
-                    inputTitle.focus();
-                    updateSingleSlug();
-                };
-
-                card.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-bold text-white">${item.ru}</span>
-                        <span class="text-xs font-mono font-bold ${isSpecial ? 'text-brand-300' : 'text-emerald-400'}">${item.lat}</span>
-                    </div>
-                    <div class="text-[10px] text-slate-500 mt-1 truncate">${item.desc}</div>
-                `;
-                alphabetGrid.appendChild(card);
-            });
-        }
-
-        /**
-         * Показ тост-уведомления
-         */
-        function showToast(message) {
-            toastText.textContent = message;
-            toastNotification.classList.remove('translate-y-20', 'opacity-0');
-            toastNotification.classList.add('translate-y-0', 'opacity-100');
-
-            if (toastTimeout) clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => {
-                toastNotification.classList.remove('translate-y-0', 'opacity-100');
-                toastNotification.classList.add('translate-y-20', 'opacity-0');
-            }, 2500);
-        }
-
-        /**
-         * Экранирование HTML
-         */
-        function escapeHtml(str) {
-            return str
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
-        }
-
-        // --- Обработчики событий ---
-
-        inputTitle.addEventListener('input', updateSingleSlug);
-        optStrictWP.addEventListener('change', () => { updateSingleSlug(); updateBatchSlug(); });
-        optTrimEdges.addEventListener('change', () => { updateSingleSlug(); updateBatchSlug(); });
-        optKeepUnderscores.addEventListener('change', () => { updateSingleSlug(); updateBatchSlug(); });
-
-        batchInput.addEventListener('input', updateBatchSlug);
-
-        // Кнопка примера
-        sampleBtn.addEventListener('click', () => {
-            inputTitle.value = 'Настройка SSO в связке Р7-Диск (SP) и Keycloak (IdP)';
-            updateSingleSlug();
-            showToast('Заголовок примера подставлен');
-        });
-
-        clearSingleBtn.addEventListener('click', () => {
-            inputTitle.value = '';
-            updateSingleSlug();
-            inputTitle.focus();
-        });
-
-        // Копирование слага
-        copySlugBtn.addEventListener('click', () => {
-            const text = slugOutput.textContent.trim();
-            if (!text || text === '...') return;
-            navigator.clipboard.writeText(text).then(() => {
-                showToast('Слаг успешно скопирован в буфер!');
-            });
-        });
-
-        // Копирование полного URL
-        copyUrlBtn.addEventListener('click', () => {
-            const slug = slugOutput.textContent.trim();
-            const fullUrl = `https://support.r7-office.ru/${slug}/`;
-            navigator.clipboard.writeText(fullUrl).then(() => {
-                showToast('Полный URL скопирован!');
-            });
-        });
-
-        // Переключение режимов (Одиночный / Пакетный)
-        modeSingleBtn.addEventListener('click', () => {
-            modeSingleBtn.classList.add('bg-brand-600', 'text-white', 'shadow-md');
-            modeSingleBtn.classList.remove('text-slate-400');
-            modeBatchBtn.classList.remove('bg-brand-600', 'text-white', 'shadow-md');
-            modeBatchBtn.classList.add('text-slate-400');
-
-            singleModeSection.classList.remove('hidden');
-            batchModeSection.classList.add('hidden');
-        });
-
-        modeBatchBtn.addEventListener('click', () => {
-            modeBatchBtn.classList.add('bg-brand-600', 'text-white', 'shadow-md');
-            modeBatchBtn.classList.remove('text-slate-400');
-            modeSingleBtn.classList.remove('bg-brand-600', 'text-white', 'shadow-md');
-            modeSingleBtn.classList.add('text-slate-400');
-
-            batchModeSection.classList.remove('hidden');
-            singleModeSection.classList.add('hidden');
-            updateBatchSlug();
-        });
-
-        // Демо для пакетного режима
-        batchSampleBtn.addEventListener('click', () => {
-            batchInput.value = [
-                'Настройка SSO в связке Р7-Диск (SP) и Keycloak (IdP)',
-                'Установка и настройка Сервера Документов Р7-Офис',
-                'Интеграция с корпоративным облаком через плагин (версия 2.4)',
-                'Как восстановить доступ к панели администратора?',
-                'Часто задаваемые вопросы: Таблицы, Формулы и Макросы'
-            ].join('\n');
-            updateBatchSlug();
-            showToast('Пакетные примеры добавлены');
-        });
-
-        // Копирование пакетных слагов
-        copyBatchSlugsBtn.addEventListener('click', () => {
-            const text = batchOutput.value.trim();
-            if (!text) return;
-            navigator.clipboard.writeText(text).then(() => {
-                showToast(`Скопировано ${batchCount.textContent} слагов!`);
-            });
-        });
-
-        // Копирование таблицы TSV (для вставки в Excel / Таблицы)
-        copyBatchTsvBtn.addEventListener('click', () => {
-            const inLines = batchInput.value.split('\n');
-            const outLines = batchOutput.value.split('\n');
-            const tsvRows = ['Заголовок\tСлаг'];
-
-            for (let i = 0; i < inLines.length; i++) {
-                if (inLines[i].trim()) {
-                    tsvRows.push(`${inLines[i].trim()}\t${outLines[i] || ''}`);
+            // 2. Если не сработало, создаем временный textarea для execCommand
+            if (!success) {
+                try {
+                    const temp = document.createElement('textarea');
+                    temp.value = text;
+                    temp.setAttribute('readonly', '');
+                    temp.style.position = 'fixed';
+                    temp.style.left = '-9999px';
+                    temp.style.top = '-9999px';
+                    temp.style.opacity = '0';
+                    document.body.appendChild(temp);
+                    temp.select();
+                    temp.setSelectionRange(0, temp.value.length);
+                    success = document.execCommand('copy');
+                    document.body.removeChild(temp);
+                } catch (e) {
+                    console.warn('Fallback execCommand failed:', e);
                 }
             }
 
-            navigator.clipboard.writeText(tsvRows.join('\n')).then(() => {
-                showToast('Таблица скопирована (формат TSV для Excel / Таблиц)!');
-            });
+            // 3. Дополнительно вызываем современный Clipboard API
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                navigator.clipboard.writeText(text).catch(() => {});
+            }
+
+            return success;
+        }
+
+        let line2Timer = null;
+        let typingDebounceTimer = null;
+
+        /**
+         * Показ подсказок с мягким фейдом:
+         * - Если передана 1 строка: показывается только нижняя строка whisperLine2 (вплотную к строке ввода).
+         * - Если переданы 2 строки: первая вверху (whisperLine1), вторая снизу (whisperLine2) с задержкой.
+         */
+        function showWhisper(line1Html, line2Html = '', line2DelayMs = 850) {
+            clearTimeout(line2Timer);
+
+            if (line2Html) {
+                // Двухстрочный режим
+                whisperLine1.style.display = 'flex';
+                whisperLine1.innerHTML = line1Html;
+                whisperLine1.classList.remove('opacity-0', '-translate-y-1');
+                whisperLine1.classList.add('opacity-100', 'translate-y-0');
+
+                whisperLine2.style.display = 'flex';
+                whisperLine2.innerHTML = line2Html;
+                whisperLine2.classList.remove('opacity-100', 'translate-y-0');
+                whisperLine2.classList.add('opacity-0', '-translate-y-1');
+
+                line2Timer = setTimeout(() => {
+                    whisperLine2.classList.remove('opacity-0', '-translate-y-1');
+                    whisperLine2.classList.add('opacity-100', 'translate-y-0');
+                }, line2DelayMs);
+            } else {
+                // Однострочный режим (подсказка Enter вплотную к поисковой строке)
+                whisperLine1.style.display = 'none';
+                whisperLine1.innerHTML = '';
+                whisperLine1.classList.remove('opacity-100', 'translate-y-0');
+                whisperLine1.classList.add('opacity-0', '-translate-y-1');
+
+                whisperLine2.style.display = 'flex';
+                whisperLine2.innerHTML = line1Html;
+                whisperLine2.classList.remove('opacity-0', '-translate-y-1');
+                whisperLine2.classList.add('opacity-100', 'translate-y-0');
+            }
+        }
+
+        /**
+         * Мягкое скрытие подсказок
+         */
+        function hideWhisper() {
+            clearTimeout(line2Timer);
+            whisperLine1.classList.remove('opacity-100', 'translate-y-0');
+            whisperLine1.classList.add('opacity-0', '-translate-y-1');
+            whisperLine2.classList.remove('opacity-100', 'translate-y-0');
+            whisperLine2.classList.add('opacity-0', '-translate-y-1');
+        }
+
+        /**
+         * Переключение в режим СЛАГА (результат)
+         */
+        function switchToSlugMode() {
+            const raw = headlineInput.value.trim();
+            if (!raw) return;
+
+            state.savedTitle = raw;
+            state.currentSlug = wpSlugify(raw);
+            state.mode = 'slug';
+
+            // Обновление интерфейса
+            headlineInput.value = state.currentSlug;
+            headlineInput.classList.add('code-font', 'font-medium', 'text-apple-blue');
+            headlineInput.classList.remove('font-normal', 'text-apple-text');
+
+            inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
+            
+            subbarSlugText.textContent = state.currentSlug;
+            slugUrlSubbar.classList.remove('hidden');
+            slugUrlSubbar.classList.add('flex');
+
+            // Подсвечиваем всё поле, чтобы можно было сразу скопировать через Cmd+C
+            headlineInput.focus();
+            headlineInput.select();
+
+            // Автоматическое копирование в буфер обмена
+            copyTextToClipboard(state.currentSlug);
+
+            // HTML невидимой кнопки Backspace в подсказке
+            const backspaceHintHtml = '<span class="text-apple-secondary select-none">Нажмите <button type="button" id="backspaceBtn" class="kbd-btn backspace-btn" title="Редактировать заголовок">⌫&nbsp;Backspace</button> для правки</span>';
+
+            // Двухстрочная подсказка: сначала статус, затем с задержкой кнопка Backspace
+            showWhisper(
+                '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Скопировано в буфер</span>',
+                backspaceHintHtml,
+                850
+            );
+
+            adjustInputWidth();
+        }
+
+        // HTML невидимой кнопки Enter в подсказке
+        const ENTER_HINT_HTML = '<span class="text-apple-secondary select-none">Нажмите <button type="button" id="enterBtn" class="kbd-btn enter-btn" title="Создать слаг">↵&nbsp;Enter</button> для создания слага</span>';
+
+        /**
+         * Переключение обратно в режим РЕДАКТИРОВАНИЯ заголовка
+         */
+        function switchToInputMode() {
+            if (state.mode === 'input') return;
+
+            state.mode = 'input';
+            headlineInput.value = state.savedTitle;
+            headlineInput.classList.remove('code-font', 'font-medium', 'text-apple-blue');
+            headlineInput.classList.add('font-normal', 'text-apple-text');
+
+            inputIcon.className = 'fa-solid fa-link text-apple-tertiary transition-transform';
+            slugUrlSubbar.classList.add('hidden');
+            slugUrlSubbar.classList.remove('flex');
+
+            if (headlineInput.value.trim()) {
+                showWhisper(ENTER_HINT_HTML);
+            } else {
+                hideWhisper();
+            }
+
+            headlineInput.focus();
+            adjustInputWidth();
+        }
+
+        // Действие при Enter (с клавиатуры или по клику на кнопку Enter в подсказке)
+        function handleEnterAction() {
+            if (state.mode === 'input') {
+                switchToSlugMode();
+            } else {
+                // Повторное нажатие Enter в режиме слага — повторно копирует
+                headlineInput.select();
+                copyTextToClipboard(state.currentSlug);
+                showWhisper(
+                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Повторно скопировано!</span>',
+                    '<span class="text-apple-secondary select-none">Нажмите <button type="button" id="backspaceBtn" class="kbd-btn backspace-btn" title="Редактировать заголовок">⌫&nbsp;Backspace</button> для правки</span>',
+                    600
+                );
+            }
+        }
+
+        // --- Обработчики событий ввода ---
+
+        // Отслеживание клавиатуры (Enter / Backspace / Esc)
+        headlineInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleEnterAction();
+            } else if (e.key === 'Backspace') {
+                // Если мы в режиме слага, Backspace возвращает к исходному заголовку!
+                if (state.mode === 'slug') {
+                    e.preventDefault();
+                    switchToInputMode();
+                }
+            } else if (e.key === 'Escape') {
+                if (state.mode === 'slug') {
+                    switchToInputMode();
+                } else {
+                    headlineInput.value = '';
+                    state.savedTitle = '';
+                    hideWhisper();
+                    adjustInputWidth();
+                }
+            }
         });
 
-        // Табы примеров кода
-        codeTabBtns.forEach(btn => {
+        // Клик по кнопкам-клавишам в строке подсказок (Enter и Backspace)
+        whisperContainer.addEventListener('click', (e) => {
+            const enterBtn = e.target.closest('#enterBtn, .enter-btn');
+            if (enterBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                handleEnterAction();
+                return;
+            }
+
+            const backspaceBtn = e.target.closest('#backspaceBtn, .backspace-btn, .kbd-btn');
+            if (backspaceBtn && state.mode === 'slug') {
+                e.preventDefault();
+                e.stopPropagation();
+                switchToInputMode();
+                return;
+            }
+        });
+
+
+
+        // Ввод текста: мягкое появление подсказки о Enter и растягивание поля
+        headlineInput.addEventListener('input', () => {
+            if (state.mode === 'slug') {
+                // Если пользователь начал печатать поверх слага
+                state.mode = 'input';
+                headlineInput.classList.remove('code-font', 'font-medium', 'text-apple-blue');
+                headlineInput.classList.add('font-normal', 'text-apple-text');
+                inputIcon.className = 'fa-solid fa-link text-apple-tertiary transition-transform';
+                slugUrlSubbar.classList.add('hidden');
+                slugUrlSubbar.classList.remove('flex');
+            }
+
+            adjustInputWidth();
+
+            const val = headlineInput.value.trim();
+            if (val) {
+                clearTimeout(typingDebounceTimer);
+                typingDebounceTimer = setTimeout(() => {
+                    showWhisper(ENTER_HINT_HTML);
+                }, 300);
+            } else {
+                hideWhisper();
+            }
+        });
+
+        // Определение вставки (Ctrl + V / Cmd + V)
+        headlineInput.addEventListener('paste', () => {
+            if (state.mode === 'slug') {
+                state.mode = 'input';
+            }
+            setTimeout(() => {
+                adjustInputWidth();
+                const val = headlineInput.value.trim();
+                if (val) {
+                    showWhisper(
+                        '<span class="text-apple-secondary">Текст вставлен</span>',
+                        '<span class="text-apple-secondary select-none">Нажмите <button type="button" class="kbd-btn enter-btn" title="Создать слаг">↵&nbsp;Enter</button> для генерации</span>',
+                        500
+                    );
+                }
+            }, 50);
+        });
+
+        // Копирование полного URL
+        copyFullUrlBtn.addEventListener('click', () => {
+            const cleanSlug = state.currentSlug.replace(/\/+$/, '');
+            const url = `https://support.r7-office.ru/${cleanSlug}/`;
+            copyTextToClipboard(url);
+            const orig = copyFullUrlBtn.innerHTML;
+            copyFullUrlBtn.innerHTML = '<i class="fa-solid fa-check text-apple-green text-[10px]"></i> <span>Скопировано</span>';
+            setTimeout(() => { copyFullUrlBtn.innerHTML = orig; }, 1500);
+
+            showWhisper(
+                '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Полный URL скопирован</span>',
+                '<span class="text-apple-secondary select-none">Нажмите <button type="button" id="backspaceBtn" class="kbd-btn" title="Редактировать заголовок">⌫&nbsp;Backspace</button> для правки</span>',
+                700
+            );
+        });
+
+
+
+        // Адаптация при изменении размера окна браузера
+        window.addEventListener('resize', adjustInputWidth);
+
+        // --- Переключение представлений (Генератор / Справка / Код) ---
+
+        function switchView(target) {
+            viewGenerator.classList.add('hidden');
+            viewDocs.classList.add('hidden');
+            viewCode.classList.add('hidden');
+
+            navGeneratorBtn.className = 'px-3.5 py-1 text-xs font-medium rounded-full text-apple-secondary hover:text-apple-text transition-all';
+            navDocsBtn.className = 'px-3.5 py-1 text-xs font-medium rounded-full text-apple-secondary hover:text-apple-text transition-all flex items-center gap-1.5';
+            navCodeBtn.className = 'px-3.5 py-1 text-xs font-medium rounded-full text-apple-secondary hover:text-apple-text transition-all flex items-center gap-1.5';
+
+            if (target === 'generator') {
+                viewGenerator.classList.remove('hidden');
+                navGeneratorBtn.className = 'px-3.5 py-1 text-xs font-medium rounded-full bg-apple-text text-white shadow-sm transition-all flex items-center gap-1.5';
+                setTimeout(() => {
+                    headlineInput.focus();
+                    adjustInputWidth();
+                }, 50);
+            } else if (target === 'docs') {
+                viewDocs.classList.remove('hidden');
+                navDocsBtn.className = 'px-3.5 py-1 text-xs font-medium rounded-full bg-apple-text text-white shadow-sm transition-all flex items-center gap-1.5';
+            } else if (target === 'code') {
+                viewCode.classList.remove('hidden');
+                navCodeBtn.className = 'px-3.5 py-1 text-xs font-medium rounded-full bg-apple-text text-white shadow-sm transition-all flex items-center gap-1.5';
+            }
+        }
+
+        navGeneratorBtn.addEventListener('click', () => switchView('generator'));
+        navHomeBtn.addEventListener('click', () => switchView('generator'));
+        docsBackBtn.addEventListener('click', () => switchView('generator'));
+        codeBackBtn.addEventListener('click', () => switchView('generator'));
+
+        navDocsBtn.addEventListener('click', () => switchView('docs'));
+        navCodeBtn.addEventListener('click', () => switchView('code'));
+
+        // Глобальный Escape для возврата из документации к генератору
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (!viewDocs.classList.contains('hidden') || !viewCode.classList.contains('hidden')) {
+                    switchView('generator');
+                }
+            }
+        });
+
+        // --- Вкладки языков кода ---
+        codeSelectorBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                codeTabBtns.forEach(b => {
-                    b.classList.remove('bg-brand-600', 'text-white');
-                    b.classList.add('text-slate-400');
+                codeSelectorBtns.forEach(b => {
+                    b.className = 'code-selector-btn px-4 py-1.5 text-xs font-medium rounded-lg text-apple-secondary hover:text-apple-text transition-all';
                 });
-                btn.classList.add('bg-brand-600', 'text-white');
-                btn.classList.remove('text-slate-400');
+                btn.className = 'code-selector-btn px-4 py-1.5 text-xs font-semibold rounded-lg bg-white shadow-apple-sm border border-apple-border text-apple-text';
 
                 const lang = btn.getAttribute('data-lang');
-                codeBlockJs.classList.add('hidden');
-                codeBlockPhp.classList.add('hidden');
-                codeBlockPy.classList.add('hidden');
+                snippetJs.classList.add('hidden');
+                snippetPhp.classList.add('hidden');
+                snippetPy.classList.add('hidden');
 
-                if (lang === 'js') codeBlockJs.classList.remove('hidden');
-                if (lang === 'php') codeBlockPhp.classList.remove('hidden');
-                if (lang === 'py') codeBlockPy.classList.remove('hidden');
+                if (lang === 'js') snippetJs.classList.remove('hidden');
+                if (lang === 'php') snippetPhp.classList.remove('hidden');
+                if (lang === 'py') snippetPy.classList.remove('hidden');
             });
         });
 
-        // Копирование активного блока кода
-        copyCodeBtn.addEventListener('click', () => {
-            let activeCode = '';
-            if (!codeBlockJs.classList.contains('hidden')) activeCode = codeBlockJs.textContent;
-            else if (!codeBlockPhp.classList.contains('hidden')) activeCode = codeBlockPhp.textContent;
-            else if (!codeBlockPy.classList.contains('hidden')) activeCode = codeBlockPy.textContent;
+        // Копирование сниппета кода
+        copySnippetBtn.addEventListener('click', () => {
+            let active = '';
+            if (!snippetJs.classList.contains('hidden')) active = snippetJs.textContent;
+            else if (!snippetPhp.classList.contains('hidden')) active = snippetPhp.textContent;
+            else if (!snippetPy.classList.contains('hidden')) active = snippetPy.textContent;
 
-            navigator.clipboard.writeText(activeCode).then(() => {
-                showToast('Код скопирован в буфер!');
+            navigator.clipboard.writeText(active).then(() => {
+                const orig = copySnippetBtn.innerHTML;
+                copySnippetBtn.innerHTML = '<i class="fa-solid fa-check text-apple-green text-[11px]"></i> <span>Скопировано</span>';
+                setTimeout(() => { copySnippetBtn.innerHTML = orig; }, 1800);
             });
         });
 
-        // Поиск по алфавитной сетке
-        alphabetFilter.addEventListener('input', (e) => {
-            renderAlphabet(e.target.value);
-        });
+        // Отрисовка алфавитной сетки Apple
+        function renderAppleAlphabet() {
+            appleAlphabetGrid.innerHTML = '';
+            ALPHABET_LIST.forEach(item => {
+                const cell = document.createElement('div');
+                cell.className = 'p-2 rounded-xl bg-apple-bg hover:bg-black/5 transition-all text-center cursor-pointer border border-apple-borderSubtle select-none';
+                cell.title = `Кликните, чтобы добавить «${item.ru}»`;
+                cell.onclick = () => {
+                    switchToInputMode();
+                    headlineInput.value += item.ru;
+                    headlineInput.focus();
+                };
+                cell.innerHTML = `
+                    <div class="text-xs font-semibold text-apple-text">${item.ru}</div>
+                    <div class="text-[10px] code-font text-apple-blue font-medium mt-0.5">${item.lat}</div>
+                `;
+                appleAlphabetGrid.appendChild(cell);
+            });
+        }
 
-        // Инициализация при загрузке
+        // Инициализация
         document.addEventListener('DOMContentLoaded', () => {
-            inputTitle.value = 'Настройка SSO в связке Р7-Диск (SP) и Keycloak (IdP)';
-            updateSingleSlug();
-            renderAlphabet();
+            renderAppleAlphabet();
+            adjustInputWidth();
+            headlineInput.focus();
+
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(adjustInputWidth);
+            }
         });
     </script>
 </body>
