@@ -112,6 +112,17 @@
             transform: none !important;
         }
 
+        /* Симуляция наведения и нажатия (для демонстрации переключения режимов) */
+        .btn-simulated-hover {
+            background-color: rgba(0, 0, 0, 0.05) !important;
+            color: #1d1d1f !important;
+        }
+        .btn-simulated-active {
+            transform: scale(0.9) !important;
+            background-color: rgba(0, 0, 0, 0.08) !important;
+            color: #1d1d1f !important;
+        }
+
         /* Кастомный скроллбар */
         ::-webkit-scrollbar {
             width: 6px;
@@ -832,17 +843,198 @@ def wp_slugify(text: str) -> str:
             }
         }
 
+        let introShowcaseTimers = [];
+        let modeTransitionTimers = [];
+
+        function clearModeTransitionTimers() {
+            modeTransitionTimers.forEach(t => clearTimeout(t));
+            modeTransitionTimers = [];
+        }
+
+        /**
+         * Немедленная остановка демонстрационной анимации и возврат контроля
+         */
+        function stopIntroShowcase(restorePost = false) {
+            if (introShowcaseTimers.length > 0) {
+                introShowcaseTimers.forEach(t => clearTimeout(t));
+                introShowcaseTimers = [];
+            }
+            clearModeTransitionTimers();
+
+            if (modeToggleBtn) {
+                modeToggleBtn.classList.remove('btn-simulated-hover', 'btn-simulated-active');
+            }
+
+            if (restorePost && state.mode === 'input' && state.generatorType !== 'post') {
+                state.generatorType = 'post';
+                updateInputModeUI();
+                adjustInputWidth();
+            }
+
+            if (inputIcon) {
+                inputIcon.style.opacity = '';
+                inputIcon.style.transform = '';
+                inputIcon.style.transition = '';
+            }
+            if (headlineInput) {
+                headlineInput.style.opacity = '';
+                headlineInput.style.transition = '';
+            }
+        }
+
+        /**
+         * Симуляция естественного наведения курсора (hover) и физического клика (active) по кнопке
+         */
+        function simulateButtonAction(btn, onAction, onComplete) {
+            if (!btn) {
+                if (onAction) onAction();
+                if (onComplete) onComplete();
+                return;
+            }
+
+            // 1. Появление ховера (наведение курсора)
+            btn.classList.add('btn-simulated-hover');
+
+            const tHover = setTimeout(() => {
+                if (!introShowcaseTimers.length) return;
+
+                // 2. Нажатие кнопки (клик вниз, active scale-90)
+                btn.classList.add('btn-simulated-active');
+
+                const tPress = setTimeout(() => {
+                    if (!introShowcaseTimers.length) return;
+
+                    // 3. Отпускание кнопки и запуск действия переключения
+                    btn.classList.remove('btn-simulated-active');
+                    if (onAction) onAction();
+
+                    // 4. Плавное затухание ховера после клика
+                    const tRelease = setTimeout(() => {
+                        btn.classList.remove('btn-simulated-hover');
+                        if (onComplete) onComplete();
+                    }, 280);
+                    introShowcaseTimers.push(tRelease);
+                }, 130);
+                introShowcaseTimers.push(tPress);
+            }, 240);
+            introShowcaseTimers.push(tHover);
+        }
+
+        /**
+         * Плавный кинематический переход между режимами ввода (Статьи ⟷ Рубрики)
+         * с анимацией иконки (вращение/масштаб) и мягким растворением плейсхолдера
+         */
+        function smoothTransitionInputMode(targetType, onComplete) {
+            clearModeTransitionTimers();
+
+            const nextType = targetType || (state.generatorType === 'post' ? 'category' : 'post');
+            if (state.generatorType === nextType && targetType) {
+                if (onComplete) onComplete();
+                return;
+            }
+
+            if (!inputIcon || !headlineInput) {
+                state.generatorType = nextType;
+                updateInputModeUI();
+                adjustInputWidth();
+                if (onComplete) onComplete();
+                return;
+            }
+
+            // Фаза 1: Уход старой иконки и мягкое растворение плейсхолдера
+            inputIcon.style.transition = 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease';
+            inputIcon.style.transform = 'scale(0.7) rotate(-15deg)';
+            inputIcon.style.opacity = '0';
+
+            if (!headlineInput.value) {
+                headlineInput.style.transition = 'opacity 0.22s ease';
+                headlineInput.style.opacity = '0';
+            }
+
+            const t1 = setTimeout(() => {
+                state.generatorType = nextType;
+                updateInputModeUI();
+                adjustInputWidth();
+
+                // Подготовка к появлению новой иконки (смещение угла и начальный масштаб)
+                inputIcon.style.transition = 'none';
+                inputIcon.style.transform = 'scale(1.2) rotate(10deg)';
+                void inputIcon.offsetWidth; // reflow
+
+                // Фаза 2: Мягкое появление новой иконки и проявление плейсхолдера
+                inputIcon.style.transition = 'transform 0.26s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.26s ease';
+                inputIcon.style.transform = 'scale(1) rotate(0deg)';
+                inputIcon.style.opacity = '1';
+
+                if (!headlineInput.value) {
+                    headlineInput.style.transition = 'opacity 0.26s ease';
+                    headlineInput.style.opacity = '1';
+                }
+
+                const t2 = setTimeout(() => {
+                    inputIcon.style.transition = '';
+                    inputIcon.style.transform = '';
+                    inputIcon.style.opacity = '';
+                    headlineInput.style.transition = '';
+                    headlineInput.style.opacity = '';
+                    if (onComplete) onComplete();
+                }, 280);
+                modeTransitionTimers.push(t2);
+            }, 220);
+            modeTransitionTimers.push(t1);
+        }
+
+        /**
+         * Ненавязчивая демонстрация режимов при загрузке или обновлении страницы:
+         * Ховер и нажатие ➔ переключение на Рубрики ➔ пауза ➔ ховер и нажатие ➔ возврат на Статьи
+         */
+        function runIntroModeShowcase() {
+            // Запуск только если поле ввода чистое и открыт режим генератора
+            if (!headlineInput || headlineInput.value.trim() !== '' || state.mode !== 'input') {
+                return;
+            }
+
+            // Через 1.0с после загрузки симулируем наведение и клик по кнопке
+            const t1 = setTimeout(() => {
+                if (!headlineInput || headlineInput.value.trim() !== '' || state.mode !== 'input') {
+                    stopIntroShowcase();
+                    return;
+                }
+
+                simulateButtonAction(modeToggleBtn, () => {
+                    smoothTransitionInputMode('category', () => {
+                        // Пауза 1.0с в режиме рубрик (ровно как и перед первым переключением)
+                        const t2 = setTimeout(() => {
+                            if (!headlineInput || headlineInput.value.trim() !== '' || state.mode !== 'input') {
+                                stopIntroShowcase();
+                                return;
+                            }
+
+                            // Симулируем наведение и клик для возврата обратно в режим статей
+                            simulateButtonAction(modeToggleBtn, () => {
+                                smoothTransitionInputMode('post', () => {
+                                    stopIntroShowcase();
+                                });
+                            });
+                        }, 1000);
+                        introShowcaseTimers.push(t2);
+                    });
+                });
+            }, 1000);
+            introShowcaseTimers.push(t1);
+        }
+
         /**
          * Переключение типа генератора (Статьи ⟷ Рубрики)
          */
         function toggleGeneratorType() {
-            state.generatorType = state.generatorType === 'post' ? 'category' : 'post';
-            
             if (state.mode === 'input') {
-                updateInputModeUI();
-                adjustInputWidth();
+                const nextType = state.generatorType === 'post' ? 'category' : 'post';
+                smoothTransitionInputMode(nextType);
                 headlineInput.focus();
+                return;
             } else if (state.mode === 'slug') {
+                state.generatorType = state.generatorType === 'post' ? 'category' : 'post';
                 updateSubbarView(state.generatorType);
                 if (state.generatorType === 'category') {
                     if (!state.baseCategorySlug) {
@@ -877,6 +1069,7 @@ def wp_slugify(text: str) -> str:
 
         modeToggleBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            stopIntroShowcase(false);
             toggleGeneratorType();
         });
 
@@ -1014,6 +1207,7 @@ def wp_slugify(text: str) -> str:
 
         // Отслеживание клавиатуры (Enter / Backspace / Esc / Del)
         headlineInput.addEventListener('keydown', (e) => {
+            stopIntroShowcase(true);
             if (e.key === 'Enter') {
                 e.preventDefault();
                 handleEnterAction();
@@ -1088,6 +1282,7 @@ def wp_slugify(text: str) -> str:
 
         // Ввод текста: мягкое появление подсказки о Enter и растягивание поля
         headlineInput.addEventListener('input', () => {
+            stopIntroShowcase(true);
             if (state.mode === 'slug') {
                 // Если пользователь начал печатать поверх слага
                 clearWhisperTimers();
@@ -1122,6 +1317,7 @@ def wp_slugify(text: str) -> str:
 
         // Определение вставки (Ctrl + V / Cmd + V)
         headlineInput.addEventListener('paste', () => {
+            stopIntroShowcase(true);
             if (state.mode === 'slug') {
                 state.mode = 'input';
                 headlineInput.classList.remove('code-font', 'font-medium', 'text-apple-blue');
@@ -1341,6 +1537,7 @@ def wp_slugify(text: str) -> str:
         // --- Переключение представлений (Генератор / Справка / Код) ---
 
         function switchView(target) {
+            stopIntroShowcase(true);
             viewGenerator.classList.add('hidden');
             viewDocs.classList.add('hidden');
             viewCode.classList.add('hidden');
@@ -1461,6 +1658,8 @@ def wp_slugify(text: str) -> str:
             if (document.fonts && document.fonts.ready) {
                 document.fonts.ready.then(adjustInputWidth);
             }
+
+            runIntroModeShowcase();
         });
     </script>
 </body>
