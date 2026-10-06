@@ -1758,9 +1758,22 @@ def wp_slugify(text: str) -> str:
 
             initCache() {
                 try {
-                    const raw = localStorage.getItem('wp_slug_nmt_cache');
-                    if (raw) {
-                        this.cache = JSON.parse(raw);
+                    const rawV2 = localStorage.getItem('wp_slug_nmt_cache_v2');
+                    if (rawV2) {
+                        this.cache = JSON.parse(rawV2);
+                    } else {
+                        // Однократная миграция из v1: переносим только качественные многословные фразы,
+                        // отсекая старые ошибочные пословные сопоставления
+                        const rawV1 = localStorage.getItem('wp_slug_nmt_cache');
+                        if (rawV1) {
+                            const oldCache = JSON.parse(rawV1);
+                            const clean = {};
+                            for (const [k, v] of Object.entries(oldCache)) {
+                                if (k && k.includes(' ')) clean[k] = v;
+                            }
+                            this.cache = clean;
+                            localStorage.setItem('wp_slug_nmt_cache_v2', JSON.stringify(this.cache));
+                        }
                     }
                 } catch (e) {
                     this.cache = {};
@@ -1773,7 +1786,7 @@ def wp_slugify(text: str) -> str:
                 const cleanVal = value.toLowerCase().trim();
                 this.cache[cleanKey] = cleanVal;
                 try {
-                    localStorage.setItem('wp_slug_nmt_cache', JSON.stringify(this.cache));
+                    localStorage.setItem('wp_slug_nmt_cache_v2', JSON.stringify(this.cache));
                 } catch (e) {}
             },
 
@@ -2011,6 +2024,9 @@ def wp_slugify(text: str) -> str:
 
                 await this.loadModel(onProgress);
 
+                // Нормализация брендов Р7 и Linux-дистрибутивов перед подачей в нейросеть
+                const preprocessed = needed.map(item => preprocessTextForNMT(item));
+
                 let outputs = [];
                 if (this.isWorkerMode && this.worker) {
                     const reqId = ++this.requestIdCounter;
@@ -2019,34 +2035,21 @@ def wp_slugify(text: str) -> str:
                         this.worker.postMessage({
                             type: 'translate',
                             id: reqId,
-                            texts: needed
+                            texts: preprocessed
                         });
                     });
                     this.markReady();
                 } else if (this.pipeline) {
-                    const raw = await this.pipeline(needed);
+                    const raw = await this.pipeline(preprocessed);
                     outputs = Array.isArray(raw) ? raw : [raw];
                     this.markReady();
                 }
 
                 needed.forEach((item, idx) => {
                     const rawTrans = outputs[idx]?.translation_text || '';
-                    const slugPart = wpSlugify(rawTrans);
+                    const slugPart = formatTranslatedSlug(rawTrans);
                     if (slugPart) {
                         this.setCached(item, slugPart);
-
-                        // Если переводилась фраза из нескольких слов и кол-во слов совпадает — кэшируем и по отдельности
-                        if (item.includes(' ')) {
-                            const ruWords = item.split(/\s+/).filter(Boolean);
-                            const enWords = slugPart.split(/-+/).filter(Boolean);
-                            if (ruWords.length === enWords.length) {
-                                ruWords.forEach((rw, rIdx) => {
-                                    if (!this.getCached(rw) && !TRANSLATION_WORDS[rw]) {
-                                        this.setCached(rw, enWords[rIdx]);
-                                    }
-                                });
-                            }
-                        }
                     }
                 });
             }
@@ -2056,85 +2059,69 @@ def wp_slugify(text: str) -> str:
         window.getNMTCache = () => NMTManager.cache;
         window.clearNMTCache = () => {
             NMTManager.cache = {};
-            try { localStorage.removeItem('wp_slug_nmt_cache'); } catch (e) {}
+            try {
+                localStorage.removeItem('wp_slug_nmt_cache');
+                localStorage.removeItem('wp_slug_nmt_cache_v2');
+            } catch (e) {}
             console.log('NMT cache cleared');
         };
 
         /**
-         * Детальный анализ и формирование слага методом перевода
-         * с приоритетом словаря Р7 и выявлением неизвестных токенов/фраз для NMT
+         * Подготовка текста перед отправкой в NMT:
+         * Нормализует специфические брендовые термины Р7 и ОС к правильной латинице,
+         * чтобы нейросеть MarianMT сохраняла их нетронутыми в естественном контексте предложения.
          */
-        function wpTranslateSlugifyDetailed(text) {
-            if (!text) return { slug: '', unknownTokens: [], unknownPhrases: [], hasUnknown: false };
+        function preprocessTextForNMT(text) {
+            if (!text) return '';
+            let s = text.trim();
+            const brandReplacements = [
+                [/(^|[^а-яёa-z0-9])р7[- ]?офис(?=[^а-яёa-z0-9]|$)/gi, 'R7-Office'],
+                [/(^|[^а-яёa-z0-9])р7[- ]?диск(?=[^а-яёa-z0-9]|$)/gi, 'R7-Disk'],
+                [/(^|[^а-яёa-z0-9])р7(?=[^а-яёa-z0-9]|$)/gi, 'R7'],
+                [/(^|[^а-яёa-z0-9])ред[- ]?ос(?=[^а-яёa-z0-9]|$)/gi, 'RedOS'],
+                [/(^|[^а-яёa-z0-9])редос(?=[^а-яёa-z0-9]|$)/gi, 'RedOS'],
+                [/(^|[^а-яёa-z0-9])астра[- ]?линукс(?=[^а-яёa-z0-9]|$)/gi, 'AstraLinux'],
+                [/(^|[^а-яёa-z0-9])астралинукс(?=[^а-яёa-z0-9]|$)/gi, 'AstraLinux'],
+                [/(^|[^а-яёa-z0-9])альт[- ]?линукс(?=[^а-яёa-z0-9]|$)/gi, 'Alt Linux'],
+                [/(^|[^а-яёa-z0-9])альтлинукс(?=[^а-яёa-z0-9]|$)/gi, 'Alt Linux']
+            ];
+            for (const [regex, rep] of brandReplacements) {
+                s = s.replace(regex, (match, prefix) => (prefix || '') + rep);
+            }
+            return s;
+        }
 
+        /**
+         * Преобразование переведённого нейросетью английского текста в слаг:
+         * - Очищает артикли в начале строки (the, a, an)
+         * - Формирует чистый kebab-case слаг через wpSlugify
+         */
+        function formatTranslatedSlug(text) {
+            if (!text) return '';
+            let clean = text.trim();
+            clean = clean.replace(/[.?!;:]+$/, '');
+            clean = clean.replace(/^(the|a|an)\s+/i, '');
+            return wpSlugify(clean);
+        }
+
+        /**
+         * Резервный словарь-переводчик для офлайн-режима (без NMT)
+         */
+        function wpTranslateFallback(text) {
+            if (!text) return '';
             let clean = text.toLowerCase().trim();
-
-            // 1. Проверяем словарь устойчивых фраз Р7 (высший приоритет!)
             for (const [phrase, translation] of Object.entries(TRANSLATION_PHRASES)) {
                 const regex = new RegExp('(^|[^a-zа-яё0-9])' + phrase.replace(/ /g, '\\s+') + '(?=[^a-zа-яё0-9]|$)', 'gi');
                 clean = clean.replace(regex, (match, prefix) => (prefix || '') + ' ' + translation + ' ');
             }
-
-            // 2. Проверяем кэшированные NMT фразы (от длинных к коротким)
-            const nmtCache = NMTManager.cache || {};
-            const cachedMultiWord = Object.keys(nmtCache).filter(k => k.includes(' ')).sort((a, b) => b.length - a.length);
-            for (const phrase of cachedMultiWord) {
-                const translation = nmtCache[phrase];
-                const regex = new RegExp('(^|[^a-zа-яё0-9])' + phrase.replace(/ /g, '\\s+') + '(?=[^a-zа-яё0-9]|$)', 'gi');
-                clean = clean.replace(regex, (match, prefix) => (prefix || '') + ' ' + translation + ' ');
-            }
-
-            // 3. Разбиваем на отдельные токены
             const rawTokens = clean.split(/[^a-zа-яё0-9]+/i).filter(Boolean);
-            if (!rawTokens.length) return { slug: '', unknownTokens: [], unknownPhrases: [], hasUnknown: false };
-
-            const unknownTokens = [];
-            let currentUnknownRun = [];
-            const unknownPhrases = [];
-
             const translatedTokens = rawTokens.map(token => {
                 const lower = token.toLowerCase();
-                if (/^[a-z0-9-]+$/i.test(lower)) {
-                    if (currentUnknownRun.length > 1) {
-                        unknownPhrases.push(currentUnknownRun.join(' '));
-                    }
-                    currentUnknownRun = [];
-                    return lower;
-                }
-                // Проверяем словарь слов Р7 (высший приоритет!)
-                if (TRANSLATION_WORDS[lower]) {
-                    if (currentUnknownRun.length > 1) {
-                        unknownPhrases.push(currentUnknownRun.join(' '));
-                    }
-                    currentUnknownRun = [];
-                    return TRANSLATION_WORDS[lower];
-                }
-                // Проверяем кэш NMT
-                if (nmtCache[lower]) {
-                    if (currentUnknownRun.length > 1) {
-                        unknownPhrases.push(currentUnknownRun.join(' '));
-                    }
-                    currentUnknownRun = [];
-                    return nmtCache[lower];
-                }
-
-                // Неизвестное кириллическое слово
-                if (/[а-яё]/i.test(lower)) {
-                    if (!unknownTokens.includes(lower)) {
-                        unknownTokens.push(lower);
-                    }
-                    currentUnknownRun.push(lower);
-                }
-
-                // Мгновенный фоллбэк на транслитерацию ISO 9 (0 мс отклик)
+                if (/^[a-z0-9-]+$/i.test(lower)) return lower;
+                if (TRANSLATION_WORDS[lower]) return TRANSLATION_WORDS[lower];
                 return wpSlugify(lower);
             });
-
-            if (currentUnknownRun.length > 1) {
-                unknownPhrases.push(currentUnknownRun.join(' '));
-            }
-
-            const slug = translatedTokens.join('-')
+            return translatedTokens.join('-')
                 .toLowerCase()
                 .replace(/[._/]/g, '-')
                 .replace(/[^a-z0-9 -]/g, '')
@@ -2142,12 +2129,60 @@ def wp_slugify(text: str) -> str:
                 .replace(/\s+/g, '-')
                 .replace(/-+/g, '-')
                 .replace(/^-+|-+$/g, '');
+        }
 
+        /**
+         * Детальный анализ и формирование слага методом перевода:
+         * Цельный перевод предложений и фраз нейросетью NMT с приоритетом словаря Р7
+         */
+        function wpTranslateSlugifyDetailed(text) {
+            if (!text) return { slug: '', toTranslate: [], hasUnknown: false };
+
+            const trimmed = text.trim();
+            if (!trimmed) return { slug: '', toTranslate: [], hasUnknown: false };
+
+            // Если текст уже чисто на латинице/цифрах без кириллицы
+            if (!/[а-яё]/i.test(trimmed)) {
+                return { slug: wpSlugify(trimmed), toTranslate: [], hasUnknown: false };
+            }
+
+            const clean = trimmed.toLowerCase();
+
+            // 1. Проверяем кэш NMT для целой строки/фразы (высший приоритет)
+            const nmtCache = NMTManager.cache || {};
+            if (nmtCache[clean]) {
+                return { slug: nmtCache[clean], toTranslate: [], hasUnknown: false };
+            }
+
+            // 2. Проверяем точное совпадение со словарем устойчивых фраз Р7
+            if (TRANSLATION_PHRASES[clean]) {
+                return { slug: wpSlugify(TRANSLATION_PHRASES[clean]), toTranslate: [], hasUnknown: false };
+            }
+
+            // 3. Если это одиночное слово (без пробелов)
+            const words = clean.split(/\s+/).filter(Boolean);
+            if (words.length === 1) {
+                const singleWord = words[0];
+                if (TRANSLATION_WORDS[singleWord]) {
+                    return { slug: wpSlugify(TRANSLATION_WORDS[singleWord]), toTranslate: [], hasUnknown: false };
+                }
+                if (nmtCache[singleWord]) {
+                    return { slug: wpSlugify(nmtCache[singleWord]), toTranslate: [], hasUnknown: false };
+                }
+                // Неизвестное одиночное слово -> запрашиваем NMT
+                return {
+                    slug: wpSlugify(singleWord),
+                    toTranslate: [singleWord],
+                    hasUnknown: true
+                };
+            }
+
+            // 4. Цельная многословная фраза или предложение (например, "ассистент идет в школу"):
+            // НЕ разбиваем пословно! Запрашиваем цельный контекстный перевод у нейросети MarianMT
             return {
-                slug,
-                unknownTokens,
-                unknownPhrases,
-                hasUnknown: unknownTokens.length > 0
+                slug: wpTranslateFallback(clean), // фоллбэк на случай офлайна
+                toTranslate: [clean],
+                hasUnknown: true
             };
         }
 
@@ -2201,32 +2236,25 @@ def wp_slugify(text: str) -> str:
             if (state.slugMethod !== 'translate') return;
 
             const analysisTitle = wpTranslateSlugifyDetailed(rawTitle);
-            const analysisSuffix = rawSuffix ? wpTranslateSlugifyDetailed(rawSuffix) : { unknownTokens: [], unknownPhrases: [] };
+            const analysisSuffix = (state.generatorType === 'category' && rawSuffix)
+                ? wpTranslateSlugifyDetailed(rawSuffix)
+                : { hasUnknown: false, toTranslate: [] };
 
             const toTranslate = [];
-            // 1. Если фраза содержит неизвестные слова, добавляем целиком строку для естественного контекстного перевода
-            const cleanTitle = rawTitle.toLowerCase().trim();
-            if (analysisTitle.hasUnknown && !NMTManager.getCached(cleanTitle) && !toTranslate.includes(cleanTitle)) {
-                toTranslate.push(cleanTitle);
+            if (analysisTitle.hasUnknown && analysisTitle.toTranslate) {
+                analysisTitle.toTranslate.forEach(t => {
+                    if (!NMTManager.getCached(t) && !toTranslate.includes(t)) {
+                        toTranslate.push(t);
+                    }
+                });
             }
-            if (rawSuffix) {
-                const cleanSuffix = rawSuffix.toLowerCase().trim();
-                if (analysisSuffix.hasUnknown && !NMTManager.getCached(cleanSuffix) && !toTranslate.includes(cleanSuffix)) {
-                    toTranslate.push(cleanSuffix);
-                }
+            if (analysisSuffix.hasUnknown && analysisSuffix.toTranslate) {
+                analysisSuffix.toTranslate.forEach(t => {
+                    if (!NMTManager.getCached(t) && !toTranslate.includes(t)) {
+                        toTranslate.push(t);
+                    }
+                });
             }
-            // 2. Добавляем неизвестные фразы
-            [...analysisTitle.unknownPhrases, ...analysisSuffix.unknownPhrases].forEach(p => {
-                if (!NMTManager.getCached(p) && !toTranslate.includes(p)) {
-                    toTranslate.push(p);
-                }
-            });
-            // 3. Добавляем неизвестные токены
-            [...analysisTitle.unknownTokens, ...analysisSuffix.unknownTokens].forEach(t => {
-                if (!NMTManager.getCached(t) && !toTranslate.includes(t)) {
-                    toTranslate.push(t);
-                }
-            });
 
             if (!toTranslate.length) return;
 
@@ -2898,7 +2926,7 @@ def wp_slugify(text: str) -> str:
                 const analysis = wpTranslateSlugifyDetailed(state.savedTitle);
                 const suffixAnalysis = (state.generatorType === 'category' && state.sectionSuffix)
                     ? wpTranslateSlugifyDetailed(state.sectionSuffix)
-                    : { hasUnknown: false, unknownTokens: [], unknownPhrases: [] };
+                    : { hasUnknown: false, toTranslate: [] };
                 const isFullyTranslated = !analysis.hasUnknown && !suffixAnalysis.hasUnknown;
 
                 if (!isFullyTranslated) {
@@ -3074,7 +3102,7 @@ def wp_slugify(text: str) -> str:
                 const analysis = wpTranslateSlugifyDetailed(raw);
                 const suffixAnalysis = (state.generatorType === 'category' && state.sectionSuffix)
                     ? wpTranslateSlugifyDetailed(state.sectionSuffix)
-                    : { hasUnknown: false, unknownTokens: [], unknownPhrases: [] };
+                    : { hasUnknown: false, toTranslate: [] };
                 const isFullyTranslated = !analysis.hasUnknown && !suffixAnalysis.hasUnknown;
 
                 if (!isFullyTranslated) {
