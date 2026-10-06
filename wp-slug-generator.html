@@ -843,6 +843,8 @@ def wp_slugify(text: str) -> str:
             }
         }
 
+        let isIntroShowcaseRunning = false;
+        let userExplicitlyToggledMode = false;
         let introShowcaseTimers = [];
         let modeTransitionTimers = [];
 
@@ -859,17 +861,23 @@ def wp_slugify(text: str) -> str:
                 introShowcaseTimers.forEach(t => clearTimeout(t));
                 introShowcaseTimers = [];
             }
-            clearModeTransitionTimers();
 
             if (modeToggleBtn) {
                 modeToggleBtn.classList.remove('btn-simulated-hover', 'btn-simulated-active');
             }
 
-            if (restorePost && state.mode === 'input' && state.generatorType !== 'post') {
-                state.generatorType = 'post';
-                updateInputModeUI();
-                adjustInputWidth();
+            // Восстанавливаем дефолтный режим 'post' ТОЛЬКО если демонстрация РЕАЛЬНО сейчас проигрывалась
+            // и пользователь сам ещё не выбирал режим кликом
+            if (isIntroShowcaseRunning) {
+                clearModeTransitionTimers();
+                if (restorePost && !userExplicitlyToggledMode && state.mode === 'input' && state.generatorType !== 'post') {
+                    state.generatorType = 'post';
+                    updateInputModeUI();
+                    adjustInputWidth();
+                }
             }
+
+            isIntroShowcaseRunning = false;
 
             if (inputIcon) {
                 inputIcon.style.opacity = '';
@@ -928,13 +936,14 @@ def wp_slugify(text: str) -> str:
             clearModeTransitionTimers();
 
             const nextType = targetType || (state.generatorType === 'post' ? 'category' : 'post');
-            if (state.generatorType === nextType && targetType) {
-                if (onComplete) onComplete();
-                return;
-            }
+            state.generatorType = nextType;
+
+            // Сразу обновляем всплывающую подсказку кнопки
+            modeToggleBtn.title = nextType === 'category'
+                ? 'Режим: Рубрики (кликните для переключения на Статьи)'
+                : 'Режим: Статьи (кликните для переключения на Рубрики)';
 
             if (!inputIcon || !headlineInput) {
-                state.generatorType = nextType;
                 updateInputModeUI();
                 adjustInputWidth();
                 if (onComplete) onComplete();
@@ -952,7 +961,6 @@ def wp_slugify(text: str) -> str:
             }
 
             const t1 = setTimeout(() => {
-                state.generatorType = nextType;
                 updateInputModeUI();
                 adjustInputWidth();
 
@@ -989,14 +997,16 @@ def wp_slugify(text: str) -> str:
          * Ховер и нажатие ➔ переключение на Рубрики ➔ пауза ➔ ховер и нажатие ➔ возврат на Статьи
          */
         function runIntroModeShowcase() {
-            // Запуск только если поле ввода чистое и открыт режим генератора
-            if (!headlineInput || headlineInput.value.trim() !== '' || state.mode !== 'input') {
+            // Запуск только если поле ввода чистое, открыт режим генератора и пользователь ещё не трогал переключатель
+            if (userExplicitlyToggledMode || !headlineInput || headlineInput.value.trim() !== '' || state.mode !== 'input') {
                 return;
             }
 
+            isIntroShowcaseRunning = true;
+
             // Через 1.0с после загрузки симулируем наведение и клик по кнопке
             const t1 = setTimeout(() => {
-                if (!headlineInput || headlineInput.value.trim() !== '' || state.mode !== 'input') {
+                if (userExplicitlyToggledMode || !headlineInput || headlineInput.value.trim() !== '' || state.mode !== 'input') {
                     stopIntroShowcase();
                     return;
                 }
@@ -1005,7 +1015,7 @@ def wp_slugify(text: str) -> str:
                     smoothTransitionInputMode('category', () => {
                         // Пауза 1.0с в режиме рубрик (ровно как и перед первым переключением)
                         const t2 = setTimeout(() => {
-                            if (!headlineInput || headlineInput.value.trim() !== '' || state.mode !== 'input') {
+                            if (userExplicitlyToggledMode || !headlineInput || headlineInput.value.trim() !== '' || state.mode !== 'input') {
                                 stopIntroShowcase();
                                 return;
                             }
@@ -1013,6 +1023,7 @@ def wp_slugify(text: str) -> str:
                             // Симулируем наведение и клик для возврата обратно в режим статей
                             simulateButtonAction(modeToggleBtn, () => {
                                 smoothTransitionInputMode('post', () => {
+                                    isIntroShowcaseRunning = false;
                                     stopIntroShowcase();
                                 });
                             });
@@ -1028,6 +1039,7 @@ def wp_slugify(text: str) -> str:
          * Переключение типа генератора (Статьи ⟷ Рубрики)
          */
         function toggleGeneratorType() {
+            userExplicitlyToggledMode = true;
             if (state.mode === 'input') {
                 const nextType = state.generatorType === 'post' ? 'category' : 'post';
                 smoothTransitionInputMode(nextType);
@@ -1056,6 +1068,9 @@ def wp_slugify(text: str) -> str:
                     clearHierarchicalBtn.classList.add('hidden');
                     adjustInputWidth();
                 }
+                modeToggleBtn.title = state.generatorType === 'category'
+                    ? 'Слаг рубрики готов (кликните для переключения режима)'
+                    : 'Слаг статьи готов (кликните для переключения режима)';
                 const itemTypeName = state.generatorType === 'category' ? 'рубрику' : 'заголовок';
                 const backspaceHintHtml = `<span class="text-apple-secondary select-none">Нажмите <button type="button" id="backspaceBtn" class="kbd-btn backspace-btn" title="Редактировать ${itemTypeName}">⌫&nbsp;Backspace</button> для правки</span>`;
                 showSequentialWhisper(
@@ -1069,7 +1084,10 @@ def wp_slugify(text: str) -> str:
 
         modeToggleBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            stopIntroShowcase(false);
+            if (isIntroShowcaseRunning) {
+                stopIntroShowcase(true);
+            }
+            userExplicitlyToggledMode = true;
             toggleGeneratorType();
         });
 
@@ -1077,6 +1095,20 @@ def wp_slugify(text: str) -> str:
          * Переключение в режим СЛАГА (результат)
          */
         function switchToSlugMode() {
+            clearModeTransitionTimers();
+            if (isIntroShowcaseRunning) {
+                stopIntroShowcase(false);
+            }
+            if (inputIcon) {
+                inputIcon.style.opacity = '';
+                inputIcon.style.transform = '';
+                inputIcon.style.transition = '';
+            }
+            if (headlineInput) {
+                headlineInput.style.opacity = '';
+                headlineInput.style.transition = '';
+            }
+
             const raw = headlineInput.value.trim();
             if (!raw) return;
 
@@ -1207,7 +1239,9 @@ def wp_slugify(text: str) -> str:
 
         // Отслеживание клавиатуры (Enter / Backspace / Esc / Del)
         headlineInput.addEventListener('keydown', (e) => {
-            stopIntroShowcase(true);
+            if (isIntroShowcaseRunning) {
+                stopIntroShowcase(true);
+            }
             if (e.key === 'Enter') {
                 e.preventDefault();
                 handleEnterAction();
@@ -1282,7 +1316,9 @@ def wp_slugify(text: str) -> str:
 
         // Ввод текста: мягкое появление подсказки о Enter и растягивание поля
         headlineInput.addEventListener('input', () => {
-            stopIntroShowcase(true);
+            if (isIntroShowcaseRunning) {
+                stopIntroShowcase(true);
+            }
             if (state.mode === 'slug') {
                 // Если пользователь начал печатать поверх слага
                 clearWhisperTimers();
@@ -1317,7 +1353,9 @@ def wp_slugify(text: str) -> str:
 
         // Определение вставки (Ctrl + V / Cmd + V)
         headlineInput.addEventListener('paste', () => {
-            stopIntroShowcase(true);
+            if (isIntroShowcaseRunning) {
+                stopIntroShowcase(true);
+            }
             if (state.mode === 'slug') {
                 state.mode = 'input';
                 headlineInput.classList.remove('code-font', 'font-medium', 'text-apple-blue');
@@ -1537,7 +1575,9 @@ def wp_slugify(text: str) -> str:
         // --- Переключение представлений (Генератор / Справка / Код) ---
 
         function switchView(target) {
-            stopIntroShowcase(true);
+            if (isIntroShowcaseRunning) {
+                stopIntroShowcase(true);
+            }
             viewGenerator.classList.add('hidden');
             viewDocs.classList.add('hidden');
             viewCode.classList.add('hidden');
