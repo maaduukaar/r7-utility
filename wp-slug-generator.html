@@ -1748,6 +1748,8 @@ def wp_slugify(text: str) -> str:
             initPromise: null,
             cache: {},
             progressListeners: new Set(),
+            fileProgress: {},
+            maxOverallPercent: 0,
             lastProgress: { status: 'idle', percent: 0, file: '' },
 
             initCache() {
@@ -1779,7 +1781,7 @@ def wp_slugify(text: str) -> str:
             addProgressListener(fn) {
                 if (typeof fn === 'function') {
                     this.progressListeners.add(fn);
-                    // Если загрузка уже в процессе, сразу информируем слушателя о последнем статусе/проценте
+                    // Если загрузка уже в процессе, сразу информируем слушателя о текущем агрегированном проценте
                     if (this.isLoading && this.lastProgress.percent > 0) {
                         fn(this.lastProgress);
                     }
@@ -1791,17 +1793,65 @@ def wp_slugify(text: str) -> str:
             },
 
             notifyProgress(p) {
-                if (p.status === 'progress' && p.file) {
+                if (!p) return;
+
+                // 1. Учитываем прогресс по каждому отдельному файлу (ONNX веса, токенизатор, конфиги)
+                if (p.file) {
+                    if (p.status === 'done') {
+                        this.fileProgress[p.file] = {
+                            loaded: p.total || 1,
+                            total: p.total || 1,
+                            percent: 100
+                        };
+                    } else if (p.status === 'progress') {
+                        this.fileProgress[p.file] = {
+                            loaded: p.loaded || 0,
+                            total: p.total || 0,
+                            percent: Math.min(100, Math.max(0, Math.round(p.progress || 0)))
+                        };
+                    }
+                }
+
+                // 2. Рассчитываем общий агрегированный прогресс по сумме байтов
+                let totalLoaded = 0;
+                let totalBytes = 0;
+                for (const f in this.fileProgress) {
+                    const item = this.fileProgress[f];
+                    if (item.total && item.total > 0) {
+                        totalLoaded += item.loaded || 0;
+                        totalBytes += item.total;
+                    }
+                }
+
+                let calculatedPercent = 0;
+                if (totalBytes > 1000000) {
+                    calculatedPercent = Math.min(99, Math.round((totalLoaded / totalBytes) * 100));
+                } else {
+                    const files = Object.values(this.fileProgress);
+                    if (files.length) {
+                        const avg = files.reduce((sum, item) => sum + (item.percent || 0), 0) / files.length;
+                        calculatedPercent = Math.min(5, Math.round(avg * 0.05));
+                    }
+                }
+
+                // 3. СТРОГО МОНОТОННОЕ УВЕЛИЧЕНИЕ (прогресс никогда не прыгает назад!)
+                if (calculatedPercent > this.maxOverallPercent) {
+                    this.maxOverallPercent = calculatedPercent;
+                }
+
+                if (p.status === 'ready' || (p.status === 'done' && this.isReady)) {
+                    this.maxOverallPercent = 100;
+                    this.lastProgress = { status: 'ready', percent: 100, file: '' };
+                } else {
                     this.lastProgress = {
                         status: 'progress',
-                        percent: Math.round(p.progress || 0),
-                        file: p.file
+                        percent: this.maxOverallPercent,
+                        file: p.file || ''
                     };
-                } else if (p.status === 'ready' || p.status === 'done') {
-                    this.lastProgress = { status: 'ready', percent: 100, file: p.file || '' };
                 }
+
                 for (const fn of this.progressListeners) {
-                    try { fn(p); } catch (e) {}
+                    try { fn(this.lastProgress); } catch (e) {}
                 }
             },
 
@@ -2001,6 +2051,28 @@ def wp_slugify(text: str) -> str:
         let activeNMTRequestId = 0;
 
         /**
+         * Плавное обновление индикатора загрузки NMT без перерисовки DOM и без дергания спиннера
+         */
+        function renderNMTLoadingWhisper(pct) {
+            if (!whisperText) return;
+            const progressSpan = document.getElementById('nmtProgressValue');
+            if (progressSpan) {
+                // Если контейнер уже показан — обновляем ТОЛЬКО текстовый узел цифр!
+                // Никакой перерисовки innerHTML, спиннер fa-spin крутится непрерывно со скоростью 60fps без сбросов
+                progressSpan.textContent = `(${pct}%)`;
+            } else {
+                // Первичное появление: стабильная разметка с фиксированной шириной tabular-nums
+                showWhisper(`
+                    <span class="text-apple-blue flex items-center gap-1.5 select-none font-medium text-[11px] tracking-tight">
+                        <i class="fa-solid fa-circle-notch fa-spin text-[11px] shrink-0"></i>
+                        <span>NMT: загрузка модели</span>
+                        <span id="nmtProgressValue" class="code-font font-medium inline-block w-10 text-left" style="font-variant-numeric: tabular-nums;">(${pct}%)</span>
+                    </span>
+                `);
+            }
+        }
+
+        /**
          * Асинхронное фоновое дообучение/перевод редких терминов через NMT Mini-Model (Transformers.js)
          * Без блокировки интерфейса: если пользователь всё ещё смотрит на этот слаг, обновляет его и буфер
          */
@@ -2035,22 +2107,17 @@ def wp_slugify(text: str) -> str:
                     if (state.mode === 'slug' && state.savedTitle === rawTitle && state.slugMethod === 'translate') {
                         if (!NMTManager.isReady) {
                             const currentPct = NMTManager.lastProgress.percent;
-                            if (currentPct > 0) {
-                                showWhisper(`<span class="text-apple-blue flex items-center gap-1.5"><i class="fa-solid fa-circle-notch fa-spin text-[11px]"></i> NMT: загрузка модели (${currentPct}%)...</span>`);
-                            } else {
-                                showWhisper('<span class="text-apple-blue flex items-center gap-1.5"><i class="fa-solid fa-wand-magic-sparkles text-[11px]"></i> NMT: подготовка модели...</span>');
-                            }
+                            renderNMTLoadingWhisper(currentPct > 0 ? currentPct : 0);
                         } else {
-                            showWhisper('<span class="text-apple-blue flex items-center gap-1.5"><i class="fa-solid fa-wand-magic-sparkles text-[11px]"></i> NMT: уточнение перевода...</span>');
+                            showWhisper('<span class="text-apple-blue flex items-center gap-1.5 font-medium text-[11px] tracking-tight"><i class="fa-solid fa-wand-magic-sparkles text-[11px]"></i> NMT: уточнение перевода...</span>');
                         }
                     }
 
                     progressHandler = (p) => {
                         if (currentReqId !== activeNMTRequestId) return;
                         if (state.mode === 'slug' && state.savedTitle === rawTitle && state.slugMethod === 'translate') {
-                            if (p.status === 'progress' && p.file) {
-                                const pct = Math.round(p.progress || 0);
-                                showWhisper(`<span class="text-apple-blue flex items-center gap-1.5"><i class="fa-solid fa-circle-notch fa-spin text-[11px]"></i> NMT: загрузка модели (${pct}%)...</span>`);
+                            if (!NMTManager.isReady && p.percent !== undefined) {
+                                renderNMTLoadingWhisper(p.percent);
                             }
                         }
                     };
