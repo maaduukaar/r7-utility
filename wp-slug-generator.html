@@ -241,9 +241,10 @@
                             Транслит
                         </button>
                         <button type="button" id="methodTranslateBtn"
-                            class="px-2.5 py-0.5 rounded-full transition-[background-color,color,box-shadow] duration-150 cursor-pointer focus:outline-none text-apple-secondary hover:text-apple-text"
-                            title="Перевод русских слов на английский язык">
-                            Перевод
+                            class="px-2.5 py-0.5 rounded-full transition-[background-color,color,box-shadow] duration-150 cursor-pointer focus:outline-none text-apple-secondary hover:text-apple-text inline-flex items-center gap-1"
+                            title="Гибридный перевод: словарь терминов Р7 + нейросеть NMT (Transformers.js)">
+                            <i class="fa-solid fa-wand-magic-sparkles text-[9px] opacity-70"></i>
+                            <span>Перевод</span>
                         </button>
                     </div>
                 </div>
@@ -314,6 +315,24 @@
                     <div id="appleAlphabetGrid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
                         <!-- Динамически заполняется через JS -->
                     </div>
+                </div>
+
+                <!-- Карточка 4: Гибридный перевод (Словарь Р7 + нейросеть NMT Transformers.js) -->
+                <div class="bg-white rounded-2xl p-6 shadow-apple-sm border border-apple-border space-y-2.5">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-lg bg-apple-bg flex items-center justify-center text-xs text-apple-blue">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </span>
+                        <h3 class="text-sm font-semibold text-apple-text tracking-tight">Гибридный перевод: Словарь Р7 + нейросеть NMT</h3>
+                    </div>
+                    <p class="text-xs text-apple-secondary leading-relaxed font-normal">
+                        В режиме «Перевод» действует интеллектуальный двухуровневый конвейер:
+                    </p>
+                    <ul class="text-xs text-apple-secondary space-y-1.5 pl-4 list-disc font-normal">
+                        <li><strong>Приоритет словаря Р7 (0 мс):</strong> термины портала базы знаний, устойчивые фразы и названия продуктов переводятся мгновенно без сетевых задержек.</li>
+                        <li><strong>Клиентская NMT-модель (Transformers.js):</strong> редкие и составные термины автоматически переводятся нейросетью MarianMT (<code>opus-mt-ru-en</code>) локально в браузере через WebAssembly/ONNX — без отправки данных на сервер.</li>
+                        <li><strong>Умное кэширование:</strong> каждый переведённый термин сохраняется в локальное хранилище браузера (<code>localStorage</code>) и в последующие разы применяется мгновенно.</li>
+                    </ul>
                 </div>
 
                 <!-- Ссылки на первоисточники -->
@@ -599,6 +618,15 @@ def wp_slugify(text: str) -> str:
          * Словарь устойчивых технических фраз и разделов Р7-Офис (проверяются первыми, от длинных к коротким)
          */
         const TRANSLATION_PHRASES = {
+            'резервное копирование базы данных': 'database-backup',
+            'резервное копирование баз данных': 'database-backup',
+            'восстановление базы данных': 'database-restore',
+            'восстановление баз данных': 'database-restore',
+            'база данных': 'database',
+            'базы данных': 'database',
+            'баз данных': 'database',
+            'базе данных': 'database',
+            'базу данных': 'database',
             'редактирование строк и столбцов': 'edit-rows-and-columns',
             'форматирование текста в ячейках': 'formatting-text-in-cells',
             'редактирование свойств ячеек': 'edit-cell-properties',
@@ -819,6 +847,11 @@ def wp_slugify(text: str) -> str:
             'аудио': 'audio',
             'аутентификации': 'authentication',
             'аутентификация': 'authentication',
+            'база': 'base',
+            'базы': 'base',
+            'базу': 'base',
+            'базе': 'base',
+            'баз': 'bases',
             'базовая': 'basic',
             'базовые': 'basic',
             'базовый': 'basic',
@@ -1168,6 +1201,14 @@ def wp_slugify(text: str) -> str:
             'новых': 'new',
             'о': 'about',
             'об': 'about',
+            'облако': 'cloud',
+            'облака': 'cloud',
+            'облаке': 'cloud',
+            'облаком': 'cloud',
+            'облачный': 'cloud',
+            'облачные': 'cloud',
+            'облачных': 'cloud',
+            'облачного': 'cloud',
             'обновить': 'update',
             'обновление': 'update',
             'обновления': 'update',
@@ -1692,36 +1733,195 @@ def wp_slugify(text: str) -> str:
         };
 
 /**
-         * Алгоритм генерации слага через перевод русских терминов на английский
-         * с автоматическим фоллбэком на транслитерацию для неизвестных слов
+         * Клиентский менеджер нейросетевого перевода NMT (Transformers.js / MarianMT opus-mt-ru-en)
+         * Гибридный конвейер:
+         * 1. Приоритет словаря Р7 (0 мс, терминология портала support.r7-office.ru)
+         * 2. Локальный персистентный кэш переводов (localStorage: wp_slug_nmt_cache)
+         * 3. Фоновый NMT-перевод редких слов через ONNX/WASM в браузере без блокировки UI
          */
-        function wpTranslateSlugify(text) {
-            if (!text) return '';
+        const NMTManager = {
+            modelId: 'Xenova/opus-mt-ru-en',
+            cdnBase: 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2',
+            pipeline: null,
+            isLoading: false,
+            isReady: false,
+            initPromise: null,
+            cache: {},
+
+            initCache() {
+                try {
+                    const raw = localStorage.getItem('wp_slug_nmt_cache');
+                    if (raw) {
+                        this.cache = JSON.parse(raw);
+                    }
+                } catch (e) {
+                    this.cache = {};
+                }
+            },
+
+            setCached(key, value) {
+                if (!key || !value) return;
+                const cleanKey = key.toLowerCase().trim();
+                const cleanVal = value.toLowerCase().trim();
+                this.cache[cleanKey] = cleanVal;
+                try {
+                    localStorage.setItem('wp_slug_nmt_cache', JSON.stringify(this.cache));
+                } catch (e) {}
+            },
+
+            getCached(key) {
+                if (!key) return null;
+                return this.cache[key.toLowerCase().trim()] || null;
+            },
+
+            async loadModel(onProgress) {
+                if (this.isReady && this.pipeline) return this.pipeline;
+                if (this.initPromise) return this.initPromise;
+
+                this.isLoading = true;
+                this.initPromise = (async () => {
+                    try {
+                        const { pipeline, env } = await import(this.cdnBase);
+                        env.allowLocalModels = false;
+                        env.useBrowserCache = true;
+                        env.backends.onnx.wasm.wasmPaths = `${this.cdnBase}/dist/`;
+
+                        this.pipeline = await pipeline('translation', this.modelId, {
+                            progress_callback: (p) => {
+                                if (typeof onProgress === 'function') {
+                                    onProgress(p);
+                                }
+                            }
+                        });
+                        this.isReady = true;
+                        this.isLoading = false;
+                        return this.pipeline;
+                    } catch (err) {
+                        this.isLoading = false;
+                        this.initPromise = null;
+                        console.warn('NMT initialization or download failed:', err);
+                        throw err;
+                    }
+                })();
+
+                return this.initPromise;
+            },
+
+            async translateBatch(items, onProgress) {
+                if (!items || !items.length) return {};
+                const needed = items.filter(item => !this.getCached(item));
+                if (!needed.length) return {};
+
+                const translator = await this.loadModel(onProgress);
+                const rawOutputs = await translator(needed);
+                const outputs = Array.isArray(rawOutputs) ? rawOutputs : [rawOutputs];
+
+                needed.forEach((item, idx) => {
+                    const rawTrans = outputs[idx]?.translation_text || '';
+                    const slugPart = wpSlugify(rawTrans);
+                    if (slugPart) {
+                        this.setCached(item, slugPart);
+
+                        // Если переводилась фраза из нескольких слов и кол-во слов совпадает — кэшируем и по отдельности
+                        if (item.includes(' ')) {
+                            const ruWords = item.split(/\s+/).filter(Boolean);
+                            const enWords = slugPart.split(/-+/).filter(Boolean);
+                            if (ruWords.length === enWords.length) {
+                                ruWords.forEach((rw, rIdx) => {
+                                    if (!this.getCached(rw) && !TRANSLATION_WORDS[rw]) {
+                                        this.setCached(rw, enWords[rIdx]);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+        };
+
+        // Экспорт глобальных функций для отладки и управления кэшем NMT
+        window.getNMTCache = () => NMTManager.cache;
+        window.clearNMTCache = () => {
+            NMTManager.cache = {};
+            try { localStorage.removeItem('wp_slug_nmt_cache'); } catch (e) {}
+            console.log('NMT cache cleared');
+        };
+
+        /**
+         * Детальный анализ и формирование слага методом перевода
+         * с приоритетом словаря Р7 и выявлением неизвестных токенов/фраз для NMT
+         */
+        function wpTranslateSlugifyDetailed(text) {
+            if (!text) return { slug: '', unknownTokens: [], unknownPhrases: [], hasUnknown: false };
 
             let clean = text.toLowerCase().trim();
 
-            // 1. Проверяем словарь устойчивых фраз
+            // 1. Проверяем словарь устойчивых фраз Р7 (высший приоритет!)
             for (const [phrase, translation] of Object.entries(TRANSLATION_PHRASES)) {
                 const regex = new RegExp('(^|[^a-zа-яё0-9])' + phrase.replace(/ /g, '\\s+') + '(?=[^a-zа-яё0-9]|$)', 'gi');
                 clean = clean.replace(regex, (match, prefix) => (prefix || '') + ' ' + translation + ' ');
             }
 
-            // 2. Разбиваем на отдельные токены (включая дефисы в составных словах вроде Р7-Офис)
-            const tokens = clean.split(/[^a-zа-яё0-9]+/i).filter(Boolean);
-            if (!tokens.length) return '';
+            // 2. Проверяем кэшированные NMT фразы (от длинных к коротким)
+            const nmtCache = NMTManager.cache || {};
+            const cachedMultiWord = Object.keys(nmtCache).filter(k => k.includes(' ')).sort((a, b) => b.length - a.length);
+            for (const phrase of cachedMultiWord) {
+                const translation = nmtCache[phrase];
+                const regex = new RegExp('(^|[^a-zа-яё0-9])' + phrase.replace(/ /g, '\\s+') + '(?=[^a-zа-яё0-9]|$)', 'gi');
+                clean = clean.replace(regex, (match, prefix) => (prefix || '') + ' ' + translation + ' ');
+            }
 
-            const translatedTokens = tokens.map(token => {
+            // 3. Разбиваем на отдельные токены
+            const rawTokens = clean.split(/[^a-zа-яё0-9]+/i).filter(Boolean);
+            if (!rawTokens.length) return { slug: '', unknownTokens: [], unknownPhrases: [], hasUnknown: false };
+
+            const unknownTokens = [];
+            let currentUnknownRun = [];
+            const unknownPhrases = [];
+
+            const translatedTokens = rawTokens.map(token => {
                 const lower = token.toLowerCase();
                 if (/^[a-z0-9-]+$/i.test(lower)) {
+                    if (currentUnknownRun.length > 1) {
+                        unknownPhrases.push(currentUnknownRun.join(' '));
+                    }
+                    currentUnknownRun = [];
                     return lower;
                 }
+                // Проверяем словарь слов Р7 (высший приоритет!)
                 if (TRANSLATION_WORDS[lower]) {
+                    if (currentUnknownRun.length > 1) {
+                        unknownPhrases.push(currentUnknownRun.join(' '));
+                    }
+                    currentUnknownRun = [];
                     return TRANSLATION_WORDS[lower];
                 }
+                // Проверяем кэш NMT
+                if (nmtCache[lower]) {
+                    if (currentUnknownRun.length > 1) {
+                        unknownPhrases.push(currentUnknownRun.join(' '));
+                    }
+                    currentUnknownRun = [];
+                    return nmtCache[lower];
+                }
+
+                // Неизвестное кириллическое слово
+                if (/[а-яё]/i.test(lower)) {
+                    if (!unknownTokens.includes(lower)) {
+                        unknownTokens.push(lower);
+                    }
+                    currentUnknownRun.push(lower);
+                }
+
+                // Мгновенный фоллбэк на транслитерацию ISO 9 (0 мс отклик)
                 return wpSlugify(lower);
             });
 
-            return translatedTokens.join('-')
+            if (currentUnknownRun.length > 1) {
+                unknownPhrases.push(currentUnknownRun.join(' '));
+            }
+
+            const slug = translatedTokens.join('-')
                 .toLowerCase()
                 .replace(/[._/]/g, '-')
                 .replace(/[^a-z0-9 -]/g, '')
@@ -1729,6 +1929,20 @@ def wp_slugify(text: str) -> str:
                 .replace(/\s+/g, '-')
                 .replace(/-+/g, '-')
                 .replace(/^-+|-+$/g, '');
+
+            return {
+                slug,
+                unknownTokens,
+                unknownPhrases,
+                hasUnknown: unknownTokens.length > 0
+            };
+        }
+
+        /**
+         * Алгоритм генерации слага через перевод русских терминов на английский
+         */
+        function wpTranslateSlugify(text) {
+            return wpTranslateSlugifyDetailed(text).slug;
         }
 
         /**
@@ -1740,6 +1954,97 @@ def wp_slugify(text: str) -> str:
                 return wpTranslateSlugify(text);
             }
             return wpSlugify(text);
+        }
+
+        let activeNMTRequestId = 0;
+
+        /**
+         * Асинхронное фоновое дообучение/перевод редких терминов через NMT Mini-Model (Transformers.js)
+         * Без блокировки интерфейса: если пользователь всё ещё смотрит на этот слаг, обновляет его и буфер
+         */
+        function scheduleNMTTranslation(rawTitle, rawSuffix) {
+            if (state.slugMethod !== 'translate') return;
+
+            const analysisTitle = wpTranslateSlugifyDetailed(rawTitle);
+            const analysisSuffix = rawSuffix ? wpTranslateSlugifyDetailed(rawSuffix) : { unknownTokens: [], unknownPhrases: [] };
+
+            const toTranslate = [];
+            // Добавляем неизвестные фразы
+            [...analysisTitle.unknownPhrases, ...analysisSuffix.unknownPhrases].forEach(p => {
+                if (!NMTManager.getCached(p) && !toTranslate.includes(p)) {
+                    toTranslate.push(p);
+                }
+            });
+            // Добавляем неизвестные токены
+            [...analysisTitle.unknownTokens, ...analysisSuffix.unknownTokens].forEach(t => {
+                if (!NMTManager.getCached(t) && !toTranslate.includes(t)) {
+                    toTranslate.push(t);
+                }
+            });
+
+            if (!toTranslate.length) return;
+
+            const currentReqId = ++activeNMTRequestId;
+
+            (async () => {
+                try {
+                    const isFirstLoad = !NMTManager.isReady;
+
+                    if (state.mode === 'slug' && state.savedTitle === rawTitle && state.slugMethod === 'translate') {
+                        if (!isFirstLoad) {
+                            showWhisper('<span class="text-apple-blue flex items-center gap-1.5"><i class="fa-solid fa-wand-magic-sparkles text-[11px]"></i> NMT: уточнение перевода...</span>');
+                        }
+                    }
+
+                    await NMTManager.translateBatch(toTranslate, (p) => {
+                        if (currentReqId !== activeNMTRequestId) return;
+                        if (state.mode === 'slug' && state.savedTitle === rawTitle && state.slugMethod === 'translate') {
+                            if (p.status === 'progress' && p.file) {
+                                const pct = Math.round(p.progress || 0);
+                                showWhisper(`<span class="text-apple-blue flex items-center gap-1.5"><i class="fa-solid fa-circle-notch fa-spin text-[11px]"></i> NMT: загрузка модели (${pct}%)...</span>`);
+                            }
+                        }
+                    });
+
+                    if (currentReqId !== activeNMTRequestId) return;
+
+                    // Если пользователь всё ещё находится на экране этого слага в режиме перевода
+                    if (state.mode === 'slug' && state.savedTitle === rawTitle && state.slugMethod === 'translate') {
+                        state.baseCategorySlug = generateSlug(state.savedTitle, 'translate');
+
+                        if (state.generatorType === 'category') {
+                            const suffix = state.sectionSuffix ? generateSlug(state.sectionSuffix, 'translate') : '';
+                            if (suffix) {
+                                state.currentSlug = `${state.baseCategorySlug}-${suffix}`;
+                                if (hierarchicalSlugInput) hierarchicalSlugInput.value = suffix;
+                            } else {
+                                state.currentSlug = state.baseCategorySlug;
+                                if (hierarchicalSlugInput) hierarchicalSlugInput.value = '';
+                            }
+                        } else {
+                            state.currentSlug = state.baseCategorySlug;
+                        }
+
+                        headlineInput.value = state.currentSlug;
+                        headlineInput.focus();
+                        headlineInput.select();
+                        copyTextToClipboard(state.currentSlug);
+                        adjustInputWidth();
+
+                        const itemTypeName = state.generatorType === 'category' ? 'рубрику' : 'заголовок';
+                        const backspaceHintHtml = `<span class="text-apple-secondary select-none">Нажмите <button type="button" id="backspaceBtn" class="kbd-btn backspace-btn" title="Редактировать ${itemTypeName}">⌫&nbsp;Backspace</button> для правки</span>`;
+
+                        showSequentialWhisper(
+                            '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Перевод (NMT + Словарь) • Обновлено и скопировано</span>',
+                            backspaceHintHtml,
+                            3000,
+                            1000
+                        );
+                    }
+                } catch (err) {
+                    console.warn('NMT background translation skipped or offline:', err);
+                }
+            })();
         }
 
         /**
@@ -2294,6 +2599,9 @@ def wp_slugify(text: str) -> str:
          * с сохранением в sessionStorage и мгновенным пересчетом слага
          */
         function setSlugMethod(method) {
+            if (state.slugMethod !== method) {
+                activeNMTRequestId++; // отменяем любые фоновые обновления NMT для предыдущего режима
+            }
             state.slugMethod = method;
             try {
                 sessionStorage.setItem('wp_slug_method', method);
@@ -2332,16 +2640,36 @@ def wp_slugify(text: str) -> str:
             copyTextToClipboard(state.currentSlug);
             adjustInputWidth();
 
-            const methodName = state.slugMethod === 'translate' ? 'Перевод' : 'Транслит';
             const itemTypeName = state.generatorType === 'category' ? 'рубрику' : 'заголовок';
             const backspaceHintHtml = `<span class="text-apple-secondary select-none">Нажмите <button type="button" id="backspaceBtn" class="kbd-btn backspace-btn" title="Редактировать ${itemTypeName}">⌫&nbsp;Backspace</button> для правки</span>`;
 
-            showSequentialWhisper(
-                `<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Режим: ${methodName} • Скопировано</span>`,
-                backspaceHintHtml,
-                2500,
-                1000
-            );
+            if (state.slugMethod === 'translate') {
+                const analysis = wpTranslateSlugifyDetailed(state.savedTitle);
+                const suffixAnalysis = state.sectionSuffix ? wpTranslateSlugifyDetailed(state.sectionSuffix) : { hasUnknown: false };
+                if (analysis.hasUnknown || suffixAnalysis.hasUnknown) {
+                    showSequentialWhisper(
+                        '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Режим: Перевод • Скопировано</span>',
+                        backspaceHintHtml,
+                        2500,
+                        1000
+                    );
+                    scheduleNMTTranslation(state.savedTitle, state.sectionSuffix);
+                } else {
+                    showSequentialWhisper(
+                        '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Режим: Перевод (Словарь) • Скопировано</span>',
+                        backspaceHintHtml,
+                        2500,
+                        1000
+                    );
+                }
+            } else {
+                showSequentialWhisper(
+                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Режим: Транслит • Скопировано</span>',
+                    backspaceHintHtml,
+                    2500,
+                    1000
+                );
+            }
         }
 
         let hasSlugMethodAppearedOnce = false;
@@ -2476,13 +2804,34 @@ def wp_slugify(text: str) -> str:
             const itemTypeName = state.generatorType === 'category' ? 'рубрику' : 'заголовок';
             const backspaceHintHtml = `<span class="text-apple-secondary select-none">Нажмите <button type="button" id="backspaceBtn" class="kbd-btn backspace-btn" title="Редактировать ${itemTypeName}">⌫&nbsp;Backspace</button> для правки</span>`;
 
-            // Последовательный показ подсказок: сначала "Скопировано в буфер" (3 сек), затем Backspace через 1 сек
-            showSequentialWhisper(
-                '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Скопировано в буфер</span>',
-                backspaceHintHtml,
-                3000,
-                1000
-            );
+            // Показ подсказок в зависимости от режима и словаря
+            if (state.slugMethod === 'translate') {
+                const analysis = wpTranslateSlugifyDetailed(raw);
+                const suffixAnalysis = state.sectionSuffix ? wpTranslateSlugifyDetailed(state.sectionSuffix) : { hasUnknown: false };
+                if (analysis.hasUnknown || suffixAnalysis.hasUnknown) {
+                    showSequentialWhisper(
+                        '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Скопировано в буфер</span>',
+                        backspaceHintHtml,
+                        3000,
+                        1000
+                    );
+                    scheduleNMTTranslation(raw, state.sectionSuffix);
+                } else {
+                    showSequentialWhisper(
+                        '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Скопировано в буфер (Словарь)</span>',
+                        backspaceHintHtml,
+                        3000,
+                        1000
+                    );
+                }
+            } else {
+                showSequentialWhisper(
+                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Скопировано в буфер</span>',
+                    backspaceHintHtml,
+                    3000,
+                    1000
+                );
+            }
 
             adjustInputWidth();
         }
@@ -2498,6 +2847,7 @@ def wp_slugify(text: str) -> str:
          * fromBackspace: признак того, что возврат совершен по клавише или кнопке Backspace
          */
         function switchToInputMode(fromBackspace = false) {
+            activeNMTRequestId++; // Отменяем ожидающие обновления NMT при возврате к редактированию
             if (state.mode === 'input') return;
 
             clearWhisperTimers();
@@ -2636,6 +2986,7 @@ def wp_slugify(text: str) -> str:
                 stopIntroShowcase(true);
             }
             if (state.mode === 'slug') {
+                activeNMTRequestId++; // отменяем NMT при начале редактирования нового текста
                 // Если пользователь начал печатать поверх слага
                 clearWhisperTimers();
                 state.mode = 'input';
@@ -3013,6 +3364,7 @@ def wp_slugify(text: str) -> str:
 
         // Инициализация
         document.addEventListener('DOMContentLoaded', () => {
+            NMTManager.initCache();
             try {
                 const savedMethod = sessionStorage.getItem('wp_slug_method');
                 if (savedMethod === 'translate' || savedMethod === 'translit') {
