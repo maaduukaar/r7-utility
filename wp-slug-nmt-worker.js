@@ -18,12 +18,23 @@ env.backends.onnx.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/@xenova/transfo
 
 const MODEL_ID = 'Xenova/opus-mt-ru-en';
 let translatorPromise = null;
+let isModelReady = false;
 
 async function getTranslator(onProgress) {
     if (!translatorPromise) {
-        translatorPromise = pipeline('translation', MODEL_ID, {
-            progress_callback: onProgress
-        });
+        translatorPromise = (async () => {
+            const instance = await pipeline('translation', MODEL_ID, {
+                progress_callback: (p) => {
+                    if (typeof onProgress === 'function') {
+                        onProgress(p);
+                    }
+                }
+            });
+            isModelReady = true;
+            // Уведомляем главный поток о полной готовности модели
+            self.postMessage({ type: 'ready' });
+            return instance;
+        })();
     }
     return translatorPromise;
 }

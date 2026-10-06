@@ -1802,10 +1802,9 @@ def wp_slugify(text: str) -> str:
                         if (msg.type === 'progress') {
                             this.notifyProgress(msg.data);
                         } else if (msg.type === 'ready') {
-                            this.isReady = true;
-                            this.isLoading = false;
-                            this.notifyProgress({ status: 'ready' });
+                            this.markReady();
                         } else if (msg.type === 'complete') {
+                            this.markReady();
                             const handler = this.workerPending.get(msg.id);
                             if (handler) {
                                 this.workerPending.delete(msg.id);
@@ -1840,11 +1839,23 @@ def wp_slugify(text: str) -> str:
                 }
             },
 
+            markReady() {
+                this.isReady = true;
+                this.isLoading = false;
+                this.maxOverallPercent = 100;
+                this.lastProgress = { status: 'ready', percent: 100, file: '' };
+                for (const fn of this.progressListeners) {
+                    try { fn(this.lastProgress); } catch (e) {}
+                }
+            },
+
             addProgressListener(fn) {
                 if (typeof fn === 'function') {
                     this.progressListeners.add(fn);
-                    // Если загрузка уже в процессе, сразу информируем слушателя о текущем агрегированном проценте
-                    if (this.isLoading && this.lastProgress.percent > 0) {
+                    // Если модель уже готова, сразу уведомляем
+                    if (this.isReady) {
+                        fn({ status: 'ready', percent: 100, file: '' });
+                    } else if (this.isLoading && this.lastProgress.percent > 0) {
                         fn(this.lastProgress);
                     }
                 }
@@ -1855,7 +1866,7 @@ def wp_slugify(text: str) -> str:
             },
 
             notifyProgress(p) {
-                if (!p) return;
+                if (!p || this.isReady) return;
 
                 // 1. Учитываем прогресс по каждому отдельному файлу (ONNX веса, токенизатор, конфиги)
                 if (p.file) {
@@ -1877,8 +1888,11 @@ def wp_slugify(text: str) -> str:
                 // 2. Рассчитываем общий агрегированный прогресс по сумме байтов
                 let totalLoaded = 0;
                 let totalBytes = 0;
-                for (const f in this.fileProgress) {
+                let allDone = true;
+                const fileKeys = Object.keys(this.fileProgress);
+                for (const f of fileKeys) {
                     const item = this.fileProgress[f];
+                    if (item.percent < 100) allDone = false;
                     if (item.total && item.total > 0) {
                         totalLoaded += item.loaded || 0;
                         totalBytes += item.total;
@@ -1887,7 +1901,11 @@ def wp_slugify(text: str) -> str:
 
                 let calculatedPercent = 0;
                 if (totalBytes > 1000000) {
-                    calculatedPercent = Math.min(99, Math.round((totalLoaded / totalBytes) * 100));
+                    if (allDone && fileKeys.length >= 3) {
+                        calculatedPercent = 100;
+                    } else {
+                        calculatedPercent = Math.min(99, Math.round((totalLoaded / totalBytes) * 100));
+                    }
                 } else {
                     const files = Object.values(this.fileProgress);
                     if (files.length) {
@@ -1901,16 +1919,16 @@ def wp_slugify(text: str) -> str:
                     this.maxOverallPercent = calculatedPercent;
                 }
 
-                if (p.status === 'ready' || (p.status === 'done' && this.isReady)) {
-                    this.maxOverallPercent = 100;
-                    this.lastProgress = { status: 'ready', percent: 100, file: '' };
-                } else {
-                    this.lastProgress = {
-                        status: 'progress',
-                        percent: this.maxOverallPercent,
-                        file: p.file || ''
-                    };
+                if (p.status === 'ready' || (p.status === 'done' && (this.isReady || calculatedPercent >= 100))) {
+                    this.markReady();
+                    return;
                 }
+
+                this.lastProgress = {
+                    status: 'progress',
+                    percent: this.maxOverallPercent,
+                    file: p.file || ''
+                };
 
                 for (const fn of this.progressListeners) {
                     try { fn(this.lastProgress); } catch (e) {}
@@ -1973,9 +1991,7 @@ def wp_slugify(text: str) -> str:
                                 this.notifyProgress(p);
                             }
                         });
-                        this.isReady = true;
-                        this.isLoading = false;
-                        this.notifyProgress({ status: 'ready' });
+                        this.markReady();
                         return true;
                     } catch (err) {
                         this.isLoading = false;
@@ -2006,9 +2022,11 @@ def wp_slugify(text: str) -> str:
                             texts: needed
                         });
                     });
+                    this.markReady();
                 } else if (this.pipeline) {
                     const raw = await this.pipeline(needed);
                     outputs = Array.isArray(raw) ? raw : [raw];
+                    this.markReady();
                 }
 
                 needed.forEach((item, idx) => {
@@ -2210,17 +2228,23 @@ def wp_slugify(text: str) -> str:
                     if (state.mode === 'slug' && state.savedTitle === rawTitle && state.slugMethod === 'translate') {
                         if (!NMTManager.isReady) {
                             const currentPct = NMTManager.lastProgress.percent;
-                            renderNMTLoadingWhisper(currentPct > 0 ? currentPct : 0);
+                            if (currentPct < 100) {
+                                renderNMTLoadingWhisper(currentPct > 0 ? currentPct : 0);
+                            } else {
+                                showWhisper('<span class="text-apple-blue flex items-center gap-1.5 font-medium text-[11px] tracking-tight"><i class="fa-solid fa-circle-notch fa-spin text-[11px]"></i> NMT: подбор перевода...</span>');
+                            }
                         } else {
-                            showWhisper('<span class="text-apple-blue flex items-center gap-1.5 font-medium text-[11px] tracking-tight"><i class="fa-solid fa-wand-magic-sparkles text-[11px]"></i> NMT: уточнение перевода...</span>');
+                            showWhisper('<span class="text-apple-blue flex items-center gap-1.5 font-medium text-[11px] tracking-tight"><i class="fa-solid fa-circle-notch fa-spin text-[11px]"></i> NMT: подбор перевода...</span>');
                         }
                     }
 
                     progressHandler = (p) => {
                         if (currentReqId !== activeNMTRequestId) return;
                         if (state.mode === 'slug' && state.savedTitle === rawTitle && state.slugMethod === 'translate') {
-                            if (!NMTManager.isReady && p.percent !== undefined) {
+                            if (!NMTManager.isReady && p && p.percent !== undefined && p.percent < 100) {
                                 renderNMTLoadingWhisper(p.percent);
+                            } else if (NMTManager.isReady || (p && p.percent >= 100)) {
+                                showWhisper('<span class="text-apple-blue flex items-center gap-1.5 font-medium text-[11px] tracking-tight"><i class="fa-solid fa-circle-notch fa-spin text-[11px]"></i> NMT: подбор перевода...</span>');
                             }
                         }
                     };
