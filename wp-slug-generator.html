@@ -1742,6 +1742,11 @@ def wp_slugify(text: str) -> str:
             modelId: 'Xenova/opus-mt-ru-en',
             cdnBase: 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2',
             pipeline: null,
+            worker: null,
+            workerPending: new Map(),
+            requestIdCounter: 0,
+            isWorkerMode: false,
+            workerFailed: false,
             isLoading: false,
             isReady: false,
             initPromise: null,
@@ -1775,6 +1780,64 @@ def wp_slugify(text: str) -> str:
             getCached(key) {
                 if (!key) return null;
                 return this.cache[key.toLowerCase().trim()] || null;
+            },
+
+            canUseWorker() {
+                // Workers do not work via file:// protocol due to origin restrictions
+                return typeof Worker !== 'undefined' && window.location.protocol !== 'file:';
+            },
+
+            initWorker() {
+                if (this.worker) return this.worker;
+                if (this.workerFailed || !this.canUseWorker()) return null;
+
+                try {
+                    this.worker = new Worker('./wp-slug-nmt-worker.js', { type: 'module' });
+                    this.isWorkerMode = true;
+
+                    this.worker.onmessage = (e) => {
+                        const msg = e.data;
+                        if (!msg) return;
+
+                        if (msg.type === 'progress') {
+                            this.notifyProgress(msg.data);
+                        } else if (msg.type === 'ready') {
+                            this.isReady = true;
+                            this.isLoading = false;
+                            this.notifyProgress({ status: 'ready' });
+                        } else if (msg.type === 'complete') {
+                            const handler = this.workerPending.get(msg.id);
+                            if (handler) {
+                                this.workerPending.delete(msg.id);
+                                handler.resolve(msg.outputs || []);
+                            }
+                        } else if (msg.type === 'error') {
+                            if (msg.id && this.workerPending.has(msg.id)) {
+                                const handler = this.workerPending.get(msg.id);
+                                this.workerPending.delete(msg.id);
+                                handler.reject(new Error(msg.error));
+                            } else {
+                                this.isLoading = false;
+                                console.warn('NMT worker error:', msg.error);
+                            }
+                        }
+                    };
+
+                    this.worker.onerror = (err) => {
+                        console.warn('NMT worker error, falling back to main thread:', err);
+                        this.workerFailed = true;
+                        this.worker = null;
+                        this.isWorkerMode = false;
+                    };
+
+                    return this.worker;
+                } catch (e) {
+                    console.warn('Failed to start NMT worker, falling back:', e);
+                    this.workerFailed = true;
+                    this.worker = null;
+                    this.isWorkerMode = false;
+                    return null;
+                }
             },
 
             addProgressListener(fn) {
@@ -1857,9 +1920,18 @@ def wp_slugify(text: str) -> str:
             // Фоновая бесшумная предзагрузка после готовности страницы
             preload() {
                 if (this.isReady || this.isLoading || this.initPromise) return;
-                this.loadModel().catch(err => {
-                    console.log('NMT background preloading deferred/failed:', err);
-                });
+
+                // Загружаем в фоне ТОЛЬКО если доступен изолированный Web Worker.
+                // В этом случае основной поток, поле ввода и интерфейс не блокируются ни на 1 мс.
+                if (this.canUseWorker()) {
+                    this.loadModel().catch(err => {
+                        console.log('NMT worker background preloading deferred/failed:', err);
+                    });
+                } else {
+                    // Если открыто локально через file:// (где браузер запрещает воркеры),
+                    // НЕ запускаем предзагрузку при старте страницы, чтобы не подвешивать поле ввода.
+                    console.log('NMT preload skipped in direct file mode to keep UI smooth');
+                }
             },
 
             async loadModel(onProgress) {
@@ -1867,10 +1939,28 @@ def wp_slugify(text: str) -> str:
                     this.addProgressListener(onProgress);
                 }
 
-                if (this.isReady && this.pipeline) return this.pipeline;
+                if (this.isReady) return true;
                 if (this.initPromise) return this.initPromise;
 
                 this.isLoading = true;
+
+                // 1. Предпочитаемый режим: изолированный Web Worker
+                const worker = this.initWorker();
+                if (worker) {
+                    this.initPromise = new Promise((resolve, reject) => {
+                        const readyCheck = (p) => {
+                            if (p && (p.status === 'ready' || this.isReady)) {
+                                this.removeProgressListener(readyCheck);
+                                resolve(true);
+                            }
+                        };
+                        this.addProgressListener(readyCheck);
+                        worker.postMessage({ type: 'load' });
+                    });
+                    return this.initPromise;
+                }
+
+                // 2. Резервный режим на основном потоке (запускается ТОЛЬКО по прямому запросу перевода)
                 this.initPromise = (async () => {
                     try {
                         const { pipeline, env } = await import(this.cdnBase);
@@ -1886,7 +1976,7 @@ def wp_slugify(text: str) -> str:
                         this.isReady = true;
                         this.isLoading = false;
                         this.notifyProgress({ status: 'ready' });
-                        return this.pipeline;
+                        return true;
                     } catch (err) {
                         this.isLoading = false;
                         this.initPromise = null;
@@ -1903,9 +1993,23 @@ def wp_slugify(text: str) -> str:
                 const needed = items.filter(item => !this.getCached(item));
                 if (!needed.length) return {};
 
-                const translator = await this.loadModel(onProgress);
-                const rawOutputs = await translator(needed);
-                const outputs = Array.isArray(rawOutputs) ? rawOutputs : [rawOutputs];
+                await this.loadModel(onProgress);
+
+                let outputs = [];
+                if (this.isWorkerMode && this.worker) {
+                    const reqId = ++this.requestIdCounter;
+                    outputs = await new Promise((resolve, reject) => {
+                        this.workerPending.set(reqId, { resolve, reject });
+                        this.worker.postMessage({
+                            type: 'translate',
+                            id: reqId,
+                            texts: needed
+                        });
+                    });
+                } else if (this.pipeline) {
+                    const raw = await this.pipeline(needed);
+                    outputs = Array.isArray(raw) ? raw : [raw];
+                }
 
                 needed.forEach((item, idx) => {
                     const rawTrans = outputs[idx]?.translation_text || '';
@@ -3494,14 +3598,17 @@ def wp_slugify(text: str) -> str:
 
             runIntroModeShowcase();
 
-            // Фоновая бесшумная предзагрузка NMT-модели (Transformers.js) после полной готовности страницы:
-            // Не мешает первичному рендеру и анимациям, загружается в фоне в моменты простоя браузера
+            // Фоновая предзагрузка NMT-модели (Transformers.js):
+            // Запускается с комфортной задержкой (3.5 сек), гарантируя, что пользователь
+            // может моментально начать вводить текст без малейшей конкуренции за ресурсы.
             const startBackgroundPreload = () => {
-                if ('requestIdleCallback' in window) {
-                    window.requestIdleCallback(() => NMTManager.preload(), { timeout: 4000 });
-                } else {
-                    setTimeout(() => NMTManager.preload(), 1500);
-                }
+                setTimeout(() => {
+                    if ('requestIdleCallback' in window) {
+                        window.requestIdleCallback(() => NMTManager.preload(), { timeout: 6000 });
+                    } else {
+                        NMTManager.preload();
+                    }
+                }, 3500);
             };
 
             if (document.readyState === 'complete') {
