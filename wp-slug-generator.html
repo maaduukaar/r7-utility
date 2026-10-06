@@ -1747,6 +1747,8 @@ def wp_slugify(text: str) -> str:
             isReady: false,
             initPromise: null,
             cache: {},
+            progressListeners: new Set(),
+            lastProgress: { status: 'idle', percent: 0, file: '' },
 
             initCache() {
                 try {
@@ -1774,7 +1776,48 @@ def wp_slugify(text: str) -> str:
                 return this.cache[key.toLowerCase().trim()] || null;
             },
 
+            addProgressListener(fn) {
+                if (typeof fn === 'function') {
+                    this.progressListeners.add(fn);
+                    // Если загрузка уже в процессе, сразу информируем слушателя о последнем статусе/проценте
+                    if (this.isLoading && this.lastProgress.percent > 0) {
+                        fn(this.lastProgress);
+                    }
+                }
+            },
+
+            removeProgressListener(fn) {
+                this.progressListeners.delete(fn);
+            },
+
+            notifyProgress(p) {
+                if (p.status === 'progress' && p.file) {
+                    this.lastProgress = {
+                        status: 'progress',
+                        percent: Math.round(p.progress || 0),
+                        file: p.file
+                    };
+                } else if (p.status === 'ready' || p.status === 'done') {
+                    this.lastProgress = { status: 'ready', percent: 100, file: p.file || '' };
+                }
+                for (const fn of this.progressListeners) {
+                    try { fn(p); } catch (e) {}
+                }
+            },
+
+            // Фоновая бесшумная предзагрузка после готовности страницы
+            preload() {
+                if (this.isReady || this.isLoading || this.initPromise) return;
+                this.loadModel().catch(err => {
+                    console.log('NMT background preloading deferred/failed:', err);
+                });
+            },
+
             async loadModel(onProgress) {
+                if (typeof onProgress === 'function') {
+                    this.addProgressListener(onProgress);
+                }
+
                 if (this.isReady && this.pipeline) return this.pipeline;
                 if (this.initPromise) return this.initPromise;
 
@@ -1788,13 +1831,12 @@ def wp_slugify(text: str) -> str:
 
                         this.pipeline = await pipeline('translation', this.modelId, {
                             progress_callback: (p) => {
-                                if (typeof onProgress === 'function') {
-                                    onProgress(p);
-                                }
+                                this.notifyProgress(p);
                             }
                         });
                         this.isReady = true;
                         this.isLoading = false;
+                        this.notifyProgress({ status: 'ready' });
                         return this.pipeline;
                     } catch (err) {
                         this.isLoading = false;
@@ -1987,16 +2029,23 @@ def wp_slugify(text: str) -> str:
             const currentReqId = ++activeNMTRequestId;
 
             (async () => {
+                let progressHandler = null;
                 try {
-                    const isFirstLoad = !NMTManager.isReady;
-
+                    // Если модель ещё не готова, сразу информируем пользователя о текущем статусе / проценте
                     if (state.mode === 'slug' && state.savedTitle === rawTitle && state.slugMethod === 'translate') {
-                        if (!isFirstLoad) {
+                        if (!NMTManager.isReady) {
+                            const currentPct = NMTManager.lastProgress.percent;
+                            if (currentPct > 0) {
+                                showWhisper(`<span class="text-apple-blue flex items-center gap-1.5"><i class="fa-solid fa-circle-notch fa-spin text-[11px]"></i> NMT: загрузка модели (${currentPct}%)...</span>`);
+                            } else {
+                                showWhisper('<span class="text-apple-blue flex items-center gap-1.5"><i class="fa-solid fa-wand-magic-sparkles text-[11px]"></i> NMT: подготовка модели...</span>');
+                            }
+                        } else {
                             showWhisper('<span class="text-apple-blue flex items-center gap-1.5"><i class="fa-solid fa-wand-magic-sparkles text-[11px]"></i> NMT: уточнение перевода...</span>');
                         }
                     }
 
-                    await NMTManager.translateBatch(toTranslate, (p) => {
+                    progressHandler = (p) => {
                         if (currentReqId !== activeNMTRequestId) return;
                         if (state.mode === 'slug' && state.savedTitle === rawTitle && state.slugMethod === 'translate') {
                             if (p.status === 'progress' && p.file) {
@@ -2004,7 +2053,11 @@ def wp_slugify(text: str) -> str:
                                 showWhisper(`<span class="text-apple-blue flex items-center gap-1.5"><i class="fa-solid fa-circle-notch fa-spin text-[11px]"></i> NMT: загрузка модели (${pct}%)...</span>`);
                             }
                         }
-                    });
+                    };
+
+                    NMTManager.addProgressListener(progressHandler);
+
+                    await NMTManager.translateBatch(toTranslate);
 
                     if (currentReqId !== activeNMTRequestId) return;
 
@@ -2043,6 +2096,10 @@ def wp_slugify(text: str) -> str:
                     }
                 } catch (err) {
                     console.warn('NMT background translation skipped or offline:', err);
+                } finally {
+                    if (progressHandler) {
+                        NMTManager.removeProgressListener(progressHandler);
+                    }
                 }
             })();
         }
@@ -2647,12 +2704,6 @@ def wp_slugify(text: str) -> str:
                 const analysis = wpTranslateSlugifyDetailed(state.savedTitle);
                 const suffixAnalysis = state.sectionSuffix ? wpTranslateSlugifyDetailed(state.sectionSuffix) : { hasUnknown: false };
                 if (analysis.hasUnknown || suffixAnalysis.hasUnknown) {
-                    showSequentialWhisper(
-                        '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Режим: Перевод • Скопировано</span>',
-                        backspaceHintHtml,
-                        2500,
-                        1000
-                    );
                     scheduleNMTTranslation(state.savedTitle, state.sectionSuffix);
                 } else {
                     showSequentialWhisper(
@@ -2809,12 +2860,6 @@ def wp_slugify(text: str) -> str:
                 const analysis = wpTranslateSlugifyDetailed(raw);
                 const suffixAnalysis = state.sectionSuffix ? wpTranslateSlugifyDetailed(state.sectionSuffix) : { hasUnknown: false };
                 if (analysis.hasUnknown || suffixAnalysis.hasUnknown) {
-                    showSequentialWhisper(
-                        '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Скопировано в буфер</span>',
-                        backspaceHintHtml,
-                        3000,
-                        1000
-                    );
                     scheduleNMTTranslation(raw, state.sectionSuffix);
                 } else {
                     showSequentialWhisper(
@@ -3382,6 +3427,22 @@ def wp_slugify(text: str) -> str:
             }
 
             runIntroModeShowcase();
+
+            // Фоновая бесшумная предзагрузка NMT-модели (Transformers.js) после полной готовности страницы:
+            // Не мешает первичному рендеру и анимациям, загружается в фоне в моменты простоя браузера
+            const startBackgroundPreload = () => {
+                if ('requestIdleCallback' in window) {
+                    window.requestIdleCallback(() => NMTManager.preload(), { timeout: 4000 });
+                } else {
+                    setTimeout(() => NMTManager.preload(), 1500);
+                }
+            };
+
+            if (document.readyState === 'complete') {
+                startBackgroundPreload();
+            } else {
+                window.addEventListener('load', startBackgroundPreload, { once: true });
+            }
         });
     </script>
 </body>
