@@ -68,6 +68,14 @@
             transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
+        /* Плавное кинематическое появление переключателя слага (строго opacity без смещения формы и субпиксельного размытия) */
+        .pill-fade {
+            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: opacity;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
         /* Мягкие переходы Apple */
         .smooth-transition {
             transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -183,43 +191,61 @@
                 <div id="whisperText" class="whisper-fade text-[11px] font-medium tracking-tight opacity-0 -translate-y-1 flex items-center justify-center pointer-events-auto cursor-default"></div>
             </div>
 
-            <!-- Главная поисковая полоса (Spotlight Input Bar) -->
-            <div id="mainSearchContainer" class="w-full bg-white rounded-2xl shadow-apple-float border border-apple-border transition-all duration-300 relative overflow-hidden group">
-                
-                <div class="flex items-center px-5 h-16 sm:h-[72px] gap-3">
-                    <!-- Иконка-переключатель режимов: Статьи ⟷ Рубрики -->
-                    <button id="modeToggleBtn" type="button"
-                        class="text-apple-tertiary hover:text-apple-text active:scale-90 transition-all flex items-center justify-center w-8 h-8 -ml-1 rounded-xl hover:bg-black/5 cursor-pointer focus:outline-none shrink-0"
-                        title="Режим: Статьи (кликните для переключения на Рубрики)">
-                        <i id="inputIcon" class="fa-regular fa-file-lines text-base transition-transform duration-300"></i>
-                    </button>
+            <!-- Главная поисковая полоса (Spotlight Input Bar) с контейнером переключателя -->
+            <div class="relative w-full">
+                <div id="mainSearchContainer" class="w-full bg-white rounded-2xl shadow-apple-float border border-apple-border transition-all duration-300 relative overflow-hidden group">
+                    
+                    <div class="flex items-center px-5 h-16 sm:h-[72px] gap-3">
+                        <!-- Иконка-переключатель режимов: Статьи ⟷ Рубрики -->
+                        <button id="modeToggleBtn" type="button"
+                            class="text-apple-tertiary hover:text-apple-text active:scale-90 transition-all flex items-center justify-center w-8 h-8 -ml-1 rounded-xl hover:bg-black/5 cursor-pointer focus:outline-none shrink-0"
+                            title="Режим: Статьи (кликните для переключения на Рубрики)">
+                            <i id="inputIcon" class="fa-regular fa-file-lines text-base transition-transform duration-300"></i>
+                        </button>
 
-                    <!-- Инпут -->
-                    <input type="text" id="headlineInput" autofocus
-                        placeholder="Вставьте заголовок статьи..."
-                        autocomplete="off"
-                        spellcheck="false"
-                        class="w-full bg-transparent text-lg sm:text-xl text-apple-text placeholder:text-apple-tertiary font-normal focus:outline-none tracking-tight">
-                </div>
-
-                <!-- Строка для обновления старого полного слага или ввода суффикса раздела -->
-                <div id="slugUrlSubbar" class="px-4 sm:px-5 py-2.5 bg-apple-bg/60 border-t border-apple-borderSubtle hidden items-center gap-2.5 text-xs">
-                    <div id="subbarIconContainer" class="text-apple-tertiary flex items-center justify-center w-5 text-[11px] shrink-0" title="Иерархический слаг">
-                        <i id="subbarIcon" class="fa-solid fa-folder-tree"></i>
-                    </div>
-                    <div class="flex-grow flex items-center min-w-0 relative">
-                        <input type="text" id="hierarchicalSlugInput"
-                            placeholder="Вставьте старый полный слаг..."
+                        <!-- Инпут -->
+                        <input type="text" id="headlineInput" autofocus
+                            placeholder="Вставьте заголовок статьи..."
                             autocomplete="off"
                             spellcheck="false"
-                            class="w-full bg-transparent code-font text-[11px] sm:text-xs text-apple-text placeholder:text-apple-tertiary font-normal focus:outline-none tracking-tight pr-6">
-                        <button id="clearHierarchicalBtn" type="button" class="absolute right-0 text-apple-tertiary hover:text-apple-text transition-colors hidden p-1" title="Очистить">
-                            <i class="fa-solid fa-xmark text-[10px]"></i>
+                            class="w-full bg-transparent text-lg sm:text-xl text-apple-text placeholder:text-apple-tertiary font-normal focus:outline-none tracking-tight">
+                    </div>
+
+                    <!-- Строка для обновления старого полного слага или ввода суффикса раздела -->
+                    <div id="slugUrlSubbar" class="px-4 sm:px-5 py-2.5 bg-apple-bg/60 border-t border-apple-borderSubtle hidden items-center gap-2.5 text-xs">
+                        <div id="subbarIconContainer" class="text-apple-tertiary flex items-center justify-center w-5 text-[11px] shrink-0" title="Иерархический слаг">
+                            <i id="subbarIcon" class="fa-solid fa-folder-tree"></i>
+                        </div>
+                        <div class="flex-grow flex items-center min-w-0 relative">
+                            <input type="text" id="hierarchicalSlugInput"
+                                placeholder="Вставьте старый полный слаг..."
+                                autocomplete="off"
+                                spellcheck="false"
+                                class="w-full bg-transparent code-font text-[11px] sm:text-xs text-apple-text placeholder:text-apple-tertiary font-normal focus:outline-none tracking-tight pr-6">
+                            <button id="clearHierarchicalBtn" type="button" class="absolute right-0 text-apple-tertiary hover:text-apple-text transition-colors hidden p-1" title="Очистить">
+                                <i class="fa-solid fa-xmark text-[10px]"></i>
+                            </button>
+                        </div>
+                        <button id="copyHierarchicalBtn" type="button" class="text-apple-secondary hover:text-apple-text transition-colors flex items-center justify-center w-7 h-7 rounded-lg hover:bg-black/5 active:scale-95 shrink-0" title="Копировать обновленный слаг">
+                            <i id="copyHierarchicalIcon" class="fa-regular fa-copy text-xs"></i>
                         </button>
                     </div>
-                    <button id="copyHierarchicalBtn" type="button" class="text-apple-secondary hover:text-apple-text transition-colors flex items-center justify-center w-7 h-7 rounded-lg hover:bg-black/5 active:scale-95 shrink-0" title="Копировать обновленный слаг">
-                        <i id="copyHierarchicalIcon" class="fa-regular fa-copy text-xs"></i>
-                    </button>
+                </div>
+
+                <!-- Компактный переключатель метода генерации (Транслит ⟷ Перевод) под поисковой строкой (абсолютное позиционирование для исключения смещения страницы) -->
+                <div id="slugMethodContainer" class="absolute top-full left-0 right-0 mt-3.5 flex items-center justify-center select-none pill-fade opacity-0 pointer-events-none">
+                    <div class="inline-flex items-center p-0.5 bg-black/[0.04] border border-black/[0.06] rounded-full text-[11px] font-medium tracking-tight">
+                        <button type="button" id="methodTranslitBtn"
+                            class="px-2.5 py-0.5 rounded-full transition-[background-color,color,box-shadow] duration-150 cursor-pointer focus:outline-none bg-white text-apple-text shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
+                            title="Транслитерация по стандарту ISO 9 (Cyr-To-Lat)">
+                            Транслит
+                        </button>
+                        <button type="button" id="methodTranslateBtn"
+                            class="px-2.5 py-0.5 rounded-full transition-[background-color,color,box-shadow] duration-150 cursor-pointer focus:outline-none text-apple-secondary hover:text-apple-text"
+                            title="Перевод русских слов на английский язык">
+                            Перевод
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -497,6 +523,7 @@ def wp_slugify(text: str) -> str:
         let state = {
             mode: 'input', // 'input' (редактирование заголовка/рубрики) или 'slug' (показ готового слага)
             generatorType: 'post', // 'post' (статьи) или 'category' (рубрики)
+            slugMethod: 'translit', // 'translit' (транслитерация) или 'translate' (перевод)
             savedTitle: '',
             baseCategorySlug: '', // Чистый слаг заголовка/рубрики без суффикса
             sectionSuffix: '', // Суффикс раздела (сохраняется при Del / Backspace, очищается только по крестику или перезагрузке)
@@ -519,6 +546,9 @@ def wp_slugify(text: str) -> str:
         const copyHierarchicalIcon = document.getElementById('copyHierarchicalIcon');
         const whisperContainer = document.getElementById('whisperContainer');
         const whisperText = document.getElementById('whisperText');
+        const slugMethodContainer = document.getElementById('slugMethodContainer');
+        const methodTranslitBtn = document.getElementById('methodTranslitBtn');
+        const methodTranslateBtn = document.getElementById('methodTranslateBtn');
 
         // Элементы переключения представлений
         const navGeneratorBtn = document.getElementById('navGeneratorBtn');
@@ -563,6 +593,249 @@ def wp_slugify(text: str) -> str:
                 .replace(/^-+|-+$/g, '');
 
             return clean || '';
+        }
+
+        /**
+         * Словарь устойчивых технических фраз и брендов (проверяются первыми)
+         */
+        const TRANSLATION_PHRASES = {
+            'р7 ассистент': 'r7-assistant',
+            'р7 ассистентом': 'r7-assistant',
+            'р7 ассистента': 'r7-assistant',
+            'р7 ассистенту': 'r7-assistant',
+            'р7 офис': 'r7-office',
+            'р7 офиса': 'r7-office',
+            'р7 офисе': 'r7-office',
+            'р7 диск': 'r7-disk',
+            'р7 диска': 'r7-disk',
+            'р7 графика': 'r7-graphics',
+            'р7 графики': 'r7-graphics',
+            'р7 органайзер': 'r7-organizer',
+            'быстрый старт': 'quick-start',
+            'начало работы': 'getting-started',
+            'системные требования': 'system-requirements',
+            'горячие клавиши': 'shortcuts',
+            'комбинации клавиш': 'shortcuts',
+            'база знаний': 'knowledge-base',
+            'демонстрация экрана': 'screen-sharing',
+            'учетная запись': 'account',
+            'учетной записи': 'account',
+            'учетные записи': 'accounts',
+            'резервная копия': 'backup',
+            'резервное копирование': 'backup',
+            'двухфакторная аутентификация': '2fa',
+            'двухфакторная проверка': '2fa',
+            'электронная почта': 'email',
+            'электронной почты': 'email',
+            'совместная работа': 'collaboration',
+            'совместное редактирование': 'co-editing',
+            'решение проблем': 'troubleshooting',
+            'вопросы и ответы': 'faq',
+            'часто задаваемые вопросы': 'faq',
+            'руководство пользователя': 'user-guide',
+            'руководство администратора': 'admin-guide',
+            'панель управления': 'control-panel',
+            'командная строка': 'cli',
+            'подключение и настройка': 'connection-and-setup',
+            'исправление формулы': 'fix-formula',
+            'объяснение формулы': 'explanation-formula',
+            'работа с формулами': 'working-with-formulas',
+            'работа с таблицами': 'working-with-spreadsheets',
+            'работа с документами': 'working-with-documents',
+            'работа с презентациями': 'working-with-presentations'
+        };
+
+        /**
+         * Словарь одиночных терминов и частых слов документации
+         */
+        const TRANSLATION_WORDS = {
+            'р7': 'r7', 'r7': 'r7',
+            'ассистент': 'assistant', 'ассистента': 'assistant', 'ассистенту': 'assistant', 'ассистентом': 'assistant', 'ассистенте': 'assistant',
+            'диск': 'disk', 'диска': 'disk', 'диску': 'disk', 'диском': 'disk', 'диске': 'disk',
+            'документ': 'document', 'документа': 'document', 'документу': 'document', 'документом': 'document', 'документе': 'document',
+            'документы': 'documents', 'документов': 'documents', 'документам': 'documents', 'документами': 'documents', 'документах': 'documents',
+            'таблица': 'spreadsheet', 'таблицы': 'spreadsheets', 'таблице': 'spreadsheet', 'таблицу': 'spreadsheet', 'таблицей': 'spreadsheet', 'таблицах': 'spreadsheets',
+            'презентация': 'presentation', 'презентации': 'presentations', 'презентацию': 'presentation', 'презентацией': 'presentation', 'презентациях': 'presentations',
+            'почта': 'mail', 'почты': 'mail', 'почте': 'mail', 'почту': 'mail', 'почтой': 'mail',
+            'календарь': 'calendar', 'календаря': 'calendar', 'календарю': 'calendar', 'календарем': 'calendar', 'календаре': 'calendar',
+            'контакт': 'contact', 'контакты': 'contacts', 'контактов': 'contacts',
+            'команда': 'team', 'команды': 'team', 'команде': 'team',
+            'сервер': 'server', 'сервера': 'server', 'серверу': 'server', 'сервером': 'server', 'сервере': 'server', 'серверы': 'servers', 'серверов': 'servers',
+            'десктоп': 'desktop', 'десктопа': 'desktop', 'десктопом': 'desktop', 'десктопе': 'desktop', 'десктопный': 'desktop', 'десктопные': 'desktop',
+            'органайзер': 'organizer', 'органайзера': 'organizer', 'органайзеру': 'organizer', 'органайзером': 'organizer',
+            'клиент': 'client', 'клиента': 'client', 'клиенты': 'clients', 'клиентов': 'clients',
+            'редактор': 'editor', 'редактора': 'editor', 'редакторы': 'editors', 'редакторов': 'editors',
+            'офис': 'office', 'офиса': 'office', 'офисе': 'office',
+
+            'работа': 'work', 'работы': 'work', 'работе': 'work', 'работу': 'work', 'работой': 'work',
+            'подключение': 'connection', 'подключения': 'connection', 'подключению': 'connection', 'подключением': 'connection', 'подключить': 'connect',
+            'настройка': 'setup', 'настройки': 'settings', 'настройке': 'setup', 'настройку': 'setup', 'настройкой': 'setup', 'настройках': 'settings',
+            'установка': 'installation', 'установки': 'installation', 'установке': 'installation', 'установку': 'installation', 'установить': 'install',
+            'удаление': 'uninstall', 'удаления': 'uninstall', 'удалению': 'uninstall', 'удалить': 'delete',
+            'обновление': 'update', 'обновления': 'update', 'обновлению': 'update', 'обновить': 'update',
+            'исправление': 'fix', 'исправления': 'fix', 'исправлению': 'fix', 'исправить': 'fix',
+            'объяснение': 'explanation', 'объяснения': 'explanation', 'объяснению': 'explanation', 'объяснить': 'explain',
+            'отключение': 'disconnection', 'отключения': 'disconnection', 'отключению': 'disconnection', 'отключить': 'disable',
+            'создание': 'create', 'создания': 'create', 'создать': 'create',
+            'редактирование': 'editing', 'редактирования': 'editing', 'редактировать': 'edit',
+            'сохранение': 'save', 'сохранения': 'save', 'сохранить': 'save',
+            'печать': 'print', 'печати': 'print',
+            'экспорт': 'export', 'экспорта': 'export', 'экспортировать': 'export',
+            'импорт': 'import', 'импорта': 'import', 'импортировать': 'import',
+            'загрузка': 'upload', 'загрузки': 'upload', 'загрузить': 'upload',
+            'скачивание': 'download', 'скачивания': 'download', 'скачать': 'download',
+            'открытие': 'open', 'открытия': 'open', 'открыть': 'open',
+            'закрытие': 'close', 'закрытия': 'close', 'закрыть': 'close',
+            'поиск': 'search', 'поиска': 'search', 'искать': 'search',
+            'замена': 'replace', 'замены': 'replace', 'заменить': 'replace',
+            'фильтрация': 'filtering', 'фильтрации': 'filtering', 'фильтр': 'filter', 'фильтры': 'filters',
+            'сортировка': 'sorting', 'сортировки': 'sorting', 'сортировать': 'sort',
+            'форматирование': 'formatting', 'форматирования': 'formatting',
+            'вставка': 'insert', 'вставки': 'insert', 'вставить': 'insert',
+            'копирование': 'copy', 'копирования': 'copy', 'скопировать': 'copy',
+            'перемещение': 'move', 'перемещения': 'move', 'переместить': 'move',
+            'восстановление': 'recovery', 'восстановления': 'recovery', 'восстановить': 'restore',
+            'сброс': 'reset', 'сброса': 'reset', 'сбросить': 'reset',
+            'авторизация': 'auth', 'авторизации': 'auth', 'вход': 'login', 'входа': 'login', 'войти': 'login',
+            'выход': 'logout', 'выхода': 'logout', 'выйти': 'logout',
+            'регистрация': 'registration', 'регистрации': 'registration',
+            'активация': 'activation', 'активации': 'activation', 'активировать': 'activate',
+            'лицензия': 'license', 'лицензии': 'license', 'лицензирование': 'licensing',
+            'проверка': 'verification', 'проверки': 'check', 'проверить': 'verify',
+            'защита': 'protection', 'защиты': 'protection', 'защитить': 'protect',
+            'пароль': 'password', 'пароли': 'passwords', 'пароля': 'password',
+            'доступ': 'access', 'доступа': 'access',
+            'права': 'permissions', 'прав': 'permissions',
+            'безопасность': 'security', 'безопасности': 'security',
+            'версия': 'version', 'версии': 'versions', 'версий': 'versions',
+            'пользователь': 'user', 'пользователя': 'user', 'пользователи': 'users', 'пользователей': 'users',
+            'администратор': 'admin', 'администратора': 'admin', 'администраторы': 'admins', 'администрирование': 'administration',
+
+            'формула': 'formula', 'формулы': 'formulas', 'формуле': 'formula', 'формулу': 'formula',
+            'функция': 'function', 'функции': 'functions', 'функций': 'functions',
+            'макрос': 'macro', 'макросы': 'macros', 'макросов': 'macros',
+            'плагин': 'plugin', 'плагины': 'plugins', 'плагинов': 'plugins',
+            'диаграмма': 'chart', 'диаграммы': 'charts', 'график': 'chart', 'графики': 'charts',
+            'рисунок': 'image', 'рисунки': 'images', 'изображение': 'image', 'изображения': 'images', 'картинка': 'picture',
+            'файл': 'file', 'файлы': 'files', 'файлов': 'files',
+            'папка': 'folder', 'папки': 'folders', 'папок': 'folders',
+            'страница': 'page', 'страницы': 'pages', 'страниц': 'pages',
+            'раздел': 'section', 'разделы': 'sections', 'разделов': 'sections',
+            'рубрика': 'category', 'рубрики': 'categories', 'рубрик': 'categories',
+            'статья': 'article', 'статьи': 'articles', 'статей': 'articles',
+            'инструкция': 'guide', 'инструкции': 'guide',
+            'руководство': 'manual', 'руководства': 'manual',
+            'справка': 'help', 'справки': 'help',
+            'ошибка': 'error', 'ошибки': 'errors', 'ошибок': 'errors',
+            'шрифт': 'font', 'шрифты': 'fonts',
+            'стиль': 'style', 'стили': 'styles',
+            'шаблон': 'template', 'шаблоны': 'templates',
+            'тема': 'theme', 'темы': 'themes',
+            'ячейка': 'cell', 'ячейки': 'cells', 'ячеек': 'cells',
+            'строка': 'row', 'строки': 'rows', 'строк': 'rows',
+            'столбец': 'column', 'столбцы': 'columns', 'столбцов': 'columns',
+            'колонка': 'column', 'колонки': 'columns',
+            'лист': 'sheet', 'листы': 'sheets',
+            'книга': 'workbook', 'книги': 'workbook',
+            'слайд': 'slide', 'слайды': 'slides',
+            'текст': 'text', 'текста': 'text',
+            'абзац': 'paragraph', 'абзацы': 'paragraphs',
+            'список': 'list', 'списки': 'lists',
+            'ссылка': 'link', 'ссылки': 'links',
+            'заголовок': 'heading', 'заголовки': 'headings',
+            'колонтитул': 'header', 'колонтитулы': 'headers',
+            'примечание': 'comment', 'примечания': 'comments', 'комментарий': 'comment', 'комментарии': 'comments',
+            'закладка': 'bookmark', 'закладки': 'bookmarks',
+            'содержание': 'table-of-contents',
+            'нумерация': 'numbering',
+            'граница': 'border', 'границы': 'borders',
+            'заливка': 'fill',
+            'выравнивание': 'alignment',
+            'сводная': 'pivot', 'сводные': 'pivot',
+            'проект': 'project', 'проекты': 'projects',
+            'задача': 'task', 'задачи': 'tasks',
+            'чат': 'chat', 'чаты': 'chats',
+            'звонок': 'call', 'звонки': 'calls',
+            'видео': 'video', 'звук': 'audio',
+            'уведомление': 'notification', 'уведомления': 'notifications',
+            'событие': 'event', 'события': 'events',
+            'встреча': 'meeting', 'встречи': 'meetings',
+            'письмо': 'email', 'письма': 'emails',
+            'вложение': 'attachment', 'вложения': 'attachments',
+            'браузер': 'browser', 'браузеры': 'browsers',
+            'мобильный': 'mobile', 'мобильные': 'mobile',
+            'приложение': 'app', 'приложения': 'applications',
+            'веб': 'web',
+            'виндовс': 'windows', 'линукс': 'linux', 'макос': 'macos', 'андроид': 'android', 'айос': 'ios',
+            'обзор': 'overview',
+            'вопрос': 'question', 'вопросы': 'faq', 'ответ': 'answer', 'ответы': 'faq',
+            'совместная': 'collaboration',
+            'рецензирование': 'review',
+            'история': 'history',
+            'сравнение': 'comparison',
+            'конфликт': 'conflict', 'конфликты': 'conflicts',
+            'автосохранение': 'autosave',
+
+            // Предлоги и союзы
+            'с': 'with', 'со': 'with',
+            'в': 'in', 'во': 'in',
+            'на': 'on', 'по': 'by', 'для': 'for',
+            'из': 'from', 'от': 'from',
+            'к': 'to', 'ко': 'to',
+            'о': 'about', 'об': 'about', 'обо': 'about',
+            'через': 'via', 'без': 'without',
+            'и': 'and', 'да': 'and', 'или': 'or', 'как': 'how-to'
+        };
+
+        /**
+         * Алгоритм генерации слага через перевод русских терминов на английский
+         * с автоматическим фоллбэком на транслитерацию для неизвестных слов
+         */
+        function wpTranslateSlugify(text) {
+            if (!text) return '';
+
+            let clean = text.toLowerCase().trim();
+
+            // 1. Проверяем словарь устойчивых фраз
+            for (const [phrase, translation] of Object.entries(TRANSLATION_PHRASES)) {
+                const regex = new RegExp('(^|[^a-zа-яё0-9])' + phrase.replace(/ /g, '\\s+') + '(?=[^a-zа-яё0-9]|$)', 'gi');
+                clean = clean.replace(regex, (match, prefix) => (prefix || '') + ' ' + translation + ' ');
+            }
+
+            // 2. Разбиваем на отдельные токены (включая дефисы в составных словах вроде Р7-Офис)
+            const tokens = clean.split(/[^a-zа-яё0-9]+/i).filter(Boolean);
+            if (!tokens.length) return '';
+
+            const translatedTokens = tokens.map(token => {
+                const lower = token.toLowerCase();
+                if (/^[a-z0-9-]+$/i.test(lower)) {
+                    return lower;
+                }
+                if (TRANSLATION_WORDS[lower]) {
+                    return TRANSLATION_WORDS[lower];
+                }
+                return wpSlugify(lower);
+            });
+
+            return translatedTokens.join('-')
+                .toLowerCase()
+                .replace(/[._/]/g, '-')
+                .replace(/[^a-z0-9 -]/g, '')
+                .trim()
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        }
+
+        /**
+         * Универсальный генератор слага в зависимости от выбранного метода (Транслит / Перевод)
+         */
+        function generateSlug(text, method = state.slugMethod) {
+            if (!text) return '';
+            if (method === 'translate') {
+                return wpTranslateSlugify(text);
+            }
+            return wpSlugify(text);
         }
 
         /**
@@ -819,9 +1092,9 @@ def wp_slugify(text: str) -> str:
          */
         function applyCategorySuffix(autoCopy = true) {
             if (!state.baseCategorySlug) {
-                state.baseCategorySlug = wpSlugify(state.savedTitle || headlineInput.value);
+                state.baseCategorySlug = generateSlug(state.savedTitle || headlineInput.value, state.slugMethod);
             }
-            const suffix = state.sectionSuffix ? wpSlugify(state.sectionSuffix) : '';
+            const suffix = state.sectionSuffix ? generateSlug(state.sectionSuffix, state.slugMethod) : '';
             if (suffix) {
                 state.currentSlug = `${state.baseCategorySlug}-${suffix}`;
             } else {
@@ -1050,7 +1323,7 @@ def wp_slugify(text: str) -> str:
                 updateSubbarView(state.generatorType);
                 if (state.generatorType === 'category') {
                     if (!state.baseCategorySlug) {
-                        state.baseCategorySlug = wpSlugify(state.savedTitle || headlineInput.value);
+                        state.baseCategorySlug = generateSlug(state.savedTitle || headlineInput.value, state.slugMethod);
                     }
                     applyCategorySuffix();
                     if (state.sectionSuffix) {
@@ -1061,7 +1334,7 @@ def wp_slugify(text: str) -> str:
                         clearHierarchicalBtn.classList.add('hidden');
                     }
                 } else {
-                    state.currentSlug = state.baseCategorySlug || wpSlugify(state.savedTitle);
+                    state.currentSlug = state.baseCategorySlug || generateSlug(state.savedTitle, state.slugMethod);
                     headlineInput.value = state.currentSlug;
                     copyTextToClipboard(state.currentSlug);
                     hierarchicalSlugInput.value = '';
@@ -1092,6 +1365,138 @@ def wp_slugify(text: str) -> str:
         });
 
         /**
+         * Обновление визуального состояния переключателя методов генерации (Транслит ⟷ Перевод)
+         */
+        function updateSlugMethodUI() {
+            if (!methodTranslitBtn || !methodTranslateBtn) return;
+            const activeClasses = ['bg-white', 'text-apple-text', 'shadow-[0_1px_2px_rgba(0,0,0,0.06)]'];
+            const inactiveClasses = ['text-apple-secondary', 'hover:text-apple-text'];
+
+            if (state.slugMethod === 'translit') {
+                methodTranslitBtn.classList.add(...activeClasses);
+                methodTranslitBtn.classList.remove(...inactiveClasses);
+                methodTranslateBtn.classList.remove(...activeClasses);
+                methodTranslateBtn.classList.add(...inactiveClasses);
+            } else {
+                methodTranslateBtn.classList.add(...activeClasses);
+                methodTranslateBtn.classList.remove(...inactiveClasses);
+                methodTranslitBtn.classList.remove(...activeClasses);
+                methodTranslitBtn.classList.add(...inactiveClasses);
+            }
+        }
+
+        /**
+         * Переключение метода формирования слага (Транслит ⟷ Перевод)
+         * с сохранением в sessionStorage и мгновенным пересчетом слага
+         */
+        function setSlugMethod(method) {
+            state.slugMethod = method;
+            try {
+                sessionStorage.setItem('wp_slug_method', method);
+            } catch (e) {}
+            updateSlugMethodUI();
+
+            // Если мы уже на втором экране (режим слага), сразу же пересчитываем слаг на лету!
+            if (state.mode === 'slug' && state.savedTitle) {
+                recalculateCurrentSlug();
+            }
+        }
+
+        /**
+         * Мгновенный пересчет слага на втором экране при переключении метода
+         */
+        function recalculateCurrentSlug() {
+            if (!state.savedTitle) return;
+            state.baseCategorySlug = generateSlug(state.savedTitle, state.slugMethod);
+
+            if (state.generatorType === 'category') {
+                const suffix = state.sectionSuffix ? generateSlug(state.sectionSuffix, state.slugMethod) : '';
+                if (suffix) {
+                    state.currentSlug = `${state.baseCategorySlug}-${suffix}`;
+                    if (hierarchicalSlugInput) hierarchicalSlugInput.value = suffix;
+                } else {
+                    state.currentSlug = state.baseCategorySlug;
+                    if (hierarchicalSlugInput) hierarchicalSlugInput.value = '';
+                }
+            } else {
+                state.currentSlug = state.baseCategorySlug;
+            }
+
+            headlineInput.value = state.currentSlug;
+            headlineInput.focus();
+            headlineInput.select();
+            copyTextToClipboard(state.currentSlug);
+            adjustInputWidth();
+
+            const methodName = state.slugMethod === 'translate' ? 'Перевод' : 'Транслит';
+            const itemTypeName = state.generatorType === 'category' ? 'рубрику' : 'заголовок';
+            const backspaceHintHtml = `<span class="text-apple-secondary select-none">Нажмите <button type="button" id="backspaceBtn" class="kbd-btn backspace-btn" title="Редактировать ${itemTypeName}">⌫&nbsp;Backspace</button> для правки</span>`;
+
+            showSequentialWhisper(
+                `<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Режим: ${methodName} • Скопировано</span>`,
+                backspaceHintHtml,
+                2500,
+                1000
+            );
+        }
+
+        let hasSlugMethodAppearedOnce = false;
+        let slugMethodAppearanceTimer = null;
+
+        function clearSlugMethodAppearanceTimer() {
+            if (slugMethodAppearanceTimer) {
+                clearTimeout(slugMethodAppearanceTimer);
+                slugMethodAppearanceTimer = null;
+            }
+        }
+
+        /**
+         * Плавное появление переключателя методов (в первый раз с деликатной задержкой)
+         */
+        function showSlugMethodContainer() {
+            if (!slugMethodContainer) return;
+            clearSlugMethodAppearanceTimer();
+
+            // В первый раз делаем кинематическую задержку (600 мс), чтобы пользователь сначала сфокусировался на готовом слаге,
+            // а затем плавно снизу выплывает переключатель. При повторных переходах — быстрое плавное проявление (100 мс).
+            const delay = !hasSlugMethodAppearedOnce ? 600 : 100;
+
+            slugMethodAppearanceTimer = setTimeout(() => {
+                if (state.mode !== 'slug') return;
+                slugMethodContainer.classList.remove('opacity-0', 'pointer-events-none');
+                slugMethodContainer.classList.add('opacity-100', 'pointer-events-auto');
+                hasSlugMethodAppearedOnce = true;
+                slugMethodAppearanceTimer = null;
+            }, delay);
+        }
+
+        /**
+         * Скрытие переключателя методов
+         */
+        function hideSlugMethodContainer() {
+            if (!slugMethodContainer) return;
+            clearSlugMethodAppearanceTimer();
+            slugMethodContainer.classList.remove('opacity-100', 'pointer-events-auto');
+            slugMethodContainer.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        if (methodTranslitBtn) {
+            methodTranslitBtn.addEventListener('mousedown', (e) => e.preventDefault());
+            methodTranslitBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                setSlugMethod('translit');
+            });
+        }
+
+        if (methodTranslateBtn) {
+            methodTranslateBtn.addEventListener('mousedown', (e) => e.preventDefault());
+            methodTranslateBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                setSlugMethod('translate');
+            });
+        }
+
+        /**
          * Переключение в режим СЛАГА (результат)
          */
         function switchToSlugMode() {
@@ -1113,7 +1518,7 @@ def wp_slugify(text: str) -> str:
             if (!raw) return;
 
             state.savedTitle = raw;
-            state.baseCategorySlug = wpSlugify(raw);
+            state.baseCategorySlug = generateSlug(raw, state.slugMethod);
             state.mode = 'slug';
             state.returnedFromSlug = false;
 
@@ -1121,7 +1526,7 @@ def wp_slugify(text: str) -> str:
             updateSubbarView(state.generatorType);
 
             if (state.generatorType === 'category') {
-                const suffix = state.sectionSuffix ? wpSlugify(state.sectionSuffix) : '';
+                const suffix = state.sectionSuffix ? generateSlug(state.sectionSuffix, state.slugMethod) : '';
                 if (suffix) {
                     state.currentSlug = `${state.baseCategorySlug}-${suffix}`;
                     hierarchicalSlugInput.value = suffix;
@@ -1152,6 +1557,9 @@ def wp_slugify(text: str) -> str:
             slugUrlSubbar.classList.add('flex');
             copyHierarchicalIcon.className = 'fa-regular fa-copy text-xs';
             copyHierarchicalBtn.classList.remove('text-apple-green');
+
+            // Показываем переключатель методов генерации слага (Транслит ⟷ Перевод) плавно и с задержкой в первый раз
+            showSlugMethodContainer();
 
             // Подсвечиваем всё поле, чтобы можно было сразу скопировать через Cmd+C
             headlineInput.focus();
@@ -1198,6 +1606,9 @@ def wp_slugify(text: str) -> str:
             updateInputModeUI();
             slugUrlSubbar.classList.add('hidden');
             slugUrlSubbar.classList.remove('flex');
+
+            // Скрываем переключатель методов слага при возврате к экрану ввода
+            hideSlugMethodContainer();
             
             // Внимание: state.sectionSuffix НЕ сбрасывается! Сбрасывается только в режиме статей
             if (state.generatorType === 'post') {
@@ -1297,6 +1708,7 @@ def wp_slugify(text: str) -> str:
                 state.savedTitle = '';
                 state.baseCategorySlug = '';
                 state.returnedFromSlug = false;
+                hideSlugMethodContainer();
                 hideWhisper();
                 headlineInput.focus();
                 adjustInputWidth();
@@ -1328,6 +1740,7 @@ def wp_slugify(text: str) -> str:
                 updateInputModeUI();
                 slugUrlSubbar.classList.add('hidden');
                 slugUrlSubbar.classList.remove('flex');
+                hideSlugMethodContainer();
                 if (state.generatorType === 'post') {
                     hierarchicalSlugInput.value = '';
                     clearHierarchicalBtn.classList.add('hidden');
@@ -1363,6 +1776,7 @@ def wp_slugify(text: str) -> str:
                 updateInputModeUI();
                 slugUrlSubbar.classList.add('hidden');
                 slugUrlSubbar.classList.remove('flex');
+                hideSlugMethodContainer();
                 if (state.generatorType === 'post') {
                     hierarchicalSlugInput.value = '';
                     clearHierarchicalBtn.classList.add('hidden');
@@ -1425,7 +1839,7 @@ def wp_slugify(text: str) -> str:
             if (state.generatorType === 'category') {
                 e.preventDefault();
                 const pasted = (e.clipboardData || window.clipboardData).getData('text');
-                const clean = wpSlugify(pasted);
+                const clean = generateSlug(pasted, state.slugMethod);
                 hierarchicalSlugInput.value = clean;
                 state.sectionSuffix = clean;
                 if (clean) {
@@ -1465,7 +1879,7 @@ def wp_slugify(text: str) -> str:
         hierarchicalSlugInput.addEventListener('input', () => {
             if (state.generatorType === 'category') {
                 const raw = hierarchicalSlugInput.value;
-                const cleanSuffix = wpSlugify(raw);
+                const cleanSuffix = generateSlug(raw, state.slugMethod);
                 state.sectionSuffix = cleanSuffix;
                 if (raw.trim()) {
                     clearHierarchicalBtn.classList.remove('hidden');
@@ -1581,6 +1995,7 @@ def wp_slugify(text: str) -> str:
             viewGenerator.classList.add('hidden');
             viewDocs.classList.add('hidden');
             viewCode.classList.add('hidden');
+            hideSlugMethodContainer();
 
             navGeneratorBtn.className = 'px-3.5 py-1 text-xs font-medium rounded-full text-apple-secondary hover:text-apple-text transition-all';
             navDocsBtn.className = 'px-3.5 py-1 text-xs font-medium rounded-full text-apple-secondary hover:text-apple-text transition-all flex items-center gap-1.5';
@@ -1588,6 +2003,9 @@ def wp_slugify(text: str) -> str:
 
             if (target === 'generator') {
                 viewGenerator.classList.remove('hidden');
+                if (state.mode === 'slug') {
+                    showSlugMethodContainer();
+                }
                 navGeneratorBtn.className = 'px-3.5 py-1 text-xs font-medium rounded-full bg-apple-text text-white shadow-sm transition-all flex items-center gap-1.5';
                 setTimeout(() => {
                     headlineInput.focus();
@@ -1691,6 +2109,14 @@ def wp_slugify(text: str) -> str:
 
         // Инициализация
         document.addEventListener('DOMContentLoaded', () => {
+            try {
+                const savedMethod = sessionStorage.getItem('wp_slug_method');
+                if (savedMethod === 'translate' || savedMethod === 'translit') {
+                    state.slugMethod = savedMethod;
+                }
+            } catch (e) {}
+            updateSlugMethodUI();
+
             renderAppleAlphabet();
             adjustInputWidth();
             headlineInput.focus();
