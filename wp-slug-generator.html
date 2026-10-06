@@ -209,6 +209,13 @@
                             autocomplete="off"
                             spellcheck="false"
                             class="w-full bg-transparent text-lg sm:text-xl text-apple-text placeholder:text-apple-tertiary font-normal focus:outline-none tracking-tight">
+
+                        <!-- Кнопка ручного копирования слага (в режиме слага) -->
+                        <button id="copySlugBtn" type="button"
+                            class="text-apple-secondary hover:text-apple-text transition-colors hidden items-center justify-center w-8 h-8 rounded-xl hover:bg-black/5 active:scale-95 shrink-0"
+                            title="Копировать слаг в буфер">
+                            <i id="copySlugIcon" class="fa-regular fa-copy text-sm"></i>
+                        </button>
                     </div>
 
                     <!-- Строка для обновления старого полного слага или ввода суффикса раздела -->
@@ -2316,11 +2323,14 @@ def wp_slugify(text: str) -> str:
                         inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
                         headlineInput.focus();
                         headlineInput.select();
-                        copyTextToClipboard(state.currentSlug);
+                        if (typeof copySlugBtn !== 'undefined' && copySlugBtn) {
+                            copySlugBtn.classList.remove('hidden');
+                            copySlugBtn.classList.add('flex');
+                        }
                         adjustInputWidth();
 
                         showSequentialWhisper(
-                            '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Перевод (NMT + Словарь) • Скопировано</span>',
+                            '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Перевод (NMT + Словарь) готов</span>',
                             getBackspaceHintHtml(),
                             3000,
                             1000
@@ -2342,10 +2352,13 @@ def wp_slugify(text: str) -> str:
                         inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
                         headlineInput.focus();
                         headlineInput.select();
-                        copyTextToClipboard(state.currentSlug);
+                        if (typeof copySlugBtn !== 'undefined' && copySlugBtn) {
+                            copySlugBtn.classList.remove('hidden');
+                            copySlugBtn.classList.add('flex');
+                        }
                         adjustInputWidth();
                         showSequentialWhisper(
-                            '<span class="text-apple-secondary flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-[11px]"></i> Частичный перевод (офлайн) • Скопировано</span>',
+                            '<span class="text-apple-secondary flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-[11px]"></i> Частичный перевод (офлайн) готов</span>',
                             getBackspaceHintHtml(),
                             3000,
                             1000
@@ -2597,13 +2610,10 @@ def wp_slugify(text: str) -> str:
             }
         }
 
-        let categorySuffixDebounceTimer = null;
-
         /**
          * Применение суффикса раздела к базовому слагу рубрики
-         * autoCopy: копировать ли сразу в буфер обмена (true при создании слага, paste, Enter; false при typing)
          */
-        function applyCategorySuffix(autoCopy = true) {
+        function applyCategorySuffix() {
             if (!state.baseCategorySlug) {
                 state.baseCategorySlug = generateSlug(state.savedTitle || headlineInput.value, state.slugMethod);
             }
@@ -2615,18 +2625,6 @@ def wp_slugify(text: str) -> str:
             }
             headlineInput.value = state.currentSlug;
             adjustInputWidth();
-
-            if (autoCopy) {
-                clearTimeout(categorySuffixDebounceTimer);
-                categorySuffixDebounceTimer = null;
-                copyTextToClipboard(state.currentSlug);
-            } else {
-                clearTimeout(categorySuffixDebounceTimer);
-                categorySuffixDebounceTimer = setTimeout(() => {
-                    copyTextToClipboard(state.currentSlug);
-                    triggerHierarchicalCopiedFeedback();
-                }, 350);
-            }
         }
 
         let isIntroShowcaseRunning = false;
@@ -2849,7 +2847,6 @@ def wp_slugify(text: str) -> str:
                 } else {
                     state.currentSlug = state.baseCategorySlug || generateSlug(state.savedTitle, state.slugMethod);
                     headlineInput.value = state.currentSlug;
-                    copyTextToClipboard(state.currentSlug);
                     hierarchicalSlugInput.value = '';
                     clearHierarchicalBtn.classList.add('hidden');
                     adjustInputWidth();
@@ -2960,11 +2957,10 @@ def wp_slugify(text: str) -> str:
                 inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
                 headlineInput.focus();
                 headlineInput.select();
-                copyTextToClipboard(state.currentSlug);
                 adjustInputWidth();
 
                 showSequentialWhisper(
-                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Режим: Перевод (Словарь) • Скопировано</span>',
+                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Режим: Перевод (Словарь)</span>',
                     getBackspaceHintHtml(),
                     2500,
                     1000
@@ -2986,11 +2982,10 @@ def wp_slugify(text: str) -> str:
                 inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
                 headlineInput.focus();
                 headlineInput.select();
-                copyTextToClipboard(state.currentSlug);
                 adjustInputWidth();
 
                 showSequentialWhisper(
-                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Режим: Транслит • Скопировано</span>',
+                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Режим: Транслит</span>',
                     getBackspaceHintHtml(),
                     2500,
                     1000
@@ -3147,11 +3142,10 @@ def wp_slugify(text: str) -> str:
                 inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
                 headlineInput.focus();
                 headlineInput.select();
-                copyTextToClipboard(state.currentSlug);
                 adjustInputWidth();
 
                 showSequentialWhisper(
-                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Скопировано в буфер (Словарь)</span>',
+                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Слаг готов (Словарь)</span>',
                     getBackspaceHintHtml(),
                     3000,
                     1000
@@ -3176,15 +3170,19 @@ def wp_slugify(text: str) -> str:
                 inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
                 headlineInput.focus();
                 headlineInput.select();
-                copyTextToClipboard(state.currentSlug);
                 adjustInputWidth();
 
                 showSequentialWhisper(
-                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Скопировано в буфер</span>',
+                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Слаг готов</span>',
                     getBackspaceHintHtml(),
                     3000,
                     1000
                 );
+            }
+
+            if (typeof copySlugBtn !== 'undefined' && copySlugBtn) {
+                copySlugBtn.classList.remove('hidden');
+                copySlugBtn.classList.add('flex');
             }
 
             adjustInputWidth();
@@ -3208,6 +3206,11 @@ def wp_slugify(text: str) -> str:
             updateInputModeUI();
             slugUrlSubbar.classList.add('hidden');
             slugUrlSubbar.classList.remove('flex');
+
+            if (typeof copySlugBtn !== 'undefined' && copySlugBtn) {
+                copySlugBtn.classList.add('hidden');
+                copySlugBtn.classList.remove('flex');
+            }
 
             // Скрываем переключатель методов слага при возврате к экрану ввода
             hideSlugMethodContainer();
@@ -3236,12 +3239,13 @@ def wp_slugify(text: str) -> str:
             if (state.mode === 'input') {
                 switchToSlugMode();
             } else {
-                // Повторное нажатие Enter в режиме слага — повторно копирует
+                // Нажатие Enter в режиме слага — копирует слаг в буфер
                 if (state.currentSlug) {
                     headlineInput.select();
                     copyTextToClipboard(state.currentSlug);
+                    triggerMainSlugCopiedFeedback();
                     showSequentialWhisper(
-                        '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Повторно скопировано!</span>',
+                        '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Скопировано в буфер!</span>',
                         getBackspaceHintHtml(),
                         3000,
                         1000
@@ -3455,9 +3459,8 @@ def wp_slugify(text: str) -> str:
                     clearHierarchicalBtn.classList.add('hidden');
                 }
                 applyCategorySuffix();
-                triggerHierarchicalCopiedFeedback();
                 showSequentialWhisper(
-                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Обновлено и скопировано!</span>',
+                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Слаг обновлен</span>',
                     getBackspaceHintHtml(),
                     2500,
                     1000
@@ -3471,12 +3474,16 @@ def wp_slugify(text: str) -> str:
                 hierarchicalSlugInput.value = updated;
                 clearHierarchicalBtn.classList.remove('hidden');
 
-                copyTextToClipboard(updated);
-                triggerHierarchicalCopiedFeedback();
                 adjustInputWidth();
                 requestAnimationFrame(() => {
                     hierarchicalSlugInput.scrollLeft = 0;
                 });
+                showSequentialWhisper(
+                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Путь обновлен</span>',
+                    getBackspaceHintHtml(),
+                    2500,
+                    1000
+                );
             }
         });
 
@@ -3491,8 +3498,7 @@ def wp_slugify(text: str) -> str:
                 } else {
                     clearHierarchicalBtn.classList.add('hidden');
                 }
-                // При вводе с клавиатуры обновляем слаг сразу, а копирование дебаунсим, чтобы не перебивать фокус
-                applyCategorySuffix(false);
+                applyCategorySuffix();
             } else {
                 if (hierarchicalSlugInput.value.trim()) {
                     clearHierarchicalBtn.classList.remove('hidden');
@@ -3503,22 +3509,20 @@ def wp_slugify(text: str) -> str:
             }
         });
 
-        // Завершение редактирования суффикса при потере фокуса
-        hierarchicalSlugInput.addEventListener('blur', () => {
-            if (state.generatorType === 'category' && categorySuffixDebounceTimer) {
-                clearTimeout(categorySuffixDebounceTimer);
-                categorySuffixDebounceTimer = null;
-                copyTextToClipboard(state.currentSlug);
-            }
-        });
-
-        // Клавиатура в поле подбара: Enter для обновления/копирования, Esc для очистки/возврата
+        // Клавиатура в поле подбара: Enter для подтверждения/копирования, Esc для очистки/возврата
         hierarchicalSlugInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 if (state.generatorType === 'category') {
-                    applyCategorySuffix(true);
+                    applyCategorySuffix();
+                    copyTextToClipboard(state.currentSlug);
                     triggerHierarchicalCopiedFeedback();
+                    showSequentialWhisper(
+                        '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Скопировано в буфер!</span>',
+                        getBackspaceHintHtml(),
+                        2500,
+                        1000
+                    );
                 } else {
                     if (hierarchicalSlugInput.value.trim() && state.currentSlug) {
                         const updated = updateHierarchicalPath(hierarchicalSlugInput.value, state.currentSlug);
@@ -3526,6 +3530,12 @@ def wp_slugify(text: str) -> str:
                         copyTextToClipboard(updated);
                         triggerHierarchicalCopiedFeedback();
                         adjustInputWidth();
+                        showSequentialWhisper(
+                            '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Скопировано в буфер!</span>',
+                            getBackspaceHintHtml(),
+                            2500,
+                            1000
+                        );
                     }
                 }
             } else if (e.key === 'Escape') {
@@ -3534,7 +3544,7 @@ def wp_slugify(text: str) -> str:
                         hierarchicalSlugInput.value = '';
                         state.sectionSuffix = '';
                         clearHierarchicalBtn.classList.add('hidden');
-                        applyCategorySuffix(true);
+                        applyCategorySuffix();
                         hierarchicalSlugInput.focus();
                     } else {
                         switchToInputMode();
@@ -3587,6 +3597,35 @@ def wp_slugify(text: str) -> str:
         });
 
 
+
+        let mainSlugCopyTimer = null;
+        function triggerMainSlugCopiedFeedback() {
+            if (!window.copySlugIcon || !window.copySlugBtn) return;
+            copySlugIcon.className = 'fa-solid fa-check text-apple-green text-sm';
+            copySlugBtn.classList.add('text-apple-green');
+            clearTimeout(mainSlugCopyTimer);
+            mainSlugCopyTimer = setTimeout(() => {
+                copySlugIcon.className = 'fa-regular fa-copy text-sm';
+                copySlugBtn.classList.remove('text-apple-green');
+            }, 1500);
+        }
+
+        // Кнопка ручного копирования сгенерированного слага в основном поле
+        if (typeof copySlugBtn !== 'undefined' && copySlugBtn) {
+            copySlugBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (!state.currentSlug) return;
+                headlineInput.select();
+                copyTextToClipboard(state.currentSlug);
+                triggerMainSlugCopiedFeedback();
+                showSequentialWhisper(
+                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Скопировано в буфер!</span>',
+                    getBackspaceHintHtml(),
+                    3000,
+                    1000
+                );
+            });
+        }
 
         // Адаптация при изменении размера окна браузера
         window.addEventListener('resize', adjustInputWidth);

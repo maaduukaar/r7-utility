@@ -189,9 +189,6 @@
             // Форматируем
             const resultHTML = formatHTML(table.outerHTML);
             outputArea.value = resultHTML;
-
-            // АВТОМАТИЧЕСКОЕ КОПИРОВАНИЕ
-            copyToClipboard(resultHTML);
         }
 
         async function copyToClipboard(text) {
