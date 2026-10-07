@@ -195,7 +195,7 @@
             <div class="relative w-full">
                 <div id="mainSearchContainer" class="w-full bg-white rounded-2xl shadow-apple-float border border-apple-border transition-all duration-300 relative overflow-hidden group">
                     
-                    <div class="flex items-center px-5 h-16 sm:h-[72px] gap-3">
+                    <div class="flex items-center px-5 h-16 sm:h-[72px] gap-5">
                         <!-- Иконка-переключатель режимов: Статьи ⟷ Рубрики -->
                         <button id="modeToggleBtn" type="button"
                             class="text-apple-tertiary hover:text-apple-text active:scale-90 transition-all flex items-center justify-center w-8 h-8 -ml-1 rounded-xl hover:bg-black/5 cursor-pointer focus:outline-none shrink-0"
@@ -208,7 +208,7 @@
                             placeholder="Вставьте заголовок статьи..."
                             autocomplete="off"
                             spellcheck="false"
-                            class="w-full min-w-0 bg-transparent text-lg sm:text-xl text-apple-text placeholder:text-apple-tertiary font-normal focus:outline-none tracking-tight pr-3">
+                            class="w-full min-w-0 bg-transparent text-lg sm:text-xl text-apple-text placeholder:text-apple-tertiary font-normal focus:outline-none tracking-tight pr-1">
 
                         <!-- Кнопка ручного копирования слага (в режиме слага) -->
                         <button id="copySlugBtn" type="button"
@@ -2418,12 +2418,12 @@ def wp_slugify(text: str) -> str:
             const headTextWidth = window.textRuler.getBoundingClientRect().width;
 
             // Внутренние отступы поля:
-            // - левая иконка с отступами (px-5 = 40px, modeToggleBtn = 28px, gap-3 = 12px)
-            // - правая кнопка копирования в режиме слага (copySlugBtn = 32px, gap-3 = 12px)
-            // Итого фиксированные элементы: 124px.
-            // Добавляем комфортный свободный запас под выделение, каретку и гарантированное расстояние до кнопки (~96px воздуха):
+            // - левая иконка с отступами (px-5 = 20px, modeToggleBtn = 28px, gap-5 = 20px)
+            // - правая кнопка копирования в режиме слага (copySlugBtn = 32px, gap-5 + pr-1 = 24px, px-5 = 20px)
+            // - комфортный субпиксельный запас = 4px
+            // Итого фиксированные элементы и эстетичные отступы 20-24px с обеих сторон: 148px.
             const isSlugMode = state.mode === 'slug';
-            const headExtraSpacing = isSlugMode ? 220 : 130;
+            const headExtraSpacing = isSlugMode ? 148 : 120;
             const headRequiredWidth = Math.ceil(headTextWidth + headExtraSpacing);
 
             // 2. Если отображается строка полного иерархического слага, измеряем её длину
@@ -2443,7 +2443,7 @@ def wp_slugify(text: str) -> str:
                 hierRequiredWidth = Math.ceil(hierTextWidth + 180);
             }
 
-            const defaultWidth = 580;
+            const defaultWidth = isSlugMode ? 460 : 580;
             // До краёв экрана минус 20 пикселей с каждой стороны (итого 40px отступ)
             const clientWidth = document.documentElement.clientWidth || window.innerWidth;
             const maxAllowedWidth = Math.max(320, clientWidth - 40);
@@ -2452,14 +2452,6 @@ def wp_slugify(text: str) -> str:
             const finalWidth = Math.min(targetWidth, maxAllowedWidth);
 
             viewGenerator.style.maxWidth = finalWidth + 'px';
-
-            // Дополнительная калибровка: если в режиме слага scrollWidth превышает clientWidth инпута,
-            // немедленно расширяем контейнер, чтобы не было срезания или горизонтального скролла
-            if (isSlugMode && headlineInput.scrollWidth > headlineInput.clientWidth) {
-                const diff = headlineInput.scrollWidth - headlineInput.clientWidth;
-                const adjustedWidth = Math.min(finalWidth + diff + 50, maxAllowedWidth);
-                viewGenerator.style.maxWidth = adjustedWidth + 'px';
-            }
         }
 
         /**
