@@ -151,9 +151,9 @@
 <body class="min-h-screen flex flex-col justify-between selection:bg-apple-blue selection:text-white">
 
     <!-- Верхняя панель управления (Header в стиле macOS Menu Bar) -->
-    <header class="w-full max-w-6xl mx-auto px-6 py-6 flex items-center justify-between z-30">
+    <header class="w-full max-w-6xl mx-auto px-4 py-4 sm:px-6 sm:py-6 flex items-center justify-between z-30">
         <!-- Логотип / Название -->
-        <button id="navHomeBtn" class="flex items-center text-apple-text hover:opacity-85 transition-all group select-none" title="WP Slug (Cyr-To-Lat) — На главную">
+        <button id="navHomeBtn" class="flex items-center text-apple-text hover:opacity-85 transition-all group select-none shrink-0" title="WP Slug (Cyr-To-Lat) — На главную">
             <!-- Компактный бейдж-глиф транслитерации (Ё → yo) -->
             <div class="h-7 px-2.5 rounded-[8px] bg-gradient-to-b from-[#2c2c2e] to-[#1c1c1e] text-white shadow-sm flex items-center justify-center gap-1.5 border border-black/10 group-hover:scale-105 transition-transform">
                 <span class="text-[11px] font-bold tracking-tight text-white">Ё</span>
@@ -162,18 +162,19 @@
             </div>
         </button>
 
-        <!-- Навигация: Справка / Код -->
-        <nav class="flex items-center gap-1.5 bg-white/70 backdrop-blur-md p-1 rounded-full shadow-apple-sm border border-apple-border">
-            <button id="navGeneratorBtn" class="px-3.5 py-1 text-xs font-medium rounded-full bg-apple-text text-white shadow-sm transition-all flex items-center gap-1.5">
-                <span>Генератор</span>
+        <!-- Навигация: Генератор / Справка / Код (на смартфонах компактные круглые кнопки с иконками, на десктопе с подписями) -->
+        <nav class="flex items-center gap-1 sm:gap-1.5 bg-white/70 backdrop-blur-md p-1 rounded-full shadow-apple-sm border border-apple-border shrink-0">
+            <button id="navGeneratorBtn" class="w-8 h-8 sm:w-auto sm:h-auto px-0 sm:px-3.5 py-0 sm:py-1 text-xs font-medium rounded-full bg-apple-text text-white shadow-sm transition-all flex items-center justify-center gap-1.5" title="Генератор слагов">
+                <i class="fa-solid fa-wand-magic-sparkles text-[11px]"></i>
+                <span class="hidden sm:inline">Генератор</span>
             </button>
-            <button id="navDocsBtn" class="px-3.5 py-1 text-xs font-medium rounded-full text-apple-secondary hover:text-apple-text transition-all flex items-center gap-1.5">
+            <button id="navDocsBtn" class="w-8 h-8 sm:w-auto sm:h-auto px-0 sm:px-3.5 py-0 sm:py-1 text-xs font-medium rounded-full text-apple-secondary hover:text-apple-text transition-all flex items-center justify-center gap-1.5" title="Справка по стандарту Cyr-To-Lat и ISO 9">
                 <i class="fa-regular fa-compass text-[11px]"></i>
-                <span>Справка</span>
+                <span class="hidden sm:inline">Справка</span>
             </button>
-            <button id="navCodeBtn" class="px-3.5 py-1 text-xs font-medium rounded-full text-apple-secondary hover:text-apple-text transition-all flex items-center gap-1.5">
+            <button id="navCodeBtn" class="w-8 h-8 sm:w-auto sm:h-auto px-0 sm:px-3.5 py-0 sm:py-1 text-xs font-medium rounded-full text-apple-secondary hover:text-apple-text transition-all flex items-center justify-center gap-1.5" title="Примеры кода">
                 <i class="fa-solid fa-code text-[11px]"></i>
-                <span>Код</span>
+                <span class="hidden sm:inline">Код</span>
             </button>
         </nav>
     </header>
@@ -501,8 +502,8 @@ def wp_slugify(text: str) -> str:
 
     </main>
 
-    <!-- Нижняя ненавязчивая строка статуса -->
-    <footer class="w-full max-w-6xl mx-auto px-6 py-6 flex items-center justify-between text-[11px] text-apple-tertiary">
+    <!-- Нижняя ненавязчивая строка статуса (на мобильных по центру в две аккуратные строки, на десктопе по краям) -->
+    <footer class="w-full max-w-6xl mx-auto px-4 py-5 sm:px-6 sm:py-6 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0 text-[11px] text-apple-tertiary text-center sm:text-left">
         <span><a href="https://github.com/maaduukaar/r7-utility" target="_blank" rel="noopener noreferrer" class="hover:text-apple-secondary transition-colors" title="Репозиторий R7-Utility на GitHub">R7-Utility</a> • <a href="https://maaduukaar.github.io/r7-utility/wp-slug-generator.html" class="hover:text-apple-secondary transition-colors" title="Страница WordPress Slug Generator">WordPress Slug Generator</a></span>
         <span><a href="https://wordpress.org/plugins/cyr2lat/" target="_blank" rel="noopener noreferrer" class="hover:text-apple-secondary transition-colors" title="Плагин Cyr-To-Lat на WordPress.org">Cyr-To-Lat</a> • ISO 9 (ГОСТ 7.79-2000 B)</span>
     </footer>
@@ -3679,26 +3680,26 @@ def wp_slugify(text: str) -> str:
             viewCode.classList.add('hidden');
             hideSlugMethodContainer();
 
-            navGeneratorBtn.className = 'px-3.5 py-1 text-xs font-medium rounded-full text-apple-secondary hover:text-apple-text transition-all';
-            navDocsBtn.className = 'px-3.5 py-1 text-xs font-medium rounded-full text-apple-secondary hover:text-apple-text transition-all flex items-center gap-1.5';
-            navCodeBtn.className = 'px-3.5 py-1 text-xs font-medium rounded-full text-apple-secondary hover:text-apple-text transition-all flex items-center gap-1.5';
+            const NAV_INACTIVE_CLS = 'w-8 h-8 sm:w-auto sm:h-auto px-0 sm:px-3.5 py-0 sm:py-1 text-xs font-medium rounded-full text-apple-secondary hover:text-apple-text transition-all flex items-center justify-center gap-1.5';
+            const NAV_ACTIVE_CLS = 'w-8 h-8 sm:w-auto sm:h-auto px-0 sm:px-3.5 py-0 sm:py-1 text-xs font-medium rounded-full bg-apple-text text-white shadow-sm transition-all flex items-center justify-center gap-1.5';
+
+            navGeneratorBtn.className = target === 'generator' ? NAV_ACTIVE_CLS : NAV_INACTIVE_CLS;
+            navDocsBtn.className = target === 'docs' ? NAV_ACTIVE_CLS : NAV_INACTIVE_CLS;
+            navCodeBtn.className = target === 'code' ? NAV_ACTIVE_CLS : NAV_INACTIVE_CLS;
 
             if (target === 'generator') {
                 viewGenerator.classList.remove('hidden');
                 if (state.mode === 'slug') {
                     showSlugMethodContainer();
                 }
-                navGeneratorBtn.className = 'px-3.5 py-1 text-xs font-medium rounded-full bg-apple-text text-white shadow-sm transition-all flex items-center gap-1.5';
                 setTimeout(() => {
                     headlineInput.focus();
                     adjustInputWidth();
                 }, 50);
             } else if (target === 'docs') {
                 viewDocs.classList.remove('hidden');
-                navDocsBtn.className = 'px-3.5 py-1 text-xs font-medium rounded-full bg-apple-text text-white shadow-sm transition-all flex items-center gap-1.5';
             } else if (target === 'code') {
                 viewCode.classList.remove('hidden');
-                navCodeBtn.className = 'px-3.5 py-1 text-xs font-medium rounded-full bg-apple-text text-white shadow-sm transition-all flex items-center gap-1.5';
             }
         }
 
