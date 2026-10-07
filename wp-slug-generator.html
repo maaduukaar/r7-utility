@@ -338,25 +338,30 @@
                     </p>
                     <ul class="text-xs text-apple-secondary space-y-1.5 pl-4 list-disc font-normal">
                         <li><strong>Приоритет словаря Р7 (0 мс):</strong> термины портала базы знаний, устойчивые фразы и названия продуктов переводятся мгновенно без сетевых задержек.</li>
-                        <li><strong>Клиентская NMT-модель (Transformers.js):</strong> редкие и составные термины автоматически переводятся нейросетью MarianMT (<code>opus-mt-ru-en</code>) локально в браузере через WebAssembly/ONNX — без отправки данных на сервер.</li>
+                        <li><strong>Клиентская NMT-модель (Transformers.js):</strong> редкие и составные термины автоматически переводятся нейросетью MarianMT (<a href="https://huggingface.co/Xenova/opus-mt-ru-en" target="_blank" rel="noopener noreferrer" class="hover:text-apple-blue transition-colors underline decoration-black/20 hover:decoration-apple-blue" title="Модель MarianMT ru-en на Hugging Face"><code>opus-mt-ru-en</code></a>) локально в браузере через WebAssembly/ONNX — без отправки данных на сервер.</li>
                         <li><strong>Умное кэширование:</strong> каждый переведённый термин сохраняется в локальное хранилище браузера (<code>localStorage</code>) и в последующие разы применяется мгновенно.</li>
                     </ul>
                 </div>
 
                 <!-- Ссылки на первоисточники -->
-                <div class="pt-4 flex flex-wrap justify-center items-center gap-4 text-xs text-apple-secondary">
+                <div class="pt-4 flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-xs text-apple-secondary">
                     <a href="https://wordpress.org/plugins/cyr2lat/" target="_blank" rel="noopener noreferrer" class="hover:text-apple-blue transition-colors flex items-center gap-1">
                         <span>Cyr-To-Lat на WordPress.org</span>
                         <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
                     </a>
                     <span>•</span>
                     <a href="https://github.com/mihdan/cyr2lat" target="_blank" rel="noopener noreferrer" class="hover:text-apple-blue transition-colors flex items-center gap-1">
-                        <span>Исходный код (GitHub)</span>
+                        <span>Исходный код Cyr-To-Lat (GitHub)</span>
                         <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
                     </a>
                     <span>•</span>
                     <a href="https://developer.wordpress.org/reference/functions/sanitize_title_with_dashes/" target="_blank" rel="noopener noreferrer" class="hover:text-apple-blue transition-colors flex items-center gap-1">
                         <span>Справка sanitize_title_with_dashes</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                    </a>
+                    <span>•</span>
+                    <a href="https://huggingface.co/Xenova/opus-mt-ru-en" target="_blank" rel="noopener noreferrer" class="hover:text-apple-blue transition-colors flex items-center gap-1" title="Модель нейросетевого перевода MarianMT (Helsinki-NLP / Xenova)">
+                        <span>Модель NMT (Hugging Face)</span>
                         <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
                     </a>
                 </div>
