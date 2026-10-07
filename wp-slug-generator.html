@@ -265,15 +265,16 @@
         <div id="viewDocs" class="w-full max-w-3xl py-10 space-y-10 hidden smooth-transition">
             
             <!-- Заголовок справки с кнопкой возврата -->
-            <div class="flex items-center justify-between pb-6 border-b border-apple-border">
-                <div>
-                    <h2 class="text-2xl font-semibold tracking-tight text-apple-text">Стандарты и логика</h2>
+            <div class="flex items-center justify-between pb-6 border-b border-apple-border gap-3 sm:gap-4">
+                <div class="min-w-0">
+                    <h2 class="text-xl sm:text-2xl font-semibold tracking-tight text-apple-text">Стандарты и логика</h2>
                     <p class="text-xs text-apple-secondary mt-1">Как устроен алгоритм Cyr-To-Lat и правила транслитерации ISO 9</p>
                 </div>
-                <button id="docsBackBtn" class="px-4 py-1.5 text-xs font-medium rounded-full bg-white shadow-apple-sm border border-apple-border text-apple-secondary hover:text-apple-text transition-all flex items-center gap-1.5">
+                <button id="docsBackBtn" class="px-3 py-1.5 sm:px-4 sm:py-1.5 text-xs font-medium rounded-full bg-white shadow-apple-sm border border-apple-border text-apple-secondary hover:text-apple-text active:scale-95 transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap" title="Вернуться к генератору (Esc)">
                     <i class="fa-solid fa-arrow-left text-[10px]"></i>
-                    <span>К генератору</span>
-                    <kbd class="ml-1 text-[9px]">Esc</kbd>
+                    <span class="hidden sm:inline">К генератору</span>
+                    <span class="sm:hidden">Назад</span>
+                    <kbd class="ml-1 text-[9px] hidden sm:inline-flex">Esc</kbd>
                 </button>
             </div>
 
@@ -369,15 +370,16 @@
         <!-- ========================================================================= -->
         <div id="viewCode" class="w-full max-w-3xl py-10 space-y-8 hidden smooth-transition">
             
-            <div class="flex items-center justify-between pb-6 border-b border-apple-border">
-                <div>
-                    <h2 class="text-2xl font-semibold tracking-tight text-apple-text">Реализация логики</h2>
+            <div class="flex items-center justify-between pb-6 border-b border-apple-border gap-3 sm:gap-4">
+                <div class="min-w-0">
+                    <h2 class="text-xl sm:text-2xl font-semibold tracking-tight text-apple-text">Реализация логики</h2>
                     <p class="text-xs text-apple-secondary mt-1">Готовые сниппеты для вставки в ваши проекты</p>
                 </div>
-                <button id="codeBackBtn" class="px-4 py-1.5 text-xs font-medium rounded-full bg-white shadow-apple-sm border border-apple-border text-apple-secondary hover:text-apple-text transition-all flex items-center gap-1.5">
+                <button id="codeBackBtn" class="px-3 py-1.5 sm:px-4 sm:py-1.5 text-xs font-medium rounded-full bg-white shadow-apple-sm border border-apple-border text-apple-secondary hover:text-apple-text active:scale-95 transition-all flex items-center gap-1.5 shrink-0 whitespace-nowrap" title="Вернуться к генератору (Esc)">
                     <i class="fa-solid fa-arrow-left text-[10px]"></i>
-                    <span>К генератору</span>
-                    <kbd class="ml-1 text-[9px]">Esc</kbd>
+                    <span class="hidden sm:inline">К генератору</span>
+                    <span class="sm:hidden">Назад</span>
+                    <kbd class="ml-1 text-[9px] hidden sm:inline-flex">Esc</kbd>
                 </button>
             </div>
 
