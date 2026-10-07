@@ -2270,17 +2270,18 @@ def wp_slugify(text: str) -> str:
             (async () => {
                 let progressHandler = null;
                 try {
-                    // Если модель ещё не готова, сразу информируем пользователя о текущем статусе / проценте
+                    // Если модель ещё не готова, информируем пользователя о проценте загрузки весов.
+                    // Во время подбора перевода надпись отображается только в строке ввода, поэтому верхнюю подсказку скрываем.
                     if (state.mode === 'slug' && state.savedTitle === rawTitle && state.slugMethod === 'translate') {
                         if (!NMTManager.isReady) {
                             const currentPct = NMTManager.lastProgress.percent;
                             if (currentPct < 100) {
                                 renderNMTLoadingWhisper(currentPct > 0 ? currentPct : 0);
                             } else {
-                                showWhisper('<span class="text-apple-blue flex items-center gap-1.5 font-medium text-[11px] tracking-tight"><i class="fa-solid fa-circle-notch fa-spin text-[11px]"></i> NMT: подбор перевода...</span>');
+                                hideWhisper();
                             }
                         } else {
-                            showWhisper('<span class="text-apple-blue flex items-center gap-1.5 font-medium text-[11px] tracking-tight"><i class="fa-solid fa-circle-notch fa-spin text-[11px]"></i> NMT: подбор перевода...</span>');
+                            hideWhisper();
                         }
                     }
 
@@ -2290,7 +2291,7 @@ def wp_slugify(text: str) -> str:
                             if (!NMTManager.isReady && p && p.percent !== undefined && p.percent < 100) {
                                 renderNMTLoadingWhisper(p.percent);
                             } else if (NMTManager.isReady || (p && p.percent >= 100)) {
-                                showWhisper('<span class="text-apple-blue flex items-center gap-1.5 font-medium text-[11px] tracking-tight"><i class="fa-solid fa-circle-notch fa-spin text-[11px]"></i> NMT: подбор перевода...</span>');
+                                hideWhisper();
                             }
                         }
                     };
@@ -2985,6 +2986,7 @@ def wp_slugify(text: str) -> str:
                     if (state.generatorType === 'category' && hierarchicalSlugInput) {
                         hierarchicalSlugInput.value = state.sectionSuffix || '';
                     }
+                    hideWhisper();
                     updateSubbarControlsVisibility();
                     updateSlugCopyBtnVisibility();
                     adjustInputWidth();
@@ -3171,6 +3173,7 @@ def wp_slugify(text: str) -> str:
                     } else {
                         hierarchicalSlugInput.value = '';
                     }
+                    hideWhisper();
                     updateSubbarControlsVisibility();
                     updateSlugCopyBtnVisibility();
 
