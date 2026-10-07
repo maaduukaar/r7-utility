@@ -208,7 +208,7 @@
                             placeholder="Вставьте заголовок статьи..."
                             autocomplete="off"
                             spellcheck="false"
-                            class="w-full bg-transparent text-lg sm:text-xl text-apple-text placeholder:text-apple-tertiary font-normal focus:outline-none tracking-tight">
+                            class="w-full min-w-0 bg-transparent text-lg sm:text-xl text-apple-text placeholder:text-apple-tertiary font-normal focus:outline-none tracking-tight pr-3">
 
                         <!-- Кнопка ручного копирования слага (в режиме слага) -->
                         <button id="copySlugBtn" type="button"
@@ -233,7 +233,7 @@
                                 <i class="fa-solid fa-xmark text-[10px]"></i>
                             </button>
                         </div>
-                        <button id="copyHierarchicalBtn" type="button" class="text-apple-secondary hover:text-apple-text transition-colors flex items-center justify-center w-7 h-7 rounded-lg hover:bg-black/5 active:scale-95 shrink-0" title="Копировать обновленный слаг">
+                        <button id="copyHierarchicalBtn" type="button" class="text-apple-secondary hover:text-apple-text transition-colors hidden items-center justify-center w-7 h-7 rounded-lg hover:bg-black/5 active:scale-95 shrink-0" title="Копировать обновленный слаг">
                             <i id="copyHierarchicalIcon" class="fa-regular fa-copy text-xs"></i>
                         </button>
                     </div>
@@ -2318,15 +2318,13 @@ def wp_slugify(text: str) -> str:
                             state.currentSlug = state.baseCategorySlug;
                         }
 
+                        updateSubbarControlsVisibility();
                         headlineInput.placeholder = '';
                         headlineInput.value = state.currentSlug;
                         inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
                         headlineInput.focus();
                         headlineInput.select();
-                        if (typeof copySlugBtn !== 'undefined' && copySlugBtn) {
-                            copySlugBtn.classList.remove('hidden');
-                            copySlugBtn.classList.add('flex');
-                        }
+                        updateSlugCopyBtnVisibility();
                         adjustInputWidth();
 
                         showSequentialWhisper(
@@ -2347,15 +2345,13 @@ def wp_slugify(text: str) -> str:
                         } else {
                             state.currentSlug = state.baseCategorySlug;
                         }
+                        updateSubbarControlsVisibility();
                         headlineInput.placeholder = '';
                         headlineInput.value = state.currentSlug;
                         inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
                         headlineInput.focus();
                         headlineInput.select();
-                        if (typeof copySlugBtn !== 'undefined' && copySlugBtn) {
-                            copySlugBtn.classList.remove('hidden');
-                            copySlugBtn.classList.add('flex');
-                        }
+                        updateSlugCopyBtnVisibility();
                         adjustInputWidth();
                         showSequentialWhisper(
                             '<span class="text-apple-secondary flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation text-[11px]"></i> Частичный перевод (офлайн) готов</span>',
@@ -2373,8 +2369,24 @@ def wp_slugify(text: str) -> str:
         }
 
         /**
+         * Обновление видимости кнопки копирования основного слага (copySlugBtn)
+         * Кнопка отображается ТОЛЬКО в режиме слага ('slug') и ТОЛЬКО если слаг уже сформирован.
+         */
+        function updateSlugCopyBtnVisibility() {
+            if (!copySlugBtn) return;
+            if (state.mode === 'slug' && state.currentSlug) {
+                copySlugBtn.classList.remove('hidden');
+                copySlugBtn.classList.add('flex');
+            } else {
+                copySlugBtn.classList.add('hidden');
+                copySlugBtn.classList.remove('flex');
+            }
+        }
+
+        /**
          * Динамическое расширение поля ввода под длину текста
-         * вплоть до краёв экрана минус 20px с каждой стороны (max-width: calc(100vw - 40px))
+         * вплоть до краёв экрана минус 20px с каждой стороны (max-width: calc(100vw - 40px)).
+         * Гарантирует, что текст слага всегда полностью виден и не перекрывается кнопкой копирования.
          */
         function adjustInputWidth() {
             if (!headlineInput || !viewGenerator) return;
@@ -2403,8 +2415,15 @@ def wp_slugify(text: str) -> str:
             const currentHeadlineText = headlineInput.value || headlineInput.placeholder || '';
             window.textRuler.textContent = currentHeadlineText;
             const headTextWidth = window.textRuler.getBoundingClientRect().width;
-            // Внутренние отступы поля: иконка (24px) + отступы (40px) + зазор (12px) + запас для каретки (44px) = ~120px
-            const headRequiredWidth = Math.ceil(headTextWidth + 120);
+
+            // Внутренние отступы поля:
+            // - левая иконка с отступами (px-5 = 40px, modeToggleBtn = 28px, gap-3 = 12px)
+            // - правая кнопка копирования в режиме слага (copySlugBtn = 32px, gap-3 = 12px)
+            // Итого фиксированные элементы: 124px.
+            // Добавляем комфортный свободный запас под выделение, каретку и гарантированное расстояние до кнопки (~96px воздуха):
+            const isSlugMode = state.mode === 'slug';
+            const headExtraSpacing = isSlugMode ? 220 : 130;
+            const headRequiredWidth = Math.ceil(headTextWidth + headExtraSpacing);
 
             // 2. Если отображается строка полного иерархического слага, измеряем её длину
             let hierRequiredWidth = 0;
@@ -2432,6 +2451,14 @@ def wp_slugify(text: str) -> str:
             const finalWidth = Math.min(targetWidth, maxAllowedWidth);
 
             viewGenerator.style.maxWidth = finalWidth + 'px';
+
+            // Дополнительная калибровка: если в режиме слага scrollWidth превышает clientWidth инпута,
+            // немедленно расширяем контейнер, чтобы не было срезания или горизонтального скролла
+            if (isSlugMode && headlineInput.scrollWidth > headlineInput.clientWidth) {
+                const diff = headlineInput.scrollWidth - headlineInput.clientWidth;
+                const adjustedWidth = Math.min(finalWidth + diff + 50, maxAllowedWidth);
+                viewGenerator.style.maxWidth = adjustedWidth + 'px';
+            }
         }
 
         /**
@@ -2593,6 +2620,33 @@ def wp_slugify(text: str) -> str:
         }
 
         /**
+         * Обновление видимости элементов управления подбара (крестик очистки и кнопка копирования).
+         * Кнопка copyHierarchicalBtn отображается ТОЛЬКО если в строке подбара есть обработанный контент!
+         */
+        function updateSubbarControlsVisibility() {
+            if (!hierarchicalSlugInput) return;
+            const hasContent = Boolean(hierarchicalSlugInput.value && hierarchicalSlugInput.value.trim());
+
+            if (clearHierarchicalBtn) {
+                if (hasContent) {
+                    clearHierarchicalBtn.classList.remove('hidden');
+                } else {
+                    clearHierarchicalBtn.classList.add('hidden');
+                }
+            }
+
+            if (copyHierarchicalBtn) {
+                if (hasContent) {
+                    copyHierarchicalBtn.classList.remove('hidden');
+                    copyHierarchicalBtn.classList.add('flex');
+                } else {
+                    copyHierarchicalBtn.classList.add('hidden');
+                    copyHierarchicalBtn.classList.remove('flex');
+                }
+            }
+        }
+
+        /**
          * Обновление оформления подбара в режиме слага ('slug')
          */
         function updateSubbarView(type = state.generatorType) {
@@ -2608,6 +2662,7 @@ def wp_slugify(text: str) -> str:
                 hierarchicalSlugInput.placeholder = 'Вставьте старый полный слаг...';
                 copyHierarchicalBtn.title = 'Копировать обновленный слаг';
             }
+            updateSubbarControlsVisibility();
         }
 
         /**
@@ -2837,20 +2892,14 @@ def wp_slugify(text: str) -> str:
                         state.baseCategorySlug = generateSlug(state.savedTitle || headlineInput.value, state.slugMethod);
                     }
                     applyCategorySuffix();
-                    if (state.sectionSuffix) {
-                        hierarchicalSlugInput.value = state.sectionSuffix;
-                        clearHierarchicalBtn.classList.remove('hidden');
-                    } else {
-                        hierarchicalSlugInput.value = '';
-                        clearHierarchicalBtn.classList.add('hidden');
-                    }
+                    hierarchicalSlugInput.value = state.sectionSuffix || '';
                 } else {
                     state.currentSlug = state.baseCategorySlug || generateSlug(state.savedTitle, state.slugMethod);
                     headlineInput.value = state.currentSlug;
                     hierarchicalSlugInput.value = '';
-                    clearHierarchicalBtn.classList.add('hidden');
                     adjustInputWidth();
                 }
+                updateSubbarControlsVisibility();
                 modeToggleBtn.title = state.generatorType === 'category'
                     ? 'Слаг рубрики готов (кликните для переключения режима)'
                     : 'Слаг статьи готов (кликните для переключения режима)';
@@ -2936,6 +2985,8 @@ def wp_slugify(text: str) -> str:
                     if (state.generatorType === 'category' && hierarchicalSlugInput) {
                         hierarchicalSlugInput.value = state.sectionSuffix || '';
                     }
+                    updateSubbarControlsVisibility();
+                    updateSlugCopyBtnVisibility();
                     adjustInputWidth();
                     scheduleNMTTranslation(state.savedTitle, state.sectionSuffix);
                     return;
@@ -2952,8 +3003,11 @@ def wp_slugify(text: str) -> str:
                     if (hierarchicalSlugInput) hierarchicalSlugInput.value = '';
                 }
 
+                updateSubbarControlsVisibility();
+                updateSlugCopyBtnVisibility();
                 headlineInput.placeholder = '';
                 headlineInput.value = state.currentSlug;
+                headlineInput.scrollLeft = 0;
                 inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
                 headlineInput.focus();
                 headlineInput.select();
@@ -2977,8 +3031,11 @@ def wp_slugify(text: str) -> str:
                     if (hierarchicalSlugInput) hierarchicalSlugInput.value = '';
                 }
 
+                updateSubbarControlsVisibility();
+                updateSlugCopyBtnVisibility();
                 headlineInput.placeholder = '';
                 headlineInput.value = state.currentSlug;
+                headlineInput.scrollLeft = 0;
                 inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
                 headlineInput.focus();
                 headlineInput.select();
@@ -3111,12 +3168,11 @@ def wp_slugify(text: str) -> str:
 
                     if (state.generatorType === 'category') {
                         hierarchicalSlugInput.value = state.sectionSuffix || '';
-                        if (state.sectionSuffix) clearHierarchicalBtn.classList.remove('hidden');
-                        else clearHierarchicalBtn.classList.add('hidden');
                     } else {
                         hierarchicalSlugInput.value = '';
-                        clearHierarchicalBtn.classList.add('hidden');
                     }
+                    updateSubbarControlsVisibility();
+                    updateSlugCopyBtnVisibility();
 
                     adjustInputWidth();
                     scheduleNMTTranslation(raw, state.sectionSuffix);
@@ -3129,16 +3185,16 @@ def wp_slugify(text: str) -> str:
                     const suffix = suffixAnalysis.slug || '';
                     state.currentSlug = suffix ? `${state.baseCategorySlug}-${suffix}` : state.baseCategorySlug;
                     hierarchicalSlugInput.value = suffix;
-                    if (suffix) clearHierarchicalBtn.classList.remove('hidden');
-                    else clearHierarchicalBtn.classList.add('hidden');
                 } else {
                     state.currentSlug = state.baseCategorySlug;
                     hierarchicalSlugInput.value = '';
-                    clearHierarchicalBtn.classList.add('hidden');
                 }
+                updateSubbarControlsVisibility();
+                updateSlugCopyBtnVisibility();
 
                 headlineInput.placeholder = '';
                 headlineInput.value = state.currentSlug;
+                headlineInput.scrollLeft = 0;
                 inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
                 headlineInput.focus();
                 headlineInput.select();
@@ -3157,16 +3213,16 @@ def wp_slugify(text: str) -> str:
                     const suffix = state.sectionSuffix ? generateSlug(state.sectionSuffix, 'translit') : '';
                     state.currentSlug = suffix ? `${state.baseCategorySlug}-${suffix}` : state.baseCategorySlug;
                     hierarchicalSlugInput.value = suffix;
-                    if (suffix) clearHierarchicalBtn.classList.remove('hidden');
-                    else clearHierarchicalBtn.classList.add('hidden');
                 } else {
                     state.currentSlug = state.baseCategorySlug;
                     hierarchicalSlugInput.value = '';
-                    clearHierarchicalBtn.classList.add('hidden');
                 }
+                updateSubbarControlsVisibility();
+                updateSlugCopyBtnVisibility();
 
                 headlineInput.placeholder = '';
                 headlineInput.value = state.currentSlug;
+                headlineInput.scrollLeft = 0;
                 inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
                 headlineInput.focus();
                 headlineInput.select();
@@ -3180,11 +3236,7 @@ def wp_slugify(text: str) -> str:
                 );
             }
 
-            if (typeof copySlugBtn !== 'undefined' && copySlugBtn) {
-                copySlugBtn.classList.remove('hidden');
-                copySlugBtn.classList.add('flex');
-            }
-
+            updateSlugCopyBtnVisibility();
             adjustInputWidth();
         }
 
@@ -3207,10 +3259,7 @@ def wp_slugify(text: str) -> str:
             slugUrlSubbar.classList.add('hidden');
             slugUrlSubbar.classList.remove('flex');
 
-            if (typeof copySlugBtn !== 'undefined' && copySlugBtn) {
-                copySlugBtn.classList.add('hidden');
-                copySlugBtn.classList.remove('flex');
-            }
+            updateSlugCopyBtnVisibility();
 
             // Скрываем переключатель методов слага при возврате к экрану ввода
             hideSlugMethodContainer();
@@ -3218,8 +3267,8 @@ def wp_slugify(text: str) -> str:
             // Внимание: state.sectionSuffix НЕ сбрасывается! Сбрасывается только в режиме статей
             if (state.generatorType === 'post') {
                 hierarchicalSlugInput.value = '';
-                clearHierarchicalBtn.classList.add('hidden');
             }
+            updateSubbarControlsVisibility();
 
             if (headlineInput.value.trim()) {
                 showWhisper(fromBackspace ? BACKSPACE_RETURN_HINT_HTML : ENTER_HINT_HTML);
@@ -3349,11 +3398,12 @@ def wp_slugify(text: str) -> str:
                 updateInputModeUI();
                 slugUrlSubbar.classList.add('hidden');
                 slugUrlSubbar.classList.remove('flex');
+                updateSlugCopyBtnVisibility();
                 hideSlugMethodContainer();
                 if (state.generatorType === 'post') {
                     hierarchicalSlugInput.value = '';
-                    clearHierarchicalBtn.classList.add('hidden');
                 }
+                updateSubbarControlsVisibility();
                 whisperText.innerHTML = '';
                 whisperText.classList.remove('opacity-100', 'translate-y-0');
                 whisperText.classList.add('opacity-0', '-translate-y-1');
@@ -3386,11 +3436,12 @@ def wp_slugify(text: str) -> str:
                 updateInputModeUI();
                 slugUrlSubbar.classList.add('hidden');
                 slugUrlSubbar.classList.remove('flex');
+                updateSlugCopyBtnVisibility();
                 hideSlugMethodContainer();
                 if (state.generatorType === 'post') {
                     hierarchicalSlugInput.value = '';
-                    clearHierarchicalBtn.classList.add('hidden');
                 }
+                updateSubbarControlsVisibility();
             }
             setTimeout(() => {
                 if (state.mode !== 'input') return;
@@ -3453,11 +3504,7 @@ def wp_slugify(text: str) -> str:
                 const clean = generateSlug(pasted, state.slugMethod);
                 hierarchicalSlugInput.value = clean;
                 state.sectionSuffix = clean;
-                if (clean) {
-                    clearHierarchicalBtn.classList.remove('hidden');
-                } else {
-                    clearHierarchicalBtn.classList.add('hidden');
-                }
+                updateSubbarControlsVisibility();
                 applyCategorySuffix();
                 showSequentialWhisper(
                     '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Слаг обновлен</span>',
@@ -3472,7 +3519,7 @@ def wp_slugify(text: str) -> str:
 
                 const updated = updateHierarchicalPath(pasted, state.currentSlug);
                 hierarchicalSlugInput.value = updated;
-                clearHierarchicalBtn.classList.remove('hidden');
+                updateSubbarControlsVisibility();
 
                 adjustInputWidth();
                 requestAnimationFrame(() => {
@@ -3493,18 +3540,10 @@ def wp_slugify(text: str) -> str:
                 const raw = hierarchicalSlugInput.value;
                 const cleanSuffix = generateSlug(raw, state.slugMethod);
                 state.sectionSuffix = cleanSuffix;
-                if (raw.trim()) {
-                    clearHierarchicalBtn.classList.remove('hidden');
-                } else {
-                    clearHierarchicalBtn.classList.add('hidden');
-                }
+                updateSubbarControlsVisibility();
                 applyCategorySuffix();
             } else {
-                if (hierarchicalSlugInput.value.trim()) {
-                    clearHierarchicalBtn.classList.remove('hidden');
-                } else {
-                    clearHierarchicalBtn.classList.add('hidden');
-                }
+                updateSubbarControlsVisibility();
                 adjustInputWidth();
             }
         });
@@ -3527,6 +3566,7 @@ def wp_slugify(text: str) -> str:
                     if (hierarchicalSlugInput.value.trim() && state.currentSlug) {
                         const updated = updateHierarchicalPath(hierarchicalSlugInput.value, state.currentSlug);
                         hierarchicalSlugInput.value = updated;
+                        updateSubbarControlsVisibility();
                         copyTextToClipboard(updated);
                         triggerHierarchicalCopiedFeedback();
                         adjustInputWidth();
@@ -3543,7 +3583,7 @@ def wp_slugify(text: str) -> str:
                     if (hierarchicalSlugInput.value) {
                         hierarchicalSlugInput.value = '';
                         state.sectionSuffix = '';
-                        clearHierarchicalBtn.classList.add('hidden');
+                        updateSubbarControlsVisibility();
                         applyCategorySuffix();
                         hierarchicalSlugInput.focus();
                     } else {
@@ -3552,7 +3592,7 @@ def wp_slugify(text: str) -> str:
                 } else {
                     if (hierarchicalSlugInput.value) {
                         hierarchicalSlugInput.value = '';
-                        clearHierarchicalBtn.classList.add('hidden');
+                        updateSubbarControlsVisibility();
                         adjustInputWidth();
                     } else {
                         switchToInputMode();
@@ -3586,12 +3626,12 @@ def wp_slugify(text: str) -> str:
         // Кнопка очистки поля подбара (крестик)
         clearHierarchicalBtn.addEventListener('click', () => {
             hierarchicalSlugInput.value = '';
-            clearHierarchicalBtn.classList.add('hidden');
             if (state.generatorType === 'category') {
                 // Очистка суффикса по крестику
                 state.sectionSuffix = '';
                 applyCategorySuffix();
             }
+            updateSubbarControlsVisibility();
             hierarchicalSlugInput.focus();
             adjustInputWidth();
         });
@@ -3761,6 +3801,8 @@ def wp_slugify(text: str) -> str:
                 }
             } catch (e) {}
             updateSlugMethodUI();
+            updateSubbarControlsVisibility();
+            updateSlugCopyBtnVisibility();
 
             renderAppleAlphabet();
             adjustInputWidth();
