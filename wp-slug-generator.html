@@ -219,7 +219,7 @@
                     </div>
 
                     <!-- Строка для обновления старого полного слага или ввода суффикса раздела -->
-                    <div id="slugUrlSubbar" class="px-4 sm:px-5 py-2.5 bg-apple-bg/60 border-t border-apple-borderSubtle hidden items-center gap-2.5 text-xs">
+                    <div id="slugUrlSubbar" class="px-4 sm:px-5 h-11 bg-apple-bg/60 border-t border-apple-borderSubtle hidden items-center gap-2.5 text-xs">
                         <div id="subbarIconContainer" class="text-apple-tertiary flex items-center justify-center w-5 text-[11px] shrink-0" title="Иерархический слаг">
                             <i id="subbarIcon" class="fa-solid fa-folder-tree"></i>
                         </div>
@@ -229,11 +229,11 @@
                                 autocomplete="off"
                                 spellcheck="false"
                                 class="w-full bg-transparent code-font text-[11px] sm:text-xs text-apple-text placeholder:text-apple-tertiary font-normal focus:outline-none tracking-tight pr-6">
-                            <button id="clearHierarchicalBtn" type="button" class="absolute right-0 text-apple-tertiary hover:text-apple-text transition-colors hidden p-1" title="Очистить">
+                            <button id="clearHierarchicalBtn" type="button" class="absolute right-0 text-apple-tertiary hover:text-apple-text transition-all duration-300 ease-out opacity-0 pointer-events-none scale-90 p-1 flex items-center justify-center" title="Очистить">
                                 <i class="fa-solid fa-xmark text-[10px]"></i>
                             </button>
                         </div>
-                        <button id="copyHierarchicalBtn" type="button" class="text-apple-secondary hover:text-apple-text transition-colors hidden items-center justify-center w-7 h-7 rounded-lg hover:bg-black/5 active:scale-95 shrink-0" title="Копировать обновленный слаг">
+                        <button id="copyHierarchicalBtn" type="button" class="text-apple-secondary hover:text-apple-text transition-all duration-300 ease-out opacity-0 pointer-events-none scale-90 flex items-center justify-center w-7 h-7 rounded-lg hover:bg-black/5 active:scale-95 shrink-0" title="Копировать обновленный слаг">
                             <i id="copyHierarchicalIcon" class="fa-regular fa-copy text-xs"></i>
                         </button>
                     </div>
@@ -2622,19 +2622,21 @@ def wp_slugify(text: str) -> str:
 
             if (clearHierarchicalBtn) {
                 if (hasContent) {
-                    clearHierarchicalBtn.classList.remove('hidden');
+                    clearHierarchicalBtn.classList.remove('opacity-0', 'pointer-events-none', 'scale-90');
+                    clearHierarchicalBtn.classList.add('opacity-100', 'pointer-events-auto', 'scale-100');
                 } else {
-                    clearHierarchicalBtn.classList.add('hidden');
+                    clearHierarchicalBtn.classList.remove('opacity-100', 'pointer-events-auto', 'scale-100');
+                    clearHierarchicalBtn.classList.add('opacity-0', 'pointer-events-none', 'scale-90');
                 }
             }
 
             if (copyHierarchicalBtn) {
                 if (hasContent) {
-                    copyHierarchicalBtn.classList.remove('hidden');
-                    copyHierarchicalBtn.classList.add('flex');
+                    copyHierarchicalBtn.classList.remove('opacity-0', 'pointer-events-none', 'scale-90');
+                    copyHierarchicalBtn.classList.add('opacity-100', 'pointer-events-auto', 'scale-100');
                 } else {
-                    copyHierarchicalBtn.classList.add('hidden');
-                    copyHierarchicalBtn.classList.remove('flex');
+                    copyHierarchicalBtn.classList.remove('opacity-100', 'pointer-events-auto', 'scale-100');
+                    copyHierarchicalBtn.classList.add('opacity-0', 'pointer-events-none', 'scale-90');
                 }
             }
         }
