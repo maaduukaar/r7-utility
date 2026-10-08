@@ -57,6 +57,13 @@
             font-weight: 400;
             font-display: swap;
         }
+        @font-face {
+            font-family: 'Han Zi';
+            src: url('assets/fonts/HanZi.ttf') format('truetype');
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+        }
 
         body {
             background-color: #f5f5f7;
@@ -353,7 +360,7 @@
             --jp-plum: #86485b;
             --jp-sakura: #eab6b1;
             color: var(--jp-sumi);
-            font-family: 'Keetano Katakana', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', Meiryo, Arial, sans-serif;
+            font-family: 'Han Zi', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', Meiryo, Arial, sans-serif;
             background-color: var(--jp-washi);
             background-image:
                 linear-gradient(90deg, rgba(73, 56, 32, .035) 1px, transparent 1px),
@@ -453,7 +460,7 @@
             left: 0;
             right: 0;
             color: #766b59;
-            font: 9px/1 'Keetano Katakana', 'Yu Gothic', Meiryo, sans-serif;
+            font: 9px/1 'Han Zi', 'Yu Gothic', Meiryo, sans-serif;
             letter-spacing: .16em;
         }
         body[data-design="japanese"] .portal-quicknav > :nth-child(1)::before { content: '記事'; }
@@ -654,9 +661,12 @@
         body[data-design="japanese"] :is(#viewDocs, #viewCode) .text-apple-tertiary { color: #766a58; }
         body[data-design="japanese"] #appleAlphabetGrid > * { background: #f4ead6; border-color: #b8a88d; }
 
-        /* Единая гарнитура третьего дизайна поверх шрифтов базовой темы и Tailwind. */
+        /* Читаемая рукописная гарнитура поверх шрифтов базовой темы и Tailwind. */
         body[data-design="japanese"] :not(.fa-solid):not(.fa-regular):not(.fa-brands) {
-            font-family: 'Keetano Katakana', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', Meiryo, Arial, sans-serif !important;
+            font-family: 'Han Zi', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', Meiryo, Arial, sans-serif !important;
+        }
+        body[data-design="japanese"] :is(.portal-brand > strong, .jp-art-copy strong) {
+            font-family: 'Keetano Katakana', 'Han Zi', 'Yu Gothic', Meiryo, sans-serif !important;
         }
 
         @media (max-width: 1000px) {
@@ -697,6 +707,18 @@
             body[data-layout="portal"] #hierarchicalSlugInput { font-size: 16px; }
             body[data-layout="portal"] .portal-alphabet button { min-height: 44px; }
             body[data-layout="portal"] .portal-workflow { gap: 4px; }
+            body[data-design="japanese"] > header > nav,
+            body[data-design="japanese"] .portal-quicknav,
+            body[data-design="japanese"] .portal-stats,
+            body[data-design="japanese"] .portal-workflow { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            body[data-design="japanese"] :is(.portal-quicknav > *, .portal-stats > div, .portal-workflow > div) {
+                min-width: 0;
+                overflow-wrap: anywhere;
+            }
+            body[data-design="japanese"] .portal-table { table-layout: fixed; }
+            body[data-design="japanese"] .portal-table :is(th, td) { overflow-wrap: anywhere; }
+            body[data-design="japanese"] .portal-shortcuts { grid-template-columns: auto minmax(0, 1fr); }
+            body[data-design="japanese"] .portal-shortcuts dd { min-width: 0; overflow-wrap: anywhere; }
             body[data-design="japanese"] .jp-art-panel { height: 116px; }
             body[data-design="japanese"] #navHomeBtn { max-width: 100%; min-width: 0; }
             body[data-design="japanese"] .portal-brand { min-width: 0; }
