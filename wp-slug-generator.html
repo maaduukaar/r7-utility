@@ -2464,12 +2464,10 @@ def wp_slugify(text: str) -> str:
         };
 
         /**
-         * Асинхронное фоновое дообучение/перевод редких терминов через NMT Mini-Model (Transformers.js)
-         * Без блокировки интерфейса: если пользователь всё ещё смотрит на этот слаг, обновляет его и буфер
+         * Анализ заголовка и суффикса на наличие терминов, требующих реального подбора NMT
+         * (не найденных в словаре Р7 и отсутствующих в кэше NMT)
          */
-        function scheduleNMTTranslation(rawTitle, rawSuffix) {
-            if (state.slugMethod !== 'translate') return;
-
+        function getPendingNMTItems(rawTitle, rawSuffix) {
             const analysisTitle = wpTranslateSlugifyDetailed(rawTitle);
             const analysisSuffix = (state.generatorType === 'category' && rawSuffix)
                 ? wpTranslateSlugifyDetailed(rawSuffix)
@@ -2491,7 +2489,67 @@ def wp_slugify(text: str) -> str:
                 });
             }
 
-            // Запускаем Canvas MatrixFx индикацию в строке ввода
+            const isFromDictOnly = !analysisTitle.hasUnknown && !analysisSuffix.hasUnknown;
+            const isFullyCachedOrDict = toTranslate.length === 0;
+
+            return {
+                toTranslate,
+                analysisTitle,
+                analysisSuffix,
+                isFromDictOnly,
+                isFullyCachedOrDict
+            };
+        }
+
+        /**
+         * Асинхронное фоновое дообучение/перевод редких терминов через NMT Mini-Model (Transformers.js)
+         * Без блокировки интерфейса: если пользователь всё ещё смотрит на этот слаг, обновляет его и буфер
+         */
+        function scheduleNMTTranslation(rawTitle, rawSuffix) {
+            if (state.slugMethod !== 'translate') return;
+
+            const { toTranslate, isFromDictOnly, isFullyCachedOrDict } = getPendingNMTItems(rawTitle, rawSuffix);
+
+            // Если все фразы уже есть в словаре или кэше — реальный подбор нейросетью не требуется:
+            // пропускаем анимацию MatrixFx и сразу отображаем готовый слаг
+            if (isFullyCachedOrDict) {
+                MatrixFx.stopImmediately();
+                if (state.mode === 'slug' && state.savedTitle === rawTitle && state.slugMethod === 'translate') {
+                    state.baseCategorySlug = generateSlug(state.savedTitle, 'translate');
+                    if (state.generatorType === 'category') {
+                        const suffix = state.sectionSuffix ? generateSlug(state.sectionSuffix, 'translate') : '';
+                        state.currentSlug = suffix ? `${state.baseCategorySlug}-${suffix}` : state.baseCategorySlug;
+                        if (hierarchicalSlugInput) hierarchicalSlugInput.value = suffix;
+                    } else {
+                        state.currentSlug = state.baseCategorySlug;
+                        if (hierarchicalSlugInput) hierarchicalSlugInput.value = '';
+                    }
+                    updateSubbarControlsVisibility();
+                    headlineInput.placeholder = '';
+                    headlineInput.value = state.currentSlug;
+                    headlineInput.style.caretColor = '';
+                    headlineInput.classList.remove('caret-transparent');
+                    if (modeToggleBtn) {
+                        modeToggleBtn.classList.remove('opacity-0', 'pointer-events-none');
+                    }
+                    inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
+                    headlineInput.focus();
+                    headlineInput.select();
+                    updateSlugCopyBtnVisibility();
+                    adjustInputWidth();
+
+                    const hintTitle = isFromDictOnly ? 'Слаг готов (Словарь)' : 'Слаг готов (Кэш)';
+                    showSequentialWhisper(
+                        `<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> ${hintTitle}</span>`,
+                        getBackspaceHintHtml(),
+                        3000,
+                        1000
+                    );
+                }
+                return;
+            }
+
+            // Запускаем Canvas MatrixFx индикацию в строке ввода ТОЛЬКО когда идет реальный подбор
             MatrixFx.start();
 
             const currentReqId = ++activeNMTRequestId;
@@ -3222,25 +3280,67 @@ def wp_slugify(text: str) -> str:
             if (!state.savedTitle) return;
 
             if (state.slugMethod === 'translate') {
-                state.currentSlug = '';
-                state.baseCategorySlug = '';
-                headlineInput.value = '';
-                headlineInput.placeholder = '';
-                headlineInput.style.caretColor = 'transparent';
-                headlineInput.classList.add('caret-transparent');
-                if (modeToggleBtn) {
-                    modeToggleBtn.classList.add('opacity-0', 'pointer-events-none');
+                const { toTranslate, isFromDictOnly, isFullyCachedOrDict } = getPendingNMTItems(state.savedTitle, state.sectionSuffix);
+
+                if (!isFullyCachedOrDict) {
+                    // ТРЕБУЕТСЯ РЕАЛЬНЫЙ ПОДБОР NMT
+                    state.currentSlug = '';
+                    state.baseCategorySlug = '';
+                    headlineInput.value = '';
+                    headlineInput.placeholder = '';
+                    headlineInput.style.caretColor = 'transparent';
+                    headlineInput.classList.add('caret-transparent');
+                    if (modeToggleBtn) {
+                        modeToggleBtn.classList.add('opacity-0', 'pointer-events-none');
+                    }
+                    if (state.generatorType === 'category' && hierarchicalSlugInput) {
+                        hierarchicalSlugInput.value = state.sectionSuffix || '';
+                    } else if (hierarchicalSlugInput) {
+                        hierarchicalSlugInput.value = '';
+                    }
+                    renderNMTTranslatingWhisper();
+                    updateSubbarControlsVisibility();
+                    updateSlugCopyBtnVisibility();
+                    adjustInputWidth();
+                    scheduleNMTTranslation(state.savedTitle, state.sectionSuffix);
+                    return;
                 }
-                if (state.generatorType === 'category' && hierarchicalSlugInput) {
-                    hierarchicalSlugInput.value = state.sectionSuffix || '';
-                } else if (hierarchicalSlugInput) {
-                    hierarchicalSlugInput.value = '';
+
+                // ПОЛНОСТЬЮ ИЗ СЛОВАРЯ ИЛИ КЭША: МГНОВЕННО, БЕЗ АНИМАЦИИ!
+                headlineInput.style.caretColor = '';
+                headlineInput.classList.remove('caret-transparent');
+                MatrixFx.stopImmediately();
+
+                state.baseCategorySlug = generateSlug(state.savedTitle, 'translate');
+                if (state.generatorType === 'category') {
+                    const suffix = state.sectionSuffix ? generateSlug(state.sectionSuffix, 'translate') : '';
+                    state.currentSlug = suffix ? `${state.baseCategorySlug}-${suffix}` : state.baseCategorySlug;
+                    if (hierarchicalSlugInput) hierarchicalSlugInput.value = suffix;
+                } else {
+                    state.currentSlug = state.baseCategorySlug;
+                    if (hierarchicalSlugInput) hierarchicalSlugInput.value = '';
                 }
-                renderNMTTranslatingWhisper();
+
                 updateSubbarControlsVisibility();
                 updateSlugCopyBtnVisibility();
+                headlineInput.placeholder = '';
+                headlineInput.value = state.currentSlug;
+                headlineInput.scrollLeft = 0;
+                if (modeToggleBtn) {
+                    modeToggleBtn.classList.remove('opacity-0', 'pointer-events-none');
+                }
+                inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
+                headlineInput.focus();
+                headlineInput.select();
                 adjustInputWidth();
-                scheduleNMTTranslation(state.savedTitle, state.sectionSuffix);
+
+                const hintTitle = isFromDictOnly ? 'Слаг готов (Словарь)' : 'Слаг готов (Кэш)';
+                showSequentialWhisper(
+                    `<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> ${hintTitle}</span>`,
+                    getBackspaceHintHtml(),
+                    2500,
+                    1000
+                );
                 return;
             }
 
@@ -3379,29 +3479,71 @@ def wp_slugify(text: str) -> str:
                 : 'Слаг статьи готов (кликните для переключения режима)';
 
             if (state.slugMethod === 'translate') {
-                state.baseCategorySlug = '';
-                state.currentSlug = '';
+                const { toTranslate, isFromDictOnly, isFullyCachedOrDict } = getPendingNMTItems(raw, state.sectionSuffix);
 
-                headlineInput.value = '';
-                headlineInput.placeholder = '';
-                headlineInput.style.caretColor = 'transparent';
-                headlineInput.classList.add('caret-transparent');
-                if (modeToggleBtn) {
-                    modeToggleBtn.classList.add('opacity-0', 'pointer-events-none');
+                if (!isFullyCachedOrDict) {
+                    // ТРЕБУЕТСЯ РЕАЛЬНЫЙ ПОДБОР NMT
+                    state.baseCategorySlug = '';
+                    state.currentSlug = '';
+
+                    headlineInput.value = '';
+                    headlineInput.placeholder = '';
+                    headlineInput.style.caretColor = 'transparent';
+                    headlineInput.classList.add('caret-transparent');
+                    if (modeToggleBtn) {
+                        modeToggleBtn.classList.add('opacity-0', 'pointer-events-none');
+                    }
+
+                    if (state.generatorType === 'category') {
+                        if (hierarchicalSlugInput) hierarchicalSlugInput.value = state.sectionSuffix || '';
+                    } else {
+                        if (hierarchicalSlugInput) hierarchicalSlugInput.value = '';
+                    }
+                    renderNMTTranslatingWhisper();
+                    updateSubbarControlsVisibility();
+                    updateSlugCopyBtnVisibility();
+
+                    adjustInputWidth();
+                    scheduleNMTTranslation(raw, state.sectionSuffix);
+                    return;
                 }
 
+                // ПОЛНОСТЬЮ ИЗ СЛОВАРЯ ИЛИ КЭША: МГНОВЕННО, БЕЗ АНИМАЦИИ!
+                headlineInput.style.caretColor = '';
+                headlineInput.classList.remove('caret-transparent');
+                MatrixFx.stopImmediately();
+
+                state.baseCategorySlug = generateSlug(raw, 'translate');
                 if (state.generatorType === 'category') {
-                    if (hierarchicalSlugInput) hierarchicalSlugInput.value = state.sectionSuffix || '';
+                    const suffix = state.sectionSuffix ? generateSlug(state.sectionSuffix, 'translate') : '';
+                    state.currentSlug = suffix ? `${state.baseCategorySlug}-${suffix}` : state.baseCategorySlug;
+                    if (hierarchicalSlugInput) hierarchicalSlugInput.value = suffix;
                 } else {
+                    state.currentSlug = state.baseCategorySlug;
                     if (hierarchicalSlugInput) hierarchicalSlugInput.value = '';
                 }
-                renderNMTTranslatingWhisper();
+
                 updateSubbarControlsVisibility();
                 updateSlugCopyBtnVisibility();
 
+                headlineInput.placeholder = '';
+                headlineInput.value = state.currentSlug;
+                headlineInput.scrollLeft = 0;
+                if (modeToggleBtn) {
+                    modeToggleBtn.classList.remove('opacity-0', 'pointer-events-none');
+                }
+                inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
+                headlineInput.focus();
+                headlineInput.select();
                 adjustInputWidth();
-                scheduleNMTTranslation(raw, state.sectionSuffix);
-                return;
+
+                const hintTitle = isFromDictOnly ? 'Слаг готов (Словарь)' : 'Слаг готов (Кэш)';
+                showSequentialWhisper(
+                    `<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> ${hintTitle}</span>`,
+                    getBackspaceHintHtml(),
+                    3000,
+                    1000
+                );
             } else {
                 // Режим: Транслит
                 headlineInput.style.caretColor = '';
