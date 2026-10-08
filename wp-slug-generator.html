@@ -2354,32 +2354,116 @@ def wp_slugify(text: str) -> str:
 
                 ctx.clearRect(0, 0, w, h);
 
-                // Отступ крайнего слоя точек от внутренних стенок формы
-                const edgeMargin = 7.5;
+                // Плотный отступ крайнего слоя точек от физических стенок формы
+                const targetMargin = 4.5;
                 const stepTarget = this.dotSize + this.spacing; // ~8px
 
-                const cols = Math.max(3, Math.round((w - 2 * edgeMargin) / stepTarget) + 1);
-                const rows = Math.max(3, Math.round((h - 2 * edgeMargin) / stepTarget) + 1);
+                const cols = Math.max(4, Math.round((w - 2 * targetMargin) / stepTarget) + 1);
+                const rows = Math.max(3, Math.round((h - 2 * targetMargin) / stepTarget) + 1);
 
-                const stepX = (w - 2 * edgeMargin) / (cols - 1);
-                const stepY = (h - 2 * edgeMargin) / (rows - 1);
+                const stepX = (w - 2 * targetMargin) / (cols - 1);
+                const stepY = (h - 2 * targetMargin) / (rows - 1);
+
+                // Проверяем, открыт ли подбар слага (если открыт - нижняя кромка прямая над разделителем)
+                const slugSubbar = document.getElementById('slugUrlSubbar');
+                const isSubbarOpen = slugSubbar && !slugSubbar.classList.contains('hidden');
+                const rTop = 16;
+                const rBottom = isSubbarOpen ? 0 : 16;
+
+                // Функция вычисления точного расстояния до контура формы с учетом скруглений 16px
+                function getDistToShape(x, y) {
+                    if (x < rTop && y < rTop) {
+                        const dx = rTop - x;
+                        const dy = rTop - y;
+                        return rTop - Math.sqrt(dx * dx + dy * dy);
+                    }
+                    if (x > w - rTop && y < rTop) {
+                        const dx = x - (w - rTop);
+                        const dy = rTop - y;
+                        return rTop - Math.sqrt(dx * dx + dy * dy);
+                    }
+                    if (rBottom > 0 && x < rBottom && y > h - rBottom) {
+                        const dx = rBottom - x;
+                        const dy = y - (h - rBottom);
+                        return rBottom - Math.sqrt(dx * dx + dy * dy);
+                    }
+                    if (rBottom > 0 && x > w - rBottom && y > h - rBottom) {
+                        const dx = x - (w - rBottom);
+                        const dy = y - (h - rBottom);
+                        return rBottom - Math.sqrt(dx * dx + dy * dy);
+                    }
+                    return Math.min(x, w - x, y, h - y);
+                }
 
                 const progress = reducedMotion ? 0.5 : (elapsed % this.waveDuration) / this.waveDuration;
 
                 for (let r = 0; r < rows; r++) {
                     for (let c = 0; c < cols; c++) {
-                        const baseX = edgeMargin + c * stepX;
-                        const baseY = edgeMargin + r * stepY;
+                        let baseX = targetMargin + c * stepX;
+                        let baseY = targetMargin + r * stepY;
 
-                        // Расстояние от внешнего контура (в шагах сетки)
+                        const rawDist = getDistToShape(baseX, baseY);
+
+                        // Если точка выходит за пределы скругления формы — отсекаем
+                        if (rawDist < targetMargin - 1.2) continue;
+
+                        let isCornerEdge = false;
+
+                        // Сглаживание и идеальная посадка на дугу в верхних скругленных углах (16px)
+                        if (baseY < rTop) {
+                            if (baseX < rTop) {
+                                const cx = rTop, cy = rTop;
+                                const vx = baseX - cx, vy = baseY - cy;
+                                const rad = Math.sqrt(vx * vx + vy * vy);
+                                const targetRad = rTop - targetMargin;
+                                if (rad >= targetRad - stepX * 0.6) {
+                                    baseX = cx + (vx / rad) * targetRad;
+                                    baseY = cy + (vy / rad) * targetRad;
+                                    isCornerEdge = true;
+                                }
+                            } else if (baseX > w - rTop) {
+                                const cx = w - rTop, cy = rTop;
+                                const vx = baseX - cx, vy = baseY - cy;
+                                const rad = Math.sqrt(vx * vx + vy * vy);
+                                const targetRad = rTop - targetMargin;
+                                if (rad >= targetRad - stepX * 0.6) {
+                                    baseX = cx + (vx / rad) * targetRad;
+                                    baseY = cy + (vy / rad) * targetRad;
+                                    isCornerEdge = true;
+                                }
+                            }
+                        }
+
+                        // В нижних углах (если подбар закрыт)
+                        if (rBottom > 0 && baseY > h - rBottom) {
+                            if (baseX < rBottom) {
+                                const cx = rBottom, cy = h - rBottom;
+                                const vx = baseX - cx, vy = baseY - cy;
+                                const rad = Math.sqrt(vx * vx + vy * vy);
+                                const targetRad = rBottom - targetMargin;
+                                if (rad >= targetRad - stepX * 0.6) {
+                                    baseX = cx + (vx / rad) * targetRad;
+                                    baseY = cy + (vy / rad) * targetRad;
+                                    isCornerEdge = true;
+                                }
+                            } else if (baseX > w - rBottom) {
+                                const cx = w - rBottom, cy = h - rBottom;
+                                const vx = baseX - cx, vy = baseY - cy;
+                                const rad = Math.sqrt(vx * vx + vy * vy);
+                                const targetRad = rBottom - targetMargin;
+                                if (rad >= targetRad - stepX * 0.6) {
+                                    baseX = cx + (vx / rad) * targetRad;
+                                    baseY = cy + (vy / rad) * targetRad;
+                                    isCornerEdge = true;
+                                }
+                            }
+                        }
+
                         const distFromEdge = Math.min(c, cols - 1 - c, r, rows - 1 - r);
-                        const isEdge = distFromEdge === 0;
+                        const isEdge = isCornerEdge || distFromEdge === 0 || rawDist <= targetMargin + 0.8;
 
-                        // Коэффициент закрепленности (приклеенности к краям формы):
-                        // Крайний слой (isEdge) неподвижен (motionFactor = 0),
-                        // Предкрайний слой плавно передает натяжение (0.55),
-                        // Внутренние слои свободно шевелятся (1.0).
-                        const motionFactor = isEdge ? 0 : (distFromEdge === 1 ? 0.55 : 1.0);
+                        // Коэффициент подвижности: крайний слой на 100% приклеен к контуру формы (motionFactor = 0)
+                        const motionFactor = isEdge ? 0 : Math.min(1, Math.max(0, (rawDist - targetMargin) / (1.6 * stepX)));
 
                         // Нормализованные координаты (0..1)
                         const nx = c / Math.max(1, cols - 1);
@@ -2390,11 +2474,11 @@ def wp_slugify(text: str) -> str:
                         const diag = (nx + (1 - ny)) / 2 + sMorph;
 
                         // Цикличное расстояние до гребня волны
-                        let dist = Math.abs(diag - progress);
-                        dist = Math.min(dist, Math.abs(diag - (progress + 1)), Math.abs(diag - (progress - 1)));
+                        let distWave = Math.abs(diag - progress);
+                        distWave = Math.min(distWave, Math.abs(diag - (progress + 1)), Math.abs(diag - (progress - 1)));
 
                         // Гауссова функция волны
-                        const wave = Math.exp(-Math.pow(dist / this.waveWidth, 2));
+                        const wave = Math.exp(-Math.pow(distWave / this.waveWidth, 2));
 
                         // Мерцание (flicker): деликатная вариация яркости точек
                         let flicker = 0.5;
@@ -2410,12 +2494,12 @@ def wp_slugify(text: str) -> str:
                         const drawY = baseY - disp * 0.4;
 
                         // Масштабирование точки на гребне волны
-                        const scaleBoost = isEdge ? 0.25 : 0.45;
+                        const scaleBoost = isEdge ? 0.20 : 0.45;
                         const currentRadius = (this.dotSize / 2) * (1 + scaleBoost * wave);
 
                         // Итоговая прозрачность: крайний слой чуть плотнее очерчивает форму
-                        const baseAlpha = isEdge ? 0.20 : 0.14;
-                        const flickerAlpha = isEdge ? 0.10 * flicker : 0.16 * flicker;
+                        const baseAlpha = isEdge ? 0.22 : 0.14;
+                        const flickerAlpha = isEdge ? 0.08 * flicker : 0.16 * flicker;
                         const alpha = Math.max(0, Math.min(1, baseAlpha + flickerAlpha + 0.70 * wave));
                         if (alpha <= 0.01) continue;
 
