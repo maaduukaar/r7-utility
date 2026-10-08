@@ -196,24 +196,29 @@
             <div class="relative w-full">
                 <div id="mainSearchContainer" class="w-full bg-white rounded-2xl shadow-apple-float border border-apple-border transition-all duration-300 relative overflow-hidden group">
                     
-                    <div class="flex items-center px-5 h-16 sm:h-[72px] gap-5">
+                    <div id="mainInputRow" class="relative w-full flex items-center px-5 h-16 sm:h-[72px] gap-5">
+                        <!-- Canvas матрица вычислений MatrixFx на всю белую область формы от края до края -->
+                        <canvas id="matrixFxCanvas" class="absolute inset-0 w-full h-full pointer-events-none opacity-0 transition-opacity duration-300 z-0"></canvas>
+
                         <!-- Иконка-переключатель режимов: Статьи ⟷ Рубрики -->
                         <button id="modeToggleBtn" type="button"
-                            class="text-apple-tertiary hover:text-apple-text active:scale-90 transition-all flex items-center justify-center w-8 h-8 -ml-1 rounded-xl hover:bg-black/5 cursor-pointer focus:outline-none shrink-0"
+                            class="text-apple-tertiary hover:text-apple-text active:scale-90 transition-all flex items-center justify-center w-8 h-8 -ml-1 rounded-xl hover:bg-black/5 cursor-pointer focus:outline-none shrink-0 relative z-10"
                             title="Режим: Статьи (кликните для переключения на Рубрики)">
                             <i id="inputIcon" class="fa-regular fa-file-lines text-base transition-transform duration-300"></i>
                         </button>
 
                         <!-- Инпут -->
-                        <input type="text" id="headlineInput" autofocus
-                            placeholder="Вставьте заголовок статьи..."
-                            autocomplete="off"
-                            spellcheck="false"
-                            class="w-full min-w-0 bg-transparent text-lg sm:text-xl text-apple-text placeholder:text-apple-tertiary font-normal focus:outline-none tracking-tight pr-1">
+                        <div class="relative flex-grow flex items-center h-full min-w-0 z-10">
+                            <input type="text" id="headlineInput" autofocus
+                                placeholder="Вставьте заголовок статьи..."
+                                autocomplete="off"
+                                spellcheck="false"
+                                class="w-full min-w-0 bg-transparent text-lg sm:text-xl text-apple-text placeholder:text-apple-tertiary font-normal focus:outline-none tracking-tight pr-1">
+                        </div>
 
                         <!-- Кнопка ручного копирования слага (в режиме слага) -->
                         <button id="copySlugBtn" type="button"
-                            class="text-apple-secondary hover:text-apple-text transition-colors hidden items-center justify-center w-8 h-8 rounded-xl hover:bg-black/5 active:scale-95 shrink-0"
+                            class="text-apple-secondary hover:text-apple-text transition-colors hidden items-center justify-center w-8 h-8 rounded-xl hover:bg-black/5 active:scale-95 shrink-0 relative z-10"
                             title="Копировать слаг в буфер">
                             <i id="copySlugIcon" class="fa-regular fa-copy text-sm"></i>
                         </button>
@@ -2244,6 +2249,221 @@ def wp_slugify(text: str) -> str:
         }
 
         /**
+         * Отображение подсказки о фоновом подборе перевода нейросетью NMT
+         */
+        function renderNMTTranslatingWhisper() {
+            showWhisper(`
+                <span class="text-apple-blue flex items-center gap-1.5 select-none font-medium text-[11px] tracking-tight">
+                    <i class="fa-solid fa-circle-notch fa-spin text-[11px] shrink-0"></i>
+                    <span>NMT: подбор перевода...</span>
+                </span>
+            `);
+        }
+
+        /**
+         * Canvas 2D MatrixFx: Анимированная точечная матрица с волновым эффектом Once UI
+         * Вариант 1 (Apple Tensor Wave): диагональная S-волна + flicker + Apple Blue палитра
+         */
+        const MatrixFx = {
+            canvas: null,
+            ctx: null,
+            animId: null,
+            isActive: false,
+            isStopping: false,
+            fadeTimeout: null,
+            width: 0,
+            height: 0,
+            dpr: 1,
+
+            // Параметры сетки и волны Once UI
+            dotSize: 2.5,
+            spacing: 5.5,
+            waveDuration: 2600, // длительность цикла S-волны в мс
+            waveIntensity: 4.5, // амплитуда смещения точек на гребне
+            waveWidth: 0.22,    // ширина гребня волны
+
+            init() {
+                this.canvas = document.getElementById('matrixFxCanvas');
+                if (!this.canvas) return;
+                this.ctx = this.canvas.getContext('2d', { alpha: true });
+                window.addEventListener('resize', () => {
+                    if (this.isActive || this.isStopping) this.resize();
+                });
+            },
+
+            resize() {
+                if (!this.canvas) return;
+                const rect = this.canvas.getBoundingClientRect();
+                const parentRect = this.canvas.parentElement ? this.canvas.parentElement.getBoundingClientRect() : null;
+                this.width = rect.width || (parentRect ? parentRect.width : 0) || this.canvas.offsetWidth || 400;
+                this.height = rect.height || (parentRect ? parentRect.height : 0) || this.canvas.offsetHeight || 60;
+                this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+                this.canvas.width = Math.round(this.width * this.dpr);
+                this.canvas.height = Math.round(this.height * this.dpr);
+                if (this.ctx) {
+                    this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+                }
+            },
+
+            start() {
+                if (!this.canvas) this.init();
+                if (!this.canvas) return;
+
+                if (this.fadeTimeout) {
+                    clearTimeout(this.fadeTimeout);
+                    this.fadeTimeout = null;
+                }
+
+                this.isStopping = false;
+                this.isActive = true;
+                this.resize();
+                if (this.width <= 0 || this.height <= 0) {
+                    requestAnimationFrame(() => {
+                        if (this.isActive) this.start();
+                    });
+                    return;
+                }
+
+                this.canvas.classList.remove('opacity-0');
+                this.canvas.classList.add('opacity-100');
+
+                const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+                if (this.animId) cancelAnimationFrame(this.animId);
+
+                const startTime = performance.now();
+
+                const loop = (currentTime) => {
+                    if (!this.isActive && !this.isStopping) return;
+                    const elapsed = currentTime - startTime;
+                    this.draw(elapsed, prefersReducedMotion);
+                    if (!prefersReducedMotion && (this.isActive || this.isStopping)) {
+                        this.animId = requestAnimationFrame(loop);
+                    }
+                };
+
+                this.animId = requestAnimationFrame(loop);
+            },
+
+            draw(elapsed, reducedMotion) {
+                const ctx = this.ctx;
+                const w = this.width;
+                const h = this.height;
+                if (!ctx || w <= 0 || h <= 0) return;
+
+                ctx.clearRect(0, 0, w, h);
+
+                const step = this.dotSize + this.spacing;
+                const cols = Math.floor(w / step);
+                const rows = Math.floor(h / step);
+                if (cols <= 0 || rows <= 0) return;
+
+                const offsetX = (w - (cols - 1) * step) / 2;
+                const offsetY = (h - (rows - 1) * step) / 2;
+
+                const progress = reducedMotion ? 0.5 : (elapsed % this.waveDuration) / this.waveDuration;
+
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const baseX = offsetX + c * step;
+                        const baseY = offsetY + r * step;
+
+                        // Нормализованные координаты (0..1)
+                        const nx = c / Math.max(1, cols - 1);
+                        const ny = r / Math.max(1, rows - 1);
+
+                        // Органическая S-кривая, движущаяся по диагонали (снизу-слева вверх-вправо)
+                        const sMorph = Math.sin(nx * Math.PI * 2) * 0.08;
+                        const diag = (nx + (1 - ny)) / 2 + sMorph;
+
+                        // Цикличное расстояние до гребня волны
+                        let dist = Math.abs(diag - progress);
+                        dist = Math.min(dist, Math.abs(diag - (progress + 1)), Math.abs(diag - (progress - 1)));
+
+                        // Гауссова функция волны
+                        const wave = Math.exp(-Math.pow(dist / this.waveWidth, 2));
+
+                        // Мерцание (flicker): деликатная вариация яркости точек
+                        let flicker = 0.5;
+                        if (!reducedMotion) {
+                            const flickerSeed = (c * 17 + r * 31);
+                            flicker = Math.sin((elapsed * 0.007) + flickerSeed) * 0.5 + 0.5;
+                        }
+
+                        // Смещение (Bulge displacement) на гребне волны
+                        const disp = wave * this.waveIntensity;
+                        const drawX = baseX + disp * 0.4;
+                        const drawY = baseY - disp * 0.4;
+
+                        // Масштабирование точки на гребне волны
+                        const currentRadius = (this.dotSize / 2) * (1 + 0.45 * wave);
+
+                        // Итоговая прозрачность: заполнение всей белой формы от края до края включая скругления углов
+                        const alpha = Math.max(0, Math.min(1, 0.14 + 0.16 * flicker + 0.70 * wave));
+                        if (alpha <= 0.01) continue;
+
+                        ctx.beginPath();
+                        ctx.arc(drawX, drawY, Math.max(0.5, currentRadius), 0, Math.PI * 2);
+
+                        if (wave > 0.45) {
+                            // Гребень волны: лазурно-акцентный оттенок
+                            ctx.fillStyle = `rgba(56, 189, 248, ${alpha})`;
+                        } else {
+                            // Фоновая матрица: фирменный Apple Blue
+                            ctx.fillStyle = `rgba(0, 113, 227, ${alpha})`;
+                        }
+                        ctx.fill();
+                    }
+                }
+            },
+
+            stop() {
+                if (!this.isActive || this.isStopping) return;
+                this.isStopping = true;
+
+                if (this.canvas) {
+                    this.canvas.classList.remove('opacity-100');
+                    this.canvas.classList.add('opacity-0');
+                }
+
+                if (this.fadeTimeout) clearTimeout(this.fadeTimeout);
+                this.fadeTimeout = setTimeout(() => {
+                    this.isActive = false;
+                    this.isStopping = false;
+                    if (this.animId) {
+                        cancelAnimationFrame(this.animId);
+                        this.animId = null;
+                    }
+                    if (this.ctx && this.width && this.height) {
+                        this.ctx.clearRect(0, 0, this.width, this.height);
+                    }
+                    this.fadeTimeout = null;
+                }, 300);
+            },
+
+            stopImmediately() {
+                this.isActive = false;
+                this.isStopping = false;
+                if (this.fadeTimeout) {
+                    clearTimeout(this.fadeTimeout);
+                    this.fadeTimeout = null;
+                }
+                if (this.animId) {
+                    cancelAnimationFrame(this.animId);
+                    this.animId = null;
+                }
+                if (this.canvas) {
+                    this.canvas.classList.remove('opacity-100');
+                    this.canvas.classList.add('opacity-0');
+                }
+                if (this.ctx && this.width && this.height) {
+                    this.ctx.clearRect(0, 0, this.width, this.height);
+                }
+            }
+        };
+
+        /**
          * Асинхронное фоновое дообучение/перевод редких терминов через NMT Mini-Model (Transformers.js)
          * Без блокировки интерфейса: если пользователь всё ещё смотрит на этот слаг, обновляет его и буфер
          */
@@ -2271,25 +2491,29 @@ def wp_slugify(text: str) -> str:
                 });
             }
 
-            if (!toTranslate.length) return;
+            // Запускаем Canvas MatrixFx индикацию в строке ввода
+            MatrixFx.start();
 
             const currentReqId = ++activeNMTRequestId;
 
             (async () => {
                 let progressHandler = null;
+                const startTime = performance.now();
+                // Минимальная кинематографическая длительность волны подбора
+                const minDuration = 550;
+
                 try {
-                    // Если модель ещё не готова, информируем пользователя о проценте загрузки весов.
-                    // Во время подбора перевода надпись отображается только в строке ввода, поэтому верхнюю подсказку скрываем.
+                    // Если модель ещё не готова, информируем о проценте загрузки весов, иначе показываем статус подбора
                     if (state.mode === 'slug' && state.savedTitle === rawTitle && state.slugMethod === 'translate') {
                         if (!NMTManager.isReady) {
                             const currentPct = NMTManager.lastProgress.percent;
                             if (currentPct < 100) {
                                 renderNMTLoadingWhisper(currentPct > 0 ? currentPct : 0);
                             } else {
-                                hideWhisper();
+                                renderNMTTranslatingWhisper();
                             }
                         } else {
-                            hideWhisper();
+                            renderNMTTranslatingWhisper();
                         }
                     }
 
@@ -2298,20 +2522,30 @@ def wp_slugify(text: str) -> str:
                         if (state.mode === 'slug' && state.savedTitle === rawTitle && state.slugMethod === 'translate') {
                             if (!NMTManager.isReady && p && p.percent !== undefined && p.percent < 100) {
                                 renderNMTLoadingWhisper(p.percent);
-                            } else if (NMTManager.isReady || (p && p.percent >= 100)) {
-                                hideWhisper();
+                            } else {
+                                renderNMTTranslatingWhisper();
                             }
                         }
                     };
 
                     NMTManager.addProgressListener(progressHandler);
 
-                    await NMTManager.translateBatch(toTranslate);
+                    // Если есть слова/фразы для нейросетевого перевода — выполняем перевод
+                    if (toTranslate.length > 0) {
+                        await NMTManager.translateBatch(toTranslate);
+                    }
+
+                    // Гарантируем, что волна MatrixFx успеет красиво пробежать и плавно проявиться/погаснуть
+                    const elapsed = performance.now() - startTime;
+                    if (elapsed < minDuration) {
+                        await new Promise(r => setTimeout(r, minDuration - elapsed));
+                    }
 
                     if (currentReqId !== activeNMTRequestId) return;
 
                     // Если пользователь всё ещё находится на экране этого слага в режиме перевода
                     if (state.mode === 'slug' && state.savedTitle === rawTitle && state.slugMethod === 'translate') {
+                        MatrixFx.stop();
                         state.baseCategorySlug = generateSlug(state.savedTitle, 'translate');
 
                         if (state.generatorType === 'category') {
@@ -2330,6 +2564,11 @@ def wp_slugify(text: str) -> str:
                         updateSubbarControlsVisibility();
                         headlineInput.placeholder = '';
                         headlineInput.value = state.currentSlug;
+                        headlineInput.style.caretColor = '';
+                        headlineInput.classList.remove('caret-transparent');
+                        if (modeToggleBtn) {
+                            modeToggleBtn.classList.remove('opacity-0', 'pointer-events-none');
+                        }
                         inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
                         headlineInput.focus();
                         headlineInput.select();
@@ -2346,6 +2585,7 @@ def wp_slugify(text: str) -> str:
                 } catch (err) {
                     console.warn('NMT background translation skipped or offline:', err);
                     if (currentReqId !== activeNMTRequestId) return;
+                    MatrixFx.stop();
                     if (state.mode === 'slug' && state.savedTitle === rawTitle && state.slugMethod === 'translate') {
                         state.baseCategorySlug = generateSlug(state.savedTitle, 'translate');
                         if (state.generatorType === 'category') {
@@ -2357,6 +2597,11 @@ def wp_slugify(text: str) -> str:
                         updateSubbarControlsVisibility();
                         headlineInput.placeholder = '';
                         headlineInput.value = state.currentSlug;
+                        headlineInput.style.caretColor = '';
+                        headlineInput.classList.remove('caret-transparent');
+                        if (modeToggleBtn) {
+                            modeToggleBtn.classList.remove('opacity-0', 'pointer-events-none');
+                        }
                         inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
                         headlineInput.focus();
                         headlineInput.select();
@@ -2421,7 +2666,7 @@ def wp_slugify(text: str) -> str:
             window.textRuler.style.fontWeight = compStyle.fontWeight;
             window.textRuler.style.letterSpacing = compStyle.letterSpacing;
 
-            const currentHeadlineText = headlineInput.value || headlineInput.placeholder || '';
+            const currentHeadlineText = headlineInput.value || (state.mode === 'slug' && state.savedTitle ? state.savedTitle : (headlineInput.placeholder || ''));
             window.textRuler.textContent = currentHeadlineText;
             const headTextWidth = window.textRuler.getBoundingClientRect().width;
 
@@ -2610,6 +2855,9 @@ def wp_slugify(text: str) -> str:
          * Обновление оформления строки ввода в режиме редактирования ('input')
          */
         function updateInputModeUI() {
+            if (modeToggleBtn) {
+                modeToggleBtn.classList.remove('opacity-0', 'pointer-events-none');
+            }
             if (state.generatorType === 'category') {
                 inputIcon.className = 'fa-regular fa-folder text-base text-apple-tertiary transition-transform duration-300';
                 headlineInput.placeholder = 'Вставьте название рубрики...';
@@ -2953,6 +3201,7 @@ def wp_slugify(text: str) -> str:
         function setSlugMethod(method) {
             if (state.slugMethod !== method) {
                 activeNMTRequestId++; // отменяем любые фоновые обновления NMT для предыдущего режима
+                MatrixFx.stopImmediately();
             }
             state.slugMethod = method;
             try {
@@ -2973,86 +3222,60 @@ def wp_slugify(text: str) -> str:
             if (!state.savedTitle) return;
 
             if (state.slugMethod === 'translate') {
-                const analysis = wpTranslateSlugifyDetailed(state.savedTitle);
-                const suffixAnalysis = (state.generatorType === 'category' && state.sectionSuffix)
-                    ? wpTranslateSlugifyDetailed(state.sectionSuffix)
-                    : { hasUnknown: false, toTranslate: [] };
-                const isFullyTranslated = !analysis.hasUnknown && !suffixAnalysis.hasUnknown;
-
-                if (!isFullyTranslated) {
-                    // Есть неизвестные слова: НЕ показываем неполный перевод, сразу запрашиваем NMT
-                    state.currentSlug = '';
-                    state.baseCategorySlug = '';
-                    headlineInput.value = '';
-                    headlineInput.placeholder = 'NMT: подбор перевода...';
-                    inputIcon.className = 'fa-solid fa-circle-notch fa-spin text-apple-blue transition-transform';
-                    if (state.generatorType === 'category' && hierarchicalSlugInput) {
-                        hierarchicalSlugInput.value = state.sectionSuffix || '';
-                    }
-                    hideWhisper();
-                    updateSubbarControlsVisibility();
-                    updateSlugCopyBtnVisibility();
-                    adjustInputWidth();
-                    scheduleNMTTranslation(state.savedTitle, state.sectionSuffix);
-                    return;
+                state.currentSlug = '';
+                state.baseCategorySlug = '';
+                headlineInput.value = '';
+                headlineInput.placeholder = '';
+                headlineInput.style.caretColor = 'transparent';
+                headlineInput.classList.add('caret-transparent');
+                if (modeToggleBtn) {
+                    modeToggleBtn.classList.add('opacity-0', 'pointer-events-none');
                 }
-
-                // 100% переведено по словарю
-                state.baseCategorySlug = analysis.slug;
-                if (state.generatorType === 'category') {
-                    const suffix = suffixAnalysis.slug || '';
-                    state.currentSlug = suffix ? `${state.baseCategorySlug}-${suffix}` : state.baseCategorySlug;
-                    if (hierarchicalSlugInput) hierarchicalSlugInput.value = suffix;
-                } else {
-                    state.currentSlug = state.baseCategorySlug;
-                    if (hierarchicalSlugInput) hierarchicalSlugInput.value = '';
+                if (state.generatorType === 'category' && hierarchicalSlugInput) {
+                    hierarchicalSlugInput.value = state.sectionSuffix || '';
+                } else if (hierarchicalSlugInput) {
+                    hierarchicalSlugInput.value = '';
                 }
-
+                renderNMTTranslatingWhisper();
                 updateSubbarControlsVisibility();
                 updateSlugCopyBtnVisibility();
-                headlineInput.placeholder = '';
-                headlineInput.value = state.currentSlug;
-                headlineInput.scrollLeft = 0;
-                inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
-                headlineInput.focus();
-                headlineInput.select();
                 adjustInputWidth();
-
-                showSequentialWhisper(
-                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Режим: Перевод (Словарь)</span>',
-                    getBackspaceHintHtml(),
-                    2500,
-                    1000
-                );
-            } else {
-                // Режим: Транслит
-                state.baseCategorySlug = generateSlug(state.savedTitle, 'translit');
-                if (state.generatorType === 'category') {
-                    const suffix = state.sectionSuffix ? generateSlug(state.sectionSuffix, 'translit') : '';
-                    state.currentSlug = suffix ? `${state.baseCategorySlug}-${suffix}` : state.baseCategorySlug;
-                    if (hierarchicalSlugInput) hierarchicalSlugInput.value = suffix;
-                } else {
-                    state.currentSlug = state.baseCategorySlug;
-                    if (hierarchicalSlugInput) hierarchicalSlugInput.value = '';
-                }
-
-                updateSubbarControlsVisibility();
-                updateSlugCopyBtnVisibility();
-                headlineInput.placeholder = '';
-                headlineInput.value = state.currentSlug;
-                headlineInput.scrollLeft = 0;
-                inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
-                headlineInput.focus();
-                headlineInput.select();
-                adjustInputWidth();
-
-                showSequentialWhisper(
-                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Режим: Транслит</span>',
-                    getBackspaceHintHtml(),
-                    2500,
-                    1000
-                );
+                scheduleNMTTranslation(state.savedTitle, state.sectionSuffix);
+                return;
             }
+
+            // Режим: Транслит
+            headlineInput.style.caretColor = '';
+            headlineInput.classList.remove('caret-transparent');
+            state.baseCategorySlug = generateSlug(state.savedTitle, 'translit');
+            if (state.generatorType === 'category') {
+                const suffix = state.sectionSuffix ? generateSlug(state.sectionSuffix, 'translit') : '';
+                state.currentSlug = suffix ? `${state.baseCategorySlug}-${suffix}` : state.baseCategorySlug;
+                if (hierarchicalSlugInput) hierarchicalSlugInput.value = suffix;
+            } else {
+                state.currentSlug = state.baseCategorySlug;
+                if (hierarchicalSlugInput) hierarchicalSlugInput.value = '';
+            }
+
+            updateSubbarControlsVisibility();
+            updateSlugCopyBtnVisibility();
+            headlineInput.placeholder = '';
+            headlineInput.value = state.currentSlug;
+            headlineInput.scrollLeft = 0;
+            if (modeToggleBtn) {
+                modeToggleBtn.classList.remove('opacity-0', 'pointer-events-none');
+            }
+            inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
+            headlineInput.focus();
+            headlineInput.select();
+            adjustInputWidth();
+
+            showSequentialWhisper(
+                '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Режим: Транслит</span>',
+                getBackspaceHintHtml(),
+                2500,
+                1000
+            );
         }
 
         let hasSlugMethodAppearedOnce = false;
@@ -3156,64 +3379,33 @@ def wp_slugify(text: str) -> str:
                 : 'Слаг статьи готов (кликните для переключения режима)';
 
             if (state.slugMethod === 'translate') {
-                const analysis = wpTranslateSlugifyDetailed(raw);
-                const suffixAnalysis = (state.generatorType === 'category' && state.sectionSuffix)
-                    ? wpTranslateSlugifyDetailed(state.sectionSuffix)
-                    : { hasUnknown: false, toTranslate: [] };
-                const isFullyTranslated = !analysis.hasUnknown && !suffixAnalysis.hasUnknown;
+                state.baseCategorySlug = '';
+                state.currentSlug = '';
 
-                if (!isFullyTranslated) {
-                    // Есть неизвестные слова: НЕ показываем неполный/транслитерированный слаг, сразу запрашиваем NMT
-                    state.baseCategorySlug = '';
-                    state.currentSlug = '';
-
-                    headlineInput.value = '';
-                    headlineInput.placeholder = 'NMT: подбор перевода...';
-                    inputIcon.className = 'fa-solid fa-circle-notch fa-spin text-apple-blue transition-transform';
-
-                    if (state.generatorType === 'category') {
-                        hierarchicalSlugInput.value = state.sectionSuffix || '';
-                    } else {
-                        hierarchicalSlugInput.value = '';
-                    }
-                    hideWhisper();
-                    updateSubbarControlsVisibility();
-                    updateSlugCopyBtnVisibility();
-
-                    adjustInputWidth();
-                    scheduleNMTTranslation(raw, state.sectionSuffix);
-                    return;
+                headlineInput.value = '';
+                headlineInput.placeholder = '';
+                headlineInput.style.caretColor = 'transparent';
+                headlineInput.classList.add('caret-transparent');
+                if (modeToggleBtn) {
+                    modeToggleBtn.classList.add('opacity-0', 'pointer-events-none');
                 }
 
-                // 100% переведено по словарю
-                state.baseCategorySlug = analysis.slug;
                 if (state.generatorType === 'category') {
-                    const suffix = suffixAnalysis.slug || '';
-                    state.currentSlug = suffix ? `${state.baseCategorySlug}-${suffix}` : state.baseCategorySlug;
-                    hierarchicalSlugInput.value = suffix;
+                    if (hierarchicalSlugInput) hierarchicalSlugInput.value = state.sectionSuffix || '';
                 } else {
-                    state.currentSlug = state.baseCategorySlug;
-                    hierarchicalSlugInput.value = '';
+                    if (hierarchicalSlugInput) hierarchicalSlugInput.value = '';
                 }
+                renderNMTTranslatingWhisper();
                 updateSubbarControlsVisibility();
                 updateSlugCopyBtnVisibility();
 
-                headlineInput.placeholder = '';
-                headlineInput.value = state.currentSlug;
-                headlineInput.scrollLeft = 0;
-                inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
-                headlineInput.focus();
-                headlineInput.select();
                 adjustInputWidth();
-
-                showSequentialWhisper(
-                    '<span class="text-apple-green flex items-center gap-1.5"><i class="fa-solid fa-check text-[11px]"></i> Слаг готов (Словарь)</span>',
-                    getBackspaceHintHtml(),
-                    3000,
-                    1000
-                );
+                scheduleNMTTranslation(raw, state.sectionSuffix);
+                return;
             } else {
                 // Режим: Транслит
+                headlineInput.style.caretColor = '';
+                headlineInput.classList.remove('caret-transparent');
                 state.baseCategorySlug = generateSlug(raw, 'translit');
                 if (state.generatorType === 'category') {
                     const suffix = state.sectionSuffix ? generateSlug(state.sectionSuffix, 'translit') : '';
@@ -3229,6 +3421,9 @@ def wp_slugify(text: str) -> str:
                 headlineInput.placeholder = '';
                 headlineInput.value = state.currentSlug;
                 headlineInput.scrollLeft = 0;
+                if (modeToggleBtn) {
+                    modeToggleBtn.classList.remove('opacity-0', 'pointer-events-none');
+                }
                 inputIcon.className = 'fa-solid fa-check text-apple-green transition-transform';
                 headlineInput.focus();
                 headlineInput.select();
@@ -3252,6 +3447,12 @@ def wp_slugify(text: str) -> str:
          */
         function switchToInputMode(fromBackspace = false) {
             activeNMTRequestId++; // Отменяем ожидающие обновления NMT при возврате к редактированию
+            MatrixFx.stopImmediately();
+            headlineInput.style.caretColor = '';
+            headlineInput.classList.remove('caret-transparent');
+            if (modeToggleBtn) {
+                modeToggleBtn.classList.remove('opacity-0', 'pointer-events-none');
+            }
             if (state.mode === 'input') return;
 
             clearWhisperTimers();
@@ -3391,6 +3592,8 @@ def wp_slugify(text: str) -> str:
 
         // Ввод текста: мягкое появление подсказки о Enter и растягивание поля
         headlineInput.addEventListener('input', () => {
+            headlineInput.style.caretColor = '';
+            headlineInput.classList.remove('caret-transparent');
             if (isIntroShowcaseRunning) {
                 stopIntroShowcase(true);
             }
@@ -3799,6 +4002,7 @@ def wp_slugify(text: str) -> str:
 
         // Инициализация
         document.addEventListener('DOMContentLoaded', () => {
+            MatrixFx.init();
             NMTManager.initCache();
             try {
                 const savedMethod = sessionStorage.getItem('wp_slug_method');
