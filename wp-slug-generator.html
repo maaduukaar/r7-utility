@@ -146,25 +146,258 @@
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(0, 0, 0, 0.25);
         }
+
+        /* Второй дизайн: один набор полей и общая логика, отдельная портальная композиция. */
+        .dense-only { display: none; }
+        .app-content { display: contents; }
+
+        body[data-design="dense"] {
+            --portal-blue: #005bac;
+            --portal-red: #c90000;
+            --portal-border: #ccc;
+            display: block;
+            background: #f3f3f3;
+            color: #222;
+            font: 13px/1.45 Arial, 'Helvetica Neue', sans-serif;
+        }
+        body[data-design="dense"] .dense-only { display: block; }
+        body[data-design="dense"] [hidden] { display: none !important; }
+        body[data-design="dense"] .portal-width,
+        body[data-design="dense"] > header,
+        body[data-design="dense"] > main,
+        body[data-design="dense"] > footer {
+            width: min(1180px, calc(100% - 24px));
+            max-width: 1180px;
+            margin-inline: auto;
+        }
+        body[data-design="dense"] a,
+        body[data-design="dense"] .portal-link { color: var(--portal-blue); }
+        body[data-design="dense"] a:hover,
+        body[data-design="dense"] .portal-link:hover { color: var(--portal-red); text-decoration: underline; }
+        body[data-design="dense"] :is(button, a, input):focus-visible {
+            outline: 2px solid var(--portal-blue) !important;
+            outline-offset: 3px;
+        }
+        body[data-design="dense"] button { touch-action: manipulation; }
+        body[data-design="dense"] button:disabled { opacity: .5; cursor: not-allowed; }
+        body[data-design="dense"] .portal-utility {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 4px 16px;
+            min-height: 28px;
+            padding: 5px 0;
+            color: #555;
+            font-size: 11px;
+            border-bottom: 1px solid var(--portal-border);
+        }
+        body[data-design="dense"] .portal-utility nav { display: flex; gap: 14px; }
+        body[data-design="dense"] > header { padding: 14px 0 12px; gap: 12px; flex-wrap: wrap; }
+        body[data-design="dense"] #navHomeBtn { gap: 10px; text-align: left; }
+        body[data-design="dense"] #navHomeBtn > div {
+            height: 38px;
+            border-radius: 2px;
+            background: var(--portal-blue);
+            box-shadow: none;
+            transform: none;
+        }
+        body[data-design="dense"] .portal-brand strong { display: block; color: #222; font-size: 22px; line-height: 1.1; }
+        body[data-design="dense"] .portal-brand small { color: #555; font-size: 11px; }
+        body[data-design="dense"] > header > nav { padding: 0; gap: 0; border-radius: 2px; box-shadow: none; background: white; }
+        body[data-design="dense"] > header > nav button {
+            width: auto;
+            height: 36px;
+            padding: 0 16px;
+            border-radius: 0;
+            color: var(--portal-blue);
+            box-shadow: none;
+        }
+        body[data-design="dense"] > header > nav button + button { border-left: 1px solid var(--portal-border); }
+        body[data-design="dense"] > header > nav button span { display: inline; }
+        body[data-design="dense"] > header > nav button[aria-current="page"] { background: var(--portal-blue); color: white; }
+        body[data-design="dense"] .portal-quicknav { display: grid; grid-template-columns: repeat(6, 1fr); background: white; border: 1px solid var(--portal-border); border-top: 3px solid var(--portal-blue); }
+        body[data-design="dense"] .portal-quicknav > * { padding: 8px 6px; text-align: center; color: var(--portal-blue); font-weight: 700; }
+        body[data-design="dense"] .portal-quicknav > * + * { border-left: 1px solid var(--portal-border); }
+        body[data-design="dense"] .portal-quicknav > *:hover { background: #eef6ff; }
+        body[data-design="dense"] .portal-breadcrumbs { display: flex; gap: 8px; padding: 8px 0; font-size: 11px; color: #666; }
+        body[data-design="dense"] .portal-title { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+        body[data-design="dense"] .portal-title h1 { font-size: 24px; font-weight: 700; line-height: 1.2; }
+        body[data-design="dense"] .portal-title p { color: #555; margin-top: 4px; font-size: 12px; }
+        body[data-design="dense"] .portal-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+        body[data-design="dense"] .portal-badge { display: inline-block; padding: 2px 6px; background: #eaf3fc; color: #004b8f; font-size: 10px; font-weight: 700; border: 1px solid #b7cee5; border-radius: 2px; }
+        body[data-design="dense"] .portal-badge-green { color: #176335; background: #edf8ef; border-color: #b4d6bc; }
+        body[data-design="dense"] .portal-badge-orange { color: #824000; background: #fff0d8; border-color: #e7b876; }
+        body[data-design="dense"] .portal-notice { padding: 7px 10px; border: 1px solid #ded09d; background: #fff8d7; margin-bottom: 10px; font-size: 12px; }
+        body[data-design="dense"] .portal-notice strong { color: #a10000; margin-right: 6px; }
+        body[data-design="dense"] > main { display: grid; grid-template-columns: 180px minmax(0, 1fr) 220px; gap: 10px; padding: 0; align-items: start; }
+        body[data-design="dense"] .app-content { display: block; min-width: 0; }
+        body[data-design="dense"] .portal-sidebar,
+        body[data-design="dense"] .portal-aside { display: grid; gap: 10px; min-width: 0; }
+        body[data-design="dense"] .portal-box { background: white; border: 1px solid var(--portal-border); min-width: 0; }
+        body[data-design="dense"] .portal-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 9px; background: #efefef; border-top: 3px solid var(--portal-blue); border-bottom: 1px solid var(--portal-border); font-size: 14px; font-weight: 700; }
+        body[data-design="dense"] .portal-heading small { font-size: 10px; font-weight: 400; color: #555; }
+        body[data-design="dense"] .portal-body { padding: 8px 10px; }
+        body[data-design="dense"] .portal-links { display: grid; }
+        body[data-design="dense"] .portal-links > * { display: block; padding: 7px 9px; text-align: left; border-bottom: 1px dotted #ccc; color: var(--portal-blue); font-size: 12px; }
+        body[data-design="dense"] .portal-links > *:last-child { border-bottom: 0; }
+        body[data-design="dense"] .portal-links > *:hover { background: #eef6ff; }
+        body[data-design="dense"] .portal-links button[aria-pressed="true"] { background: #eaf3fc; font-weight: 700; box-shadow: inset 3px 0 var(--portal-blue); }
+        body[data-design="dense"] .portal-steps { counter-reset: portal-step; }
+        body[data-design="dense"] .portal-steps li { position: relative; padding: 7px 0 7px 27px; border-bottom: 1px dotted #ccc; font-size: 12px; }
+        body[data-design="dense"] .portal-steps li::before { counter-increment: portal-step; content: counter(portal-step, decimal-leading-zero); position: absolute; left: 0; color: var(--portal-blue); font-weight: 700; }
+        body[data-design="dense"] .portal-steps small { display: block; color: #555; }
+        body[data-design="dense"] .portal-shortcuts { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; font-size: 12px; }
+        body[data-design="dense"] kbd { border-radius: 2px; font-size: 10px; }
+        body[data-design="dense"] .portal-callout { border: 1px solid #e7b876; border-top: 3px solid #e88b14; padding: 10px; background: #fffaf0; font-size: 12px; }
+        body[data-design="dense"] .portal-callout strong { display: block; font-size: 15px; margin: 5px 0; }
+        body[data-design="dense"] .portal-callout p { color: #555; margin-bottom: 6px; }
+        body[data-design="dense"] #viewGenerator { max-width: none !important; padding: 0; align-items: stretch; justify-content: start; border: 1px solid var(--portal-border); background: white; transition: none !important; }
+        body[data-design="dense"] #viewGenerator.hidden { display: none; }
+        body[data-design="dense"] .portal-form-top { padding: 10px 12px 0; }
+        body[data-design="dense"] .portal-form-top p { color: #555; font-size: 12px; margin-bottom: 8px; }
+        body[data-design="dense"] .portal-control-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; }
+        body[data-design="dense"] .portal-control-row > span { min-width: 52px; font-weight: 700; }
+        body[data-design="dense"] .portal-segment { display: inline-flex; gap: 0; border: 1px solid #bbb; border-radius: 2px; overflow: hidden; }
+        body[data-design="dense"] .portal-segment button { padding: 5px 12px; color: var(--portal-blue); background: #fafafa; }
+        body[data-design="dense"] .portal-segment button + button { border-left: 1px solid #bbb; }
+        body[data-design="dense"] .portal-segment button[aria-pressed="true"] { color: white; background: var(--portal-blue); }
+        body[data-design="dense"] .generator-form { display: flex; flex-direction: column; padding: 10px 12px 0; }
+        body[data-design="dense"] #slugMethodContainer { position: static; justify-content: start; order: -2; margin: 0 0 10px; opacity: 1; pointer-events: auto; transition: none; gap: 10px; font-size: 12px; }
+        body[data-design="dense"] #slugMethodContainer > span { min-width: 52px; font-weight: 700; }
+        body[data-design="dense"] #slugMethodContainer > div { padding: 0; border: 1px solid #bbb; border-radius: 2px; background: #fafafa; }
+        body[data-design="dense"] #slugMethodContainer button { padding: 5px 12px; border-radius: 0; box-shadow: none; font: inherit; color: var(--portal-blue); }
+        body[data-design="dense"] #slugMethodContainer button + button { border-left: 1px solid #bbb; }
+        body[data-design="dense"] #slugMethodContainer button[aria-pressed="true"] { background: var(--portal-blue); color: white; }
+        body[data-design="dense"] #denseHeadlineLabel { order: -1; font-size: 12px; font-weight: 700; margin-bottom: 5px; }
+        body[data-design="dense"] #mainSearchContainer { border: 1px solid #aaa; border-radius: 2px; box-shadow: none; }
+        body[data-design="dense"] #mainSearchContainer:focus-within { border-color: var(--portal-blue); }
+        body[data-design="dense"] #mainInputRow { height: 54px; padding: 0 10px; gap: 8px; }
+        body[data-design="dense"] #headlineInput { font-size: 16px; letter-spacing: normal; }
+        body[data-design="dense"] #headlineInput::placeholder,
+        body[data-design="dense"] #hierarchicalSlugInput::placeholder { color: #757575; }
+        body[data-design="dense"] #modeToggleBtn,
+        body[data-design="dense"] #copySlugBtn,
+        body[data-design="dense"] #copyHierarchicalBtn { border-radius: 2px; }
+        body[data-design="dense"] #slugUrlSubbar { height: auto; min-height: 66px; padding: 7px 10px; flex-wrap: wrap; gap: 4px 8px; background: #f5f5f5; border-color: #ccc; }
+        body[data-design="dense"] #densePathLabel { width: 100%; font-size: 11px; color: #555; font-weight: 700; }
+        body[data-design="dense"] .portal-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        body[data-design="dense"] .portal-button { padding: 7px 12px; border: 1px solid #aaa; background: #f6f6f6; border-radius: 2px; color: #333; font-size: 12px; font-weight: 700; }
+        body[data-design="dense"] .portal-button-primary { background: var(--portal-red); border-color: #a90000; color: white; flex: 1; }
+        body[data-design="dense"] .portal-button-primary:hover:not(:disabled) { background: #ab0000; }
+        body[data-design="dense"] .portal-source { margin-top: 8px; color: #555; font-size: 11px; overflow-wrap: anywhere; }
+        body[data-design="dense"] .portal-source span { color: #222; }
+        body[data-design="dense"] #whisperContainer { order: 1; min-height: 36px; height: auto; margin: 0; padding: 8px; }
+        body[data-design="dense"] #whisperText { font-size: 11px; }
+        body[data-design="dense"] .portal-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #d5d5d5; border-top: 1px solid #ccc; order: 2; }
+        body[data-design="dense"] .portal-stats > div { padding: 7px 10px; background: #fafafa; }
+        body[data-design="dense"] .portal-stats dt { color: #666; font-size: 10px; }
+        body[data-design="dense"] .portal-stats dd { font-size: 12px; font-weight: 700; }
+        body[data-design="dense"] .portal-workflow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+        body[data-design="dense"] .portal-workflow > div { border: 1px solid #ccc; border-top: 2px solid var(--portal-blue); padding: 8px; background: white; font-size: 11px; color: #555; }
+        body[data-design="dense"] .portal-workflow strong { display: block; color: #222; font-size: 12px; margin-bottom: 3px; }
+        body[data-design="dense"] .portal-lower { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 10px; margin-top: 10px; }
+        body[data-design="dense"] .portal-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        body[data-design="dense"] .portal-table :is(th, td) { padding: 7px 8px; border-bottom: 1px solid #ddd; text-align: left; }
+        body[data-design="dense"] .portal-table th { background: #f5f5f5; font-weight: 700; }
+        body[data-design="dense"] .portal-table code { color: var(--portal-blue); }
+        body[data-design="dense"] .portal-alphabet { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+        body[data-design="dense"] .portal-alphabet button { border: 1px solid #d3d3d3; background: #f8f8f8; padding: 4px 0; font-size: 12px; }
+        body[data-design="dense"] .portal-alphabet button:hover { background: #eaf3fc; border-color: #7ca7cd; }
+        body[data-design="dense"] .portal-alphabet small { display: block; color: var(--portal-blue); font: 10px/1.4 monospace; }
+        body[data-design="dense"] .portal-caption { font-size: 11px; color: #555; margin-top: 6px; }
+        body[data-design="dense"] .portal-example { display: block; width: 100%; text-align: left; padding: 8px 0; border-bottom: 1px dotted #ccc; color: var(--portal-blue); font-size: 12px; }
+        body[data-design="dense"] .portal-example small { display: block; font-family: monospace; color: #666; overflow-wrap: anywhere; }
+        body[data-design="dense"] .portal-sitemap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; padding: 12px; background: #eaeaea; border-top: 3px solid #999; border-bottom: 1px solid #ccc; }
+        body[data-design="dense"] .portal-sitemap h2 { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+        body[data-design="dense"] .portal-sitemap :is(a, button) { display: block; text-align: left; font-size: 11px; padding: 3px 0; color: var(--portal-blue); }
+        body[data-design="dense"] > footer { padding: 10px 0 16px; color: #666; font-size: 10px; }
+        body[data-design="dense"] :is(#viewDocs, #viewCode) { max-width: none; padding: 12px; background: white; border: 1px solid #ccc; }
+        body[data-design="dense"] :is(#viewDocs, #viewCode) > * + * { margin-top: 12px; }
+        body[data-design="dense"] :is(#viewDocs, #viewCode) > div:first-child { padding-bottom: 10px; }
+        body[data-design="dense"] :is(#viewDocs, #viewCode) h2 { font-size: 20px; }
+        body[data-design="dense"] :is(#viewDocs, #viewCode) .rounded-2xl { border-radius: 2px; box-shadow: none; padding: 12px; border-color: #ccc; }
+        body[data-design="dense"] #viewDocs .space-y-6 > * + * { margin-top: 10px; }
+        body[data-design="dense"] :is(#viewDocs, #viewCode) .text-apple-secondary { color: #555; }
+        body[data-design="dense"] :is(#viewDocs, #viewCode) .text-apple-tertiary { color: #666; }
+        body[data-design="dense"] :is(#viewDocs, #viewCode) button { border-radius: 2px; box-shadow: none; }
+        body[data-design="dense"] #viewCode > div:nth-child(2) { flex-wrap: wrap; gap: 4px; }
+        body[data-design="dense"] #copySnippetBtn { position: static; margin-bottom: 12px; }
+        body[data-design="dense"] #appleAlphabetGrid { gap: 4px; }
+        body[data-design="dense"] #appleAlphabetGrid > * { border-radius: 2px; padding: 6px; }
+        body[data-design="dense"] .text-apple-green { color: #176b35; }
+        body[data-design="dense"] .smooth-transition,
+        body[data-design="dense"] .transition-all { transition-duration: .12s; }
+        body[data-design="dense"] .portal-generator-context { display: none; }
+        body[data-design="dense"][data-view="generator"] .portal-generator-context { display: grid; }
+
+        @media (max-width: 1000px) {
+            body[data-design="dense"] > main { grid-template-columns: 165px minmax(0, 1fr); }
+            body[data-design="dense"] .portal-aside { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); }
+            body[data-design="dense"] .portal-lower { grid-template-columns: 1fr 1fr; }
+            body[data-design="dense"] .portal-lower > :last-child { grid-column: 1 / -1; }
+        }
+        @media (max-width: 640px) {
+            body[data-design="dense"] .portal-width,
+            body[data-design="dense"] > :is(header, main, footer) { width: calc(100% - 16px); }
+            body[data-design="dense"] > header { padding: 10px 0; }
+            body[data-design="dense"] > header > nav { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); }
+            body[data-design="dense"] > header > nav button { height: 40px; padding: 0 8px; }
+            body[data-design="dense"] .portal-utility { font-size: 10px; }
+            body[data-design="dense"] .portal-utility nav { flex-wrap: wrap; gap: 12px; }
+            body[data-design="dense"] .portal-utility nav > * { min-height: 28px; display: inline-flex; align-items: center; }
+            body[data-design="dense"] .portal-quicknav { grid-template-columns: repeat(3, 1fr); }
+            body[data-design="dense"] .portal-quicknav > * { min-height: 40px; border-bottom: 1px solid #ddd; font-size: 12px; }
+            body[data-design="dense"] .portal-quicknav > :nth-child(4) { border-left: 0; }
+            body[data-design="dense"] .portal-title h1 { font-size: 22px; }
+            body[data-design="dense"] > main { grid-template-columns: minmax(0, 1fr); }
+            body[data-design="dense"] .app-content { grid-row: 1; }
+            body[data-design="dense"] .portal-sidebar { grid-template-columns: 1fr 1fr; }
+            body[data-design="dense"] .portal-aside { grid-template-columns: 1fr 1fr; }
+            body[data-design="dense"] .portal-aside > :last-child { grid-column: 1 / -1; }
+            body[data-design="dense"] .portal-lower { grid-template-columns: minmax(0, 1fr); }
+            body[data-design="dense"] .portal-sitemap { grid-template-columns: 1fr 1fr; gap: 12px; }
+            body[data-design="dense"] .portal-sitemap :is(a, button) { min-height: 32px; }
+            body[data-design="dense"] :is(.portal-segment, #slugMethodContainer) button { min-height: 36px; }
+            body[data-design="dense"] .portal-links > * { min-height: 38px; }
+            body[data-design="dense"] .portal-button { min-height: 40px; }
+            body[data-design="dense"] :is(#modeToggleBtn, #copySlugBtn, #copyHierarchicalBtn) { width: 36px; height: 36px; }
+            body[data-design="dense"] #clearHierarchicalBtn { width: 28px; height: 32px; }
+            body[data-design="dense"] #hierarchicalSlugInput { font-size: 16px; }
+            body[data-design="dense"] .portal-alphabet button { min-height: 44px; }
+            body[data-design="dense"] .portal-workflow { gap: 4px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            body[data-design="dense"] *, body[data-design="dense"] *::before { transition: none !important; animation: none !important; }
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between selection:bg-apple-blue selection:text-white">
+<body data-design="classic" data-view="generator" class="min-h-screen flex flex-col justify-between selection:bg-apple-blue selection:text-white">
+
+    <div class="dense-only portal-utility portal-width">
+        <span>R7-UTILITY / Инструменты для работы с контентом</span>
+        <nav aria-label="Служебная навигация">
+            <a href="https://github.com/maaduukaar/r7-utility" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+            <button type="button" class="portal-link" data-portal-view="docs">Справка</button>
+            <button type="button" class="portal-link" data-portal-action="design">Классический вид ↔</button>
+        </nav>
+    </div>
 
     <!-- Верхняя панель управления (Header в стиле macOS Menu Bar) -->
     <header class="w-full max-w-6xl mx-auto px-4 py-4 sm:px-6 sm:py-6 flex items-center justify-between z-30">
         <!-- Логотип / Название -->
-        <button id="navHomeBtn" class="flex items-center text-apple-text hover:opacity-85 transition-all group select-none shrink-0" title="WP Slug (Cyr-To-Lat) — На главную">
+        <button id="navHomeBtn" type="button" aria-label="Плотный дизайн Japanese Dense Web" aria-pressed="false" class="flex items-center text-apple-text hover:opacity-85 transition-all group select-none shrink-0" title="Включить дизайн Japanese Dense Web">
             <!-- Компактный бейдж-глиф транслитерации (Ё → yo) -->
             <div class="h-7 px-2.5 rounded-[8px] bg-gradient-to-b from-[#2c2c2e] to-[#1c1c1e] text-white shadow-sm flex items-center justify-center gap-1.5 border border-black/10 group-hover:scale-105 transition-transform">
                 <span class="text-[11px] font-bold tracking-tight text-white">Ё</span>
                 <i class="fa-solid fa-arrow-right text-[8px] text-white/50"></i>
                 <span class="code-font text-[11px] font-bold text-white tracking-tight">yo</span>
             </div>
+            <span class="dense-only portal-brand"><strong>WP Slug<span style="color: #c90000">.</span></strong><small>Генератор адресов WordPress</small></span>
         </button>
 
         <!-- Навигация: Генератор / Справка / Код (на смартфонах компактные круглые кнопки с иконками, на десктопе с подписями) -->
         <nav class="flex items-center gap-1 sm:gap-1.5 bg-white/70 backdrop-blur-md p-1 rounded-full shadow-apple-sm border border-apple-border shrink-0">
-            <button id="navGeneratorBtn" class="w-8 h-8 sm:w-auto sm:h-auto px-0 sm:px-3.5 py-0 sm:py-1 text-xs font-medium rounded-full bg-apple-text text-white shadow-sm transition-all flex items-center justify-center gap-1.5" title="Генератор слагов">
+            <button id="navGeneratorBtn" aria-current="page" class="w-8 h-8 sm:w-auto sm:h-auto px-0 sm:px-3.5 py-0 sm:py-1 text-xs font-medium rounded-full bg-apple-text text-white shadow-sm transition-all flex items-center justify-center gap-1.5" title="Генератор слагов">
                 <i class="fa-solid fa-wand-magic-sparkles text-[11px]"></i>
                 <span class="hidden sm:inline">Генератор</span>
             </button>
@@ -179,13 +412,70 @@
         </nav>
     </header>
 
+    <div class="dense-only portal-width">
+        <nav class="portal-quicknav" aria-label="Быстрый доступ">
+            <button type="button" data-portal-type="post">Статьи</button>
+            <button type="button" data-portal-type="category">Рубрики</button>
+            <button type="button" data-portal-method="translit">Транслитерация</button>
+            <button type="button" data-portal-method="translate">Перевод RU → EN</button>
+            <button type="button" data-portal-view="docs">Таблица ISO 9</button>
+            <button type="button" data-portal-view="code">Примеры кода</button>
+        </nav>
+        <nav class="portal-breadcrumbs" aria-label="Хлебные крошки">
+            <a href="https://github.com/maaduukaar/r7-utility" target="_blank" rel="noopener noreferrer">R7-Utility</a><span aria-hidden="true">›</span>
+            <button type="button" class="portal-link" data-portal-view="generator">WordPress Slug</button><span aria-hidden="true">›</span>
+            <span id="denseCurrentView" aria-current="page">Генератор</span>
+        </nav>
+        <div class="portal-title">
+            <div><h1>Генератор слагов WordPress</h1><p>Заголовок → транслитерация или перевод → готовый URL-ярлык</p></div>
+            <div class="portal-badges"><span class="portal-badge">CYR-TO-LAT</span><span class="portal-badge">ISO 9 · B</span><span class="portal-badge portal-badge-green">✓ Обработка в браузере</span></div>
+        </div>
+        <p class="portal-notice"><strong>ПАМЯТКА</strong> <b>й → j · щ → shh · х → h.</b> Эти соответствия Cyr-To-Lat важны при переносе адресов. <button type="button" class="portal-link" data-portal-view="docs">Сравнить стандарты →</button></p>
+    </div>
+
     <!-- ОСНОВНОЙ КОНТЕНТ -->
     <main class="flex-grow flex items-center justify-center px-5 w-full relative">
+
+        <aside class="dense-only portal-sidebar" aria-label="Разделы и инструменты">
+            <section class="portal-box">
+                <h2 class="portal-heading">Генератор <small>01</small></h2>
+                <div class="portal-links">
+                    <button type="button" data-portal-type="post">› Слаг статьи</button>
+                    <button type="button" data-portal-type="category">› Слаг рубрики</button>
+                    <button type="button" data-portal-method="translit">› Транслит / ISO 9</button>
+                    <button type="button" data-portal-method="translate">› Перевод на английский</button>
+                </div>
+                <h2 class="portal-heading">Справочник <small>02</small></h2>
+                <div class="portal-links">
+                    <button type="button" data-portal-view="docs">› Стандарты и алфавит</button>
+                    <button type="button" data-portal-lang="js">› JavaScript</button>
+                    <button type="button" data-portal-lang="php">› PHP / WordPress</button>
+                    <button type="button" data-portal-lang="py">› Python</button>
+                </div>
+            </section>
+            <section class="portal-box">
+                <h2 class="portal-heading">Ещё инструменты</h2>
+                <div class="portal-links">
+                    <a href="table-converter.html">› Адаптивные таблицы</a>
+                    <a href="table-converter-redisign.html">› Шапка таблицы / thead</a>
+                    <a href="add-target-blank.html">› Ссылки / target blank</a>
+                    <a href="list-diff-checker.html">› Сравнение списков</a>
+                </div>
+            </section>
+        </aside>
+
+        <div class="app-content">
 
         <!-- ========================================================================= -->
         <!-- РЕЖИМ 1: МИНИМАЛИСТИЧНЫЙ СПОТЛАЙТ-ГЕНЕРАТОР (APPLE STYLE)                 -->
         <!-- ========================================================================= -->
         <div id="viewGenerator" class="w-full py-12 flex flex-col items-center justify-center relative" style="max-width: 580px; transition: max-width 0.22s cubic-bezier(0.16, 1, 0.3, 1);">
+
+            <h2 class="dense-only portal-heading">Создать URL-ярлык <span class="portal-badge portal-badge-green" id="denseStatus" role="status">Готов к вводу</span></h2>
+            <div class="dense-only portal-form-top">
+                <p>Введите заголовок, выберите способ преобразования и получите слаг.</p>
+                <div class="portal-control-row"><span>Объект</span><div class="portal-segment" role="group" aria-label="Тип контента"><button type="button" data-portal-type="post">Статья</button><button type="button" data-portal-type="category">Рубрика</button></div></div>
+            </div>
 
             <!-- Контекстные подсказки (на десктопе в одну строку, на мобильных адаптивно в две строки) -->
             <div id="whisperContainer" class="h-10 sm:h-6 flex items-center justify-center pointer-events-none mb-2 select-none">
@@ -193,7 +483,8 @@
             </div>
 
             <!-- Главная поисковая полоса (Spotlight Input Bar) с контейнером переключателя -->
-            <div class="relative w-full">
+            <div class="generator-form relative w-full">
+                <label class="dense-only" id="denseHeadlineLabel" for="headlineInput">Заголовок статьи</label>
                 <div id="mainSearchContainer" class="w-full bg-white rounded-2xl shadow-apple-float border border-apple-border transition-all duration-300 relative overflow-hidden group">
                     
                     <div id="mainInputRow" class="relative w-full flex items-center px-5 h-16 sm:h-[72px] gap-5">
@@ -209,7 +500,7 @@
 
                         <!-- Инпут -->
                         <div class="relative flex-grow flex items-center h-full min-w-0 z-10">
-                            <input type="text" id="headlineInput" autofocus
+                            <input type="text" id="headlineInput" autofocus aria-label="Заголовок статьи"
                                 placeholder="Вставьте заголовок статьи..."
                                 autocomplete="off"
                                 spellcheck="false"
@@ -226,11 +517,12 @@
 
                     <!-- Строка для обновления старого полного слага или ввода суффикса раздела -->
                     <div id="slugUrlSubbar" class="px-4 sm:px-5 h-11 bg-apple-bg/60 border-t border-apple-borderSubtle hidden items-center gap-2.5 text-xs">
+                        <label class="dense-only" id="densePathLabel" for="hierarchicalSlugInput">Старый URL → заменить последний сегмент</label>
                         <div id="subbarIconContainer" class="text-apple-tertiary flex items-center justify-center w-5 text-[11px] shrink-0" title="Иерархический слаг">
                             <i id="subbarIcon" class="fa-solid fa-folder-tree"></i>
                         </div>
                         <div class="flex-grow flex items-center min-w-0 relative">
-                            <input type="text" id="hierarchicalSlugInput"
+                            <input type="text" id="hierarchicalSlugInput" aria-label="Старый полный URL или путь"
                                 placeholder="Вставьте старый полный слаг..."
                                 autocomplete="off"
                                 spellcheck="false"
@@ -247,6 +539,7 @@
 
                 <!-- Компактный переключатель метода генерации (Транслит ⟷ Перевод) под поисковой строкой (абсолютное позиционирование для исключения смещения страницы) -->
                 <div id="slugMethodContainer" class="absolute top-full left-0 right-0 mt-3.5 flex items-center justify-center select-none pill-fade opacity-0 pointer-events-none">
+                    <span class="dense-only">Метод</span>
                     <div class="inline-flex items-center p-0.5 bg-black/[0.04] border border-black/[0.06] rounded-full text-[11px] font-medium tracking-tight">
                         <button type="button" id="methodTranslitBtn"
                             class="px-2.5 py-0.5 rounded-full transition-[background-color,color,box-shadow] duration-150 cursor-pointer focus:outline-none bg-white text-apple-text shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
@@ -260,8 +553,26 @@
                         </button>
                     </div>
                 </div>
+                <div class="dense-only portal-actions">
+                    <button type="button" class="portal-button portal-button-primary" id="denseGenerateBtn" data-portal-action="generate">Сформировать слаг →</button>
+                    <button type="button" class="portal-button" id="denseEditBtn" data-portal-action="edit" hidden>Редактировать</button>
+                    <button type="button" class="portal-button" data-portal-action="clear">Очистить</button>
+                </div>
+                <p class="dense-only portal-source" id="denseSource" hidden>Исходный заголовок: <span id="denseSourceText"></span></p>
             </div>
 
+            <dl class="dense-only portal-stats">
+                <div><dt>Тип контента</dt><dd id="denseType">Статья</dd></div>
+                <div><dt>Преобразование</dt><dd id="denseMethod">Транслитерация</dd></div>
+                <div><dt>Символов в слаге</dt><dd id="denseLength">—</dd></div>
+            </dl>
+
+        </div>
+
+        <div class="dense-only portal-workflow portal-generator-context" aria-label="Возможности генератора">
+            <div><strong>01 / Транслит</strong>Буквы по таблице Cyr-To-Lat. Пробелы становятся дефисами.</div>
+            <div><strong>02 / Перевод</strong>Словарь Р7 + нейросеть. Английский слаг по смыслу.</div>
+            <div><strong>03 / Полный путь</strong>Сохранение родительских папок при замене слага статьи.</div>
         </div>
 
         <!-- ========================================================================= -->
@@ -512,7 +823,76 @@ def wp_slugify(text: str) -> str:
 
         </div>
 
+        </div>
+
+        <aside class="dense-only portal-aside" aria-label="Подсказки по работе">
+            <section class="portal-box">
+                <h2 class="portal-heading">Быстрый старт</h2>
+                <ol class="portal-body portal-steps">
+                    <li><b>Выберите объект</b><small>Статья или рубрика</small></li>
+                    <li><b>Вставьте заголовок</b><small>Транслит или перевод</small></li>
+                    <li><b>Сформируйте слаг</b><small>Нажмите Enter или кнопку</small></li>
+                    <li><b>Скопируйте результат</b><small>Повторный Enter или копирование</small></li>
+                </ol>
+            </section>
+            <section class="portal-box">
+                <h2 class="portal-heading">Клавиатура</h2>
+                <dl class="portal-body portal-shortcuts">
+                    <dt><kbd>Enter</kbd></dt><dd>Создать / скопировать</dd>
+                    <dt><kbd>⌫</kbd></dt><dd>Вернуться к заголовку</dd>
+                    <dt><kbd>Esc</kbd></dt><dd>Назад / очистить ввод</dd>
+                </dl>
+            </section>
+            <section class="portal-callout">
+                <span class="portal-badge portal-badge-orange">РУБРИКИ И СТАТЬИ</span>
+                <strong>Сохраните структуру URL</strong>
+                <p>После генерации вставьте старый путь в нижнее поле. Для рубрики в нём можно задать суффикс раздела.</p>
+                <button type="button" class="portal-link" data-portal-view="generator">Перейти к генератору →</button>
+            </section>
+        </aside>
     </main>
+
+    <div class="dense-only portal-width portal-lower portal-generator-context">
+        <section class="portal-box">
+            <h2 class="portal-heading">Какой метод выбрать? <small>СРАВНЕНИЕ</small></h2>
+            <table class="portal-table">
+                <caption class="sr-only">Сравнение транслитерации и перевода</caption>
+                <thead><tr><th scope="col">Параметр</th><th scope="col">Транслит</th><th scope="col">Перевод</th></tr></thead>
+                <tbody>
+                    <tr><th scope="row">Основа</th><td>Таблица ISO 9 B</td><td>Словарь + NMT</td></tr>
+                    <tr><th scope="row">«Документы»</th><td><code>dokumenty</code></td><td><code>documents</code></td></tr>
+                    <tr><th scope="row">Результат</th><td>Буквы латиницей</td><td>Английские слова</td></tr>
+                    <tr><th scope="row">Обработка</th><td>В браузере</td><td>В браузере</td></tr>
+                    <tr><th scope="row">Загрузка модели</th><td>Не нужна</td><td>Для новых фраз</td></tr>
+                </tbody>
+            </table>
+            <div class="portal-body"><button type="button" class="portal-link" data-portal-view="docs">Подробнее о стандартах и переводе →</button></div>
+        </section>
+        <section class="portal-box">
+            <h2 class="portal-heading">Алфавит под рукой <small>ISO 9 · B</small></h2>
+            <div class="portal-body">
+                <div id="denseAlphabet" class="portal-alphabet" aria-label="Таблица транслитерации"></div>
+                <p class="portal-caption" id="denseAlphabetFeedback" role="status">Нажмите букву, чтобы скопировать латиницу. ∅ — знак опускается.</p>
+            </div>
+        </section>
+        <section class="portal-box">
+            <h2 class="portal-heading">Попробовать на примере</h2>
+            <div class="portal-body">
+                <p class="portal-caption" style="margin-top: 0">Подставить заголовок и включить транслитерацию:</p>
+                <button type="button" class="portal-example" data-portal-example="Настройка сервера">Настройка сервера <span aria-hidden="true">↗</span><small>nastrojka-servera</small></button>
+                <button type="button" class="portal-example" data-portal-example="Общий доступ">Общий доступ <span aria-hidden="true">↗</span><small>obshhij-dostup</small></button>
+                <button type="button" class="portal-example" data-portal-example="Работа с таблицами">Работа с таблицами <span aria-hidden="true">↗</span><small>rabota-s-tablitsami</small></button>
+                <p class="portal-caption">Копирование выполняется только по вашему действию.</p>
+            </div>
+        </section>
+    </div>
+
+    <div class="dense-only portal-width portal-sitemap" role="navigation" aria-label="Карта приложения">
+        <section><h2>Генератор</h2><button type="button" data-portal-type="post">Слаги статей</button><button type="button" data-portal-type="category">Слаги рубрик</button><button type="button" data-portal-method="translate">Перевод на английский</button></section>
+        <section><h2>Разработчикам</h2><button type="button" data-portal-lang="js">Код на JavaScript</button><button type="button" data-portal-lang="php">Код на PHP</button><button type="button" data-portal-lang="py">Код на Python</button></section>
+        <section><h2>Первоисточники</h2><a href="https://wordpress.org/plugins/cyr2lat/" target="_blank" rel="noopener noreferrer">Плагин Cyr-To-Lat ↗</a><a href="https://github.com/mihdan/cyr2lat" target="_blank" rel="noopener noreferrer">Исходный код плагина ↗</a><a href="https://developer.wordpress.org/reference/functions/sanitize_title_with_dashes/" target="_blank" rel="noopener noreferrer">Функции WordPress ↗</a></section>
+        <section><h2>R7-Utility</h2><a href="list-diff-checker.html">Сравнение списков</a><a href="table-converter.html">Конвертер таблиц</a><button type="button" data-portal-action="design">Вернуться к классическому виду ↔</button></section>
+    </div>
 
     <!-- Нижняя ненавязчивая строка статуса (на мобильных по центру в две аккуратные строки, на десктопе по краям) -->
     <footer class="w-full max-w-6xl mx-auto px-4 py-5 sm:px-6 sm:py-6 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0 text-[11px] text-apple-tertiary text-center sm:text-left">
@@ -609,6 +989,119 @@ def wp_slugify(text: str) -> str:
         const snippetPhp = document.getElementById('snippetPhp');
         const snippetPy = document.getElementById('snippetPy');
         const copySnippetBtn = document.getElementById('copySnippetBtn');
+
+        // Дизайн намеренно не сохраняется: при открытии страницы всегда классический вид.
+        const denseUI = Object.fromEntries([
+            'HeadlineLabel', 'PathLabel', 'Status', 'GenerateBtn', 'EditBtn',
+            'Source', 'SourceText', 'Type', 'Method', 'Length', 'CurrentView'
+        ].map(name => [name, document.getElementById(`dense${name}`)]));
+        const portalTypeButtons = document.querySelectorAll('[data-portal-type]');
+        const portalMethodButtons = document.querySelectorAll('[data-portal-method]');
+
+        function updateDenseUI() {
+            if (document.body.dataset.design !== 'dense') return;
+            const isSlug = state.mode === 'slug';
+            const isCategory = state.generatorType === 'category';
+            const label = isSlug ? 'Готовый слаг' : (isCategory ? 'Название рубрики' : 'Заголовок статьи');
+            denseUI.HeadlineLabel.textContent = label;
+            headlineInput.setAttribute('aria-label', label);
+            denseUI.PathLabel.textContent = isCategory ? 'Суффикс раздела' : 'Старый URL → заменить последний сегмент';
+            denseUI.Type.textContent = isCategory ? 'Рубрика' : 'Статья';
+            denseUI.Method.textContent = state.slugMethod === 'translit' ? 'Транслитерация' : 'Перевод RU → EN';
+            denseUI.Length.textContent = isSlug ? String(state.currentSlug.length) : '—';
+            const isTranslating = headlineInput.classList.contains('caret-transparent');
+            denseUI.Status.textContent = !isSlug ? 'Готов к вводу' : state.currentSlug ? '✓ Слаг готов' : isTranslating ? 'Обработка…' : 'Нет символов для слага';
+            denseUI.Status.classList.toggle('portal-badge-green', !isSlug || Boolean(state.currentSlug));
+            denseUI.Status.classList.toggle('portal-badge-orange', isSlug && !state.currentSlug && !isTranslating);
+            denseUI.GenerateBtn.textContent = isSlug ? 'Копировать слаг' : 'Сформировать слаг →';
+            denseUI.GenerateBtn.disabled = isSlug ? !state.currentSlug : !headlineInput.value.trim();
+            denseUI.EditBtn.hidden = !isSlug;
+            denseUI.Source.hidden = !isSlug;
+            denseUI.SourceText.textContent = isSlug ? state.savedTitle : '';
+            portalTypeButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.portalType === state.generatorType)));
+            portalMethodButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.portalMethod === state.slugMethod)));
+        }
+
+        function toggleDesign() {
+            stopIntroShowcase(true);
+            // Завершаем возможный переход между Статьями и Рубриками до смены компоновки.
+            clearModeTransitionTimers();
+            if (state.mode === 'input') updateInputModeUI();
+            const isDense = document.body.dataset.design !== 'dense';
+            document.body.dataset.design = isDense ? 'dense' : 'classic';
+            navHomeBtn.setAttribute('aria-pressed', String(isDense));
+            navHomeBtn.title = isDense ? 'Вернуться к классическому дизайну' : 'Включить дизайн Japanese Dense Web';
+            // Смена оформления сохраняет открытый раздел, заголовок, результат и путь.
+            updateDenseUI();
+            adjustInputWidth();
+        }
+
+        function selectPortalType(type) {
+            stopIntroShowcase(true);
+            if (state.generatorType !== type) toggleGeneratorType();
+            switchView('generator');
+            updateDenseUI();
+        }
+
+        // Все дополнительные элементы вызывают общие действия приложения.
+        document.addEventListener('click', event => {
+            const button = event.target.closest('[data-portal-view], [data-portal-type], [data-portal-method], [data-portal-lang], [data-portal-action], [data-portal-example]');
+            if (!button) return;
+            const data = button.dataset;
+            if (data.portalView) switchView(data.portalView);
+            else if (data.portalType) selectPortalType(data.portalType);
+            else if (data.portalMethod) {
+                setSlugMethod(data.portalMethod);
+                switchView('generator');
+            } else if (data.portalLang) {
+                switchView('code');
+                document.querySelector(`.code-selector-btn[data-lang="${data.portalLang}"]`).click();
+            } else if (data.portalExample) {
+                stopIntroShowcase(true);
+                if (state.mode === 'slug') switchToInputMode();
+                selectPortalType('post');
+                setSlugMethod('translit');
+                headlineInput.value = data.portalExample;
+                headlineInput.dispatchEvent(new Event('input', { bubbles: true }));
+                headlineInput.focus();
+            } else if (data.portalAction === 'design') {
+                toggleDesign();
+                navHomeBtn.focus();
+            } else if (data.portalAction === 'generate') {
+                handleEnterAction();
+            } else if (data.portalAction === 'edit') {
+                switchToInputMode(true);
+            } else if (data.portalAction === 'clear') {
+                if (state.mode === 'slug') switchToInputMode();
+                headlineInput.value = '';
+                state.savedTitle = '';
+                state.currentSlug = '';
+                state.baseCategorySlug = '';
+                state.returnedFromSlug = false;
+                headlineInput.dispatchEvent(new Event('input', { bubbles: true }));
+                headlineInput.focus();
+            }
+            updateDenseUI();
+        });
+
+        function renderDenseAlphabet() {
+            const grid = document.getElementById('denseAlphabet');
+            const feedback = document.getElementById('denseAlphabetFeedback');
+            ALPHABET_LIST.forEach(({ ru, lat }) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.innerHTML = `${ru}<small>${lat}</small>`;
+                button.setAttribute('aria-label', lat === '∅' ? `${ru}: знак опускается` : `${ru}: скопировать ${lat}`);
+                button.addEventListener('click', () => {
+                    if (lat === '∅') feedback.textContent = `Знак «${ru}» опускается в слаге.`;
+                    else {
+                        const copied = copyTextToClipboard(lat);
+                        feedback.textContent = copied ? `${ru} → ${lat}: скопировано` : `Не удалось скопировать. Соответствие: ${ru} → ${lat}`;
+                    }
+                });
+                grid.appendChild(button);
+            });
+        }
 
         /**
          * Алгоритм транслитерации и генерации слага
@@ -2802,6 +3295,8 @@ def wp_slugify(text: str) -> str:
          */
         function adjustInputWidth() {
             if (!headlineInput || !viewGenerator) return;
+            updateDenseUI();
+            if (document.body.dataset.design === 'dense') return;
 
             if (!window.textRuler) {
                 window.textRuler = document.createElement('span');
@@ -3025,6 +3520,7 @@ def wp_slugify(text: str) -> str:
                 headlineInput.placeholder = 'Вставьте заголовок статьи...';
                 modeToggleBtn.title = 'Режим: Статьи (кликните для переключения на Рубрики)';
             }
+            headlineInput.setAttribute('aria-label', state.generatorType === 'category' ? 'Название рубрики' : 'Заголовок статьи');
         }
 
         /**
@@ -3072,7 +3568,9 @@ def wp_slugify(text: str) -> str:
                 hierarchicalSlugInput.placeholder = 'Вставьте старый полный слаг...';
                 copyHierarchicalBtn.title = 'Копировать обновленный слаг';
             }
+            hierarchicalSlugInput.setAttribute('aria-label', type === 'category' ? 'Суффикс раздела' : 'Старый полный URL или путь');
             updateSubbarControlsVisibility();
+            updateDenseUI();
         }
 
         /**
@@ -3186,6 +3684,13 @@ def wp_slugify(text: str) -> str:
 
             const nextType = targetType || (state.generatorType === 'post' ? 'category' : 'post');
             state.generatorType = nextType;
+
+            if (document.body.dataset.design === 'dense') {
+                updateInputModeUI();
+                adjustInputWidth();
+                if (onComplete) onComplete();
+                return;
+            }
 
             // Сразу обновляем всплывающую подсказку кнопки
             modeToggleBtn.title = nextType === 'category'
@@ -3336,6 +3841,8 @@ def wp_slugify(text: str) -> str:
          */
         function updateSlugMethodUI() {
             if (!methodTranslitBtn || !methodTranslateBtn) return;
+            methodTranslitBtn.setAttribute('aria-pressed', String(state.slugMethod === 'translit'));
+            methodTranslateBtn.setAttribute('aria-pressed', String(state.slugMethod === 'translate'));
             const activeClasses = ['bg-white', 'text-apple-text', 'shadow-[0_1px_2px_rgba(0,0,0,0.06)]'];
             const inactiveClasses = ['text-apple-secondary', 'hover:text-apple-text'];
 
@@ -3350,6 +3857,7 @@ def wp_slugify(text: str) -> str:
                 methodTranslitBtn.classList.remove(...activeClasses);
                 methodTranslitBtn.classList.add(...inactiveClasses);
             }
+            updateDenseUI();
         }
 
         /**
@@ -3558,6 +4066,7 @@ def wp_slugify(text: str) -> str:
 
             state.savedTitle = raw;
             state.mode = 'slug';
+            headlineInput.setAttribute('aria-label', 'Готовый слаг');
             state.returnedFromSlug = false;
 
             // Настройка оформления
@@ -4124,6 +4633,12 @@ def wp_slugify(text: str) -> str:
         // --- Переключение представлений (Генератор / Справка / Код) ---
 
         function switchView(target) {
+            document.body.dataset.view = target;
+            denseUI.CurrentView.textContent = { generator: 'Генератор', docs: 'Справка', code: 'Примеры кода' }[target];
+            [[navGeneratorBtn, 'generator'], [navDocsBtn, 'docs'], [navCodeBtn, 'code']].forEach(([button, view]) => {
+                if (view === target) button.setAttribute('aria-current', 'page');
+                else button.removeAttribute('aria-current');
+            });
             if (isIntroShowcaseRunning) {
                 stopIntroShowcase(true);
             }
@@ -4156,7 +4671,7 @@ def wp_slugify(text: str) -> str:
         }
 
         navGeneratorBtn.addEventListener('click', () => switchView('generator'));
-        navHomeBtn.addEventListener('click', () => switchView('generator'));
+        navHomeBtn.addEventListener('click', toggleDesign);
         docsBackBtn.addEventListener('click', () => switchView('generator'));
         codeBackBtn.addEventListener('click', () => switchView('generator'));
 
@@ -4257,6 +4772,7 @@ def wp_slugify(text: str) -> str:
             updateSlugCopyBtnVisibility();
 
             renderAppleAlphabet();
+            renderDenseAlphabet();
             adjustInputWidth();
             headlineInput.focus();
 
