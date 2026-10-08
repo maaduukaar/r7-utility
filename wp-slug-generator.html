@@ -50,6 +50,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
+        @font-face {
+            font-family: 'Keetano Katakana';
+            src: url('assets/fonts/keetano_katakana.ttf') format('truetype');
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+        }
+
         body {
             background-color: #f5f5f7;
             color: #1d1d1f;
@@ -147,11 +155,12 @@
             background: rgba(0, 0, 0, 0.25);
         }
 
-        /* Второй дизайн: один набор полей и общая логика, отдельная портальная композиция. */
+        /* Общая портальная композиция для плотного и японского дизайнов. */
         .dense-only { display: none; }
+        .japanese-only { display: none !important; }
         .app-content { display: contents; }
 
-        body[data-design="dense"] {
+        body[data-layout="portal"] {
             --portal-blue: #005bac;
             --portal-red: #c90000;
             --portal-border: #ccc;
@@ -160,27 +169,27 @@
             color: #222;
             font: 13px/1.45 Arial, 'Helvetica Neue', sans-serif;
         }
-        body[data-design="dense"] .dense-only { display: block; }
-        body[data-design="dense"] [hidden] { display: none !important; }
-        body[data-design="dense"] .portal-width,
-        body[data-design="dense"] > header,
-        body[data-design="dense"] > main,
-        body[data-design="dense"] > footer {
+        body[data-layout="portal"] .dense-only { display: block; }
+        body[data-layout="portal"] [hidden] { display: none !important; }
+        body[data-layout="portal"] .portal-width,
+        body[data-layout="portal"] > header,
+        body[data-layout="portal"] > main,
+        body[data-layout="portal"] > footer {
             width: min(1180px, calc(100% - 24px));
             max-width: 1180px;
             margin-inline: auto;
         }
-        body[data-design="dense"] a,
-        body[data-design="dense"] .portal-link { color: var(--portal-blue); }
-        body[data-design="dense"] a:hover,
-        body[data-design="dense"] .portal-link:hover { color: var(--portal-red); text-decoration: underline; }
-        body[data-design="dense"] :is(button, a, input):focus-visible {
+        body[data-layout="portal"] a,
+        body[data-layout="portal"] .portal-link { color: var(--portal-blue); }
+        body[data-layout="portal"] a:hover,
+        body[data-layout="portal"] .portal-link:hover { color: var(--portal-red); text-decoration: underline; }
+        body[data-layout="portal"] :is(button, a, input):focus-visible {
             outline: 2px solid var(--portal-blue) !important;
             outline-offset: 3px;
         }
-        body[data-design="dense"] button { touch-action: manipulation; }
-        body[data-design="dense"] button:disabled { opacity: .5; cursor: not-allowed; }
-        body[data-design="dense"] .portal-utility {
+        body[data-layout="portal"] button { touch-action: manipulation; }
+        body[data-layout="portal"] button:disabled { opacity: .5; cursor: not-allowed; }
+        body[data-layout="portal"] .portal-utility {
             display: flex;
             justify-content: space-between;
             flex-wrap: wrap;
@@ -191,20 +200,20 @@
             font-size: 11px;
             border-bottom: 1px solid var(--portal-border);
         }
-        body[data-design="dense"] .portal-utility nav { display: flex; gap: 14px; }
-        body[data-design="dense"] > header { padding: 14px 0 12px; gap: 12px; flex-wrap: wrap; }
-        body[data-design="dense"] #navHomeBtn { gap: 10px; text-align: left; }
-        body[data-design="dense"] #navHomeBtn > div {
+        body[data-layout="portal"] .portal-utility nav { display: flex; gap: 14px; }
+        body[data-layout="portal"] > header { padding: 14px 0 12px; gap: 12px; flex-wrap: wrap; }
+        body[data-layout="portal"] #navHomeBtn { gap: 10px; text-align: left; }
+        body[data-layout="portal"] #navHomeBtn > div {
             height: 38px;
             border-radius: 2px;
             background: var(--portal-blue);
             box-shadow: none;
             transform: none;
         }
-        body[data-design="dense"] .portal-brand strong { display: block; color: #222; font-size: 22px; line-height: 1.1; }
-        body[data-design="dense"] .portal-brand small { color: #555; font-size: 11px; }
-        body[data-design="dense"] > header > nav { padding: 0; gap: 0; border-radius: 2px; box-shadow: none; background: white; }
-        body[data-design="dense"] > header > nav button {
+        body[data-layout="portal"] .portal-brand strong { display: block; color: #222; font-size: 22px; line-height: 1.1; }
+        body[data-layout="portal"] .portal-brand small { color: #555; font-size: 11px; }
+        body[data-layout="portal"] > header > nav { padding: 0; gap: 0; border-radius: 2px; box-shadow: none; background: white; }
+        body[data-layout="portal"] > header > nav button {
             width: auto;
             height: 36px;
             padding: 0 16px;
@@ -212,187 +221,520 @@
             color: var(--portal-blue);
             box-shadow: none;
         }
-        body[data-design="dense"] > header > nav button + button { border-left: 1px solid var(--portal-border); }
-        body[data-design="dense"] > header > nav button span { display: inline; }
-        body[data-design="dense"] > header > nav button[aria-current="page"] { background: var(--portal-blue); color: white; }
-        body[data-design="dense"] .portal-quicknav { display: grid; grid-template-columns: repeat(6, 1fr); background: white; border: 1px solid var(--portal-border); border-top: 3px solid var(--portal-blue); }
-        body[data-design="dense"] .portal-quicknav > * { padding: 8px 6px; text-align: center; color: var(--portal-blue); font-weight: 700; }
-        body[data-design="dense"] .portal-quicknav > * + * { border-left: 1px solid var(--portal-border); }
-        body[data-design="dense"] .portal-quicknav > *:hover { background: #eef6ff; }
-        body[data-design="dense"] .portal-breadcrumbs { display: flex; gap: 8px; padding: 8px 0; font-size: 11px; color: #666; }
-        body[data-design="dense"] .portal-title { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
-        body[data-design="dense"] .portal-title h1 { font-size: 24px; font-weight: 700; line-height: 1.2; }
-        body[data-design="dense"] .portal-title p { color: #555; margin-top: 4px; font-size: 12px; }
-        body[data-design="dense"] .portal-badges { display: flex; gap: 4px; flex-wrap: wrap; }
-        body[data-design="dense"] .portal-badge { display: inline-block; padding: 2px 6px; background: #eaf3fc; color: #004b8f; font-size: 10px; font-weight: 700; border: 1px solid #b7cee5; border-radius: 2px; }
-        body[data-design="dense"] .portal-badge-green { color: #176335; background: #edf8ef; border-color: #b4d6bc; }
-        body[data-design="dense"] .portal-badge-orange { color: #824000; background: #fff0d8; border-color: #e7b876; }
-        body[data-design="dense"] .portal-notice { padding: 7px 10px; border: 1px solid #ded09d; background: #fff8d7; margin-bottom: 10px; font-size: 12px; }
-        body[data-design="dense"] .portal-notice strong { color: #a10000; margin-right: 6px; }
-        body[data-design="dense"] > main { display: grid; grid-template-columns: 180px minmax(0, 1fr) 220px; gap: 10px; padding: 0; align-items: start; }
-        body[data-design="dense"] .app-content { display: block; min-width: 0; }
-        body[data-design="dense"] .portal-sidebar,
-        body[data-design="dense"] .portal-aside { display: grid; gap: 10px; min-width: 0; }
-        body[data-design="dense"] .portal-box { background: white; border: 1px solid var(--portal-border); min-width: 0; }
-        body[data-design="dense"] .portal-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 9px; background: #efefef; border-top: 3px solid var(--portal-blue); border-bottom: 1px solid var(--portal-border); font-size: 14px; font-weight: 700; }
-        body[data-design="dense"] .portal-heading small { font-size: 10px; font-weight: 400; color: #555; }
-        body[data-design="dense"] .portal-body { padding: 8px 10px; }
-        body[data-design="dense"] .portal-links { display: grid; }
-        body[data-design="dense"] .portal-links > * { display: block; padding: 7px 9px; text-align: left; border-bottom: 1px dotted #ccc; color: var(--portal-blue); font-size: 12px; }
-        body[data-design="dense"] .portal-links > *:last-child { border-bottom: 0; }
-        body[data-design="dense"] .portal-links > *:hover { background: #eef6ff; }
-        body[data-design="dense"] .portal-links button[aria-pressed="true"] { background: #eaf3fc; font-weight: 700; box-shadow: inset 3px 0 var(--portal-blue); }
-        body[data-design="dense"] .portal-steps { counter-reset: portal-step; }
-        body[data-design="dense"] .portal-steps li { position: relative; padding: 7px 0 7px 27px; border-bottom: 1px dotted #ccc; font-size: 12px; }
-        body[data-design="dense"] .portal-steps li::before { counter-increment: portal-step; content: counter(portal-step, decimal-leading-zero); position: absolute; left: 0; color: var(--portal-blue); font-weight: 700; }
-        body[data-design="dense"] .portal-steps small { display: block; color: #555; }
-        body[data-design="dense"] .portal-shortcuts { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; font-size: 12px; }
-        body[data-design="dense"] kbd { border-radius: 2px; font-size: 10px; }
-        body[data-design="dense"] .portal-callout { border: 1px solid #e7b876; border-top: 3px solid #e88b14; padding: 10px; background: #fffaf0; font-size: 12px; }
-        body[data-design="dense"] .portal-callout strong { display: block; font-size: 15px; margin: 5px 0; }
-        body[data-design="dense"] .portal-callout p { color: #555; margin-bottom: 6px; }
-        body[data-design="dense"] #viewGenerator { max-width: none !important; padding: 0; align-items: stretch; justify-content: start; border: 1px solid var(--portal-border); background: white; transition: none !important; }
-        body[data-design="dense"] #viewGenerator.hidden { display: none; }
-        body[data-design="dense"] .portal-form-top { padding: 10px 12px 0; }
-        body[data-design="dense"] .portal-form-top p { color: #555; font-size: 12px; margin-bottom: 8px; }
-        body[data-design="dense"] .portal-control-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; }
-        body[data-design="dense"] .portal-control-row > span { min-width: 52px; font-weight: 700; }
-        body[data-design="dense"] .portal-segment { display: inline-flex; gap: 0; border: 1px solid #bbb; border-radius: 2px; overflow: hidden; }
-        body[data-design="dense"] .portal-segment button { padding: 5px 12px; color: var(--portal-blue); background: #fafafa; }
-        body[data-design="dense"] .portal-segment button + button { border-left: 1px solid #bbb; }
-        body[data-design="dense"] .portal-segment button[aria-pressed="true"] { color: white; background: var(--portal-blue); }
-        body[data-design="dense"] .generator-form { display: flex; flex-direction: column; padding: 10px 12px 0; }
-        body[data-design="dense"] #slugMethodContainer { position: static; justify-content: start; order: -2; margin: 0 0 10px; opacity: 1; pointer-events: auto; transition: none; gap: 10px; font-size: 12px; }
-        body[data-design="dense"] #slugMethodContainer > span { min-width: 52px; font-weight: 700; }
-        body[data-design="dense"] #slugMethodContainer > div { padding: 0; border: 1px solid #bbb; border-radius: 2px; background: #fafafa; }
-        body[data-design="dense"] #slugMethodContainer button { padding: 5px 12px; border-radius: 0; box-shadow: none; font: inherit; color: var(--portal-blue); }
-        body[data-design="dense"] #slugMethodContainer button + button { border-left: 1px solid #bbb; }
-        body[data-design="dense"] #slugMethodContainer button[aria-pressed="true"] { background: var(--portal-blue); color: white; }
-        body[data-design="dense"] #denseHeadlineLabel { order: -1; font-size: 12px; font-weight: 700; margin-bottom: 5px; }
-        body[data-design="dense"] #mainSearchContainer { border: 1px solid #aaa; border-radius: 2px; box-shadow: none; }
-        body[data-design="dense"] #mainSearchContainer:focus-within { border-color: var(--portal-blue); }
-        body[data-design="dense"] #mainInputRow { height: 54px; padding: 0 10px; gap: 8px; }
-        body[data-design="dense"] #headlineInput { font-size: 16px; letter-spacing: normal; }
-        body[data-design="dense"] #headlineInput::placeholder,
-        body[data-design="dense"] #hierarchicalSlugInput::placeholder { color: #757575; }
-        body[data-design="dense"] #modeToggleBtn,
-        body[data-design="dense"] #copySlugBtn,
-        body[data-design="dense"] #copyHierarchicalBtn { border-radius: 2px; }
-        body[data-design="dense"] #slugUrlSubbar { height: auto; min-height: 66px; padding: 7px 10px; flex-wrap: wrap; gap: 4px 8px; background: #f5f5f5; border-color: #ccc; }
-        body[data-design="dense"] #densePathLabel { width: 100%; font-size: 11px; color: #555; font-weight: 700; }
-        body[data-design="dense"] .portal-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-        body[data-design="dense"] .portal-button { padding: 7px 12px; border: 1px solid #aaa; background: #f6f6f6; border-radius: 2px; color: #333; font-size: 12px; font-weight: 700; }
-        body[data-design="dense"] .portal-button-primary { background: var(--portal-red); border-color: #a90000; color: white; flex: 1; }
-        body[data-design="dense"] .portal-button-primary:hover:not(:disabled) { background: #ab0000; }
-        body[data-design="dense"] .portal-source { margin-top: 8px; color: #555; font-size: 11px; overflow-wrap: anywhere; }
-        body[data-design="dense"] .portal-source span { color: #222; }
-        body[data-design="dense"] #whisperContainer { order: 1; min-height: 36px; height: auto; margin: 0; padding: 8px; }
-        body[data-design="dense"] #whisperText { font-size: 11px; }
-        body[data-design="dense"] .portal-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #d5d5d5; border-top: 1px solid #ccc; order: 2; }
-        body[data-design="dense"] .portal-stats > div { padding: 7px 10px; background: #fafafa; }
-        body[data-design="dense"] .portal-stats dt { color: #666; font-size: 10px; }
-        body[data-design="dense"] .portal-stats dd { font-size: 12px; font-weight: 700; }
-        body[data-design="dense"] .portal-workflow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
-        body[data-design="dense"] .portal-workflow > div { border: 1px solid #ccc; border-top: 2px solid var(--portal-blue); padding: 8px; background: white; font-size: 11px; color: #555; }
-        body[data-design="dense"] .portal-workflow strong { display: block; color: #222; font-size: 12px; margin-bottom: 3px; }
-        body[data-design="dense"] .portal-lower { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 10px; margin-top: 10px; }
-        body[data-design="dense"] .portal-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        body[data-design="dense"] .portal-table :is(th, td) { padding: 7px 8px; border-bottom: 1px solid #ddd; text-align: left; }
-        body[data-design="dense"] .portal-table th { background: #f5f5f5; font-weight: 700; }
-        body[data-design="dense"] .portal-table code { color: var(--portal-blue); }
-        body[data-design="dense"] .portal-alphabet { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
-        body[data-design="dense"] .portal-alphabet button { border: 1px solid #d3d3d3; background: #f8f8f8; padding: 4px 0; font-size: 12px; }
-        body[data-design="dense"] .portal-alphabet button:hover { background: #eaf3fc; border-color: #7ca7cd; }
-        body[data-design="dense"] .portal-alphabet small { display: block; color: var(--portal-blue); font: 10px/1.4 monospace; }
-        body[data-design="dense"] .portal-caption { font-size: 11px; color: #555; margin-top: 6px; }
-        body[data-design="dense"] .portal-example { display: block; width: 100%; text-align: left; padding: 8px 0; border-bottom: 1px dotted #ccc; color: var(--portal-blue); font-size: 12px; }
-        body[data-design="dense"] .portal-example small { display: block; font-family: monospace; color: #666; overflow-wrap: anywhere; }
-        body[data-design="dense"] .portal-sitemap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; padding: 12px; background: #eaeaea; border-top: 3px solid #999; border-bottom: 1px solid #ccc; }
-        body[data-design="dense"] .portal-sitemap h2 { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
-        body[data-design="dense"] .portal-sitemap :is(a, button) { display: block; text-align: left; font-size: 11px; padding: 3px 0; color: var(--portal-blue); }
-        body[data-design="dense"] > footer { padding: 10px 0 16px; color: #666; font-size: 10px; }
-        body[data-design="dense"] :is(#viewDocs, #viewCode) { max-width: none; padding: 12px; background: white; border: 1px solid #ccc; }
-        body[data-design="dense"] :is(#viewDocs, #viewCode) > * + * { margin-top: 12px; }
-        body[data-design="dense"] :is(#viewDocs, #viewCode) > div:first-child { padding-bottom: 10px; }
-        body[data-design="dense"] :is(#viewDocs, #viewCode) h2 { font-size: 20px; }
-        body[data-design="dense"] :is(#viewDocs, #viewCode) .rounded-2xl { border-radius: 2px; box-shadow: none; padding: 12px; border-color: #ccc; }
-        body[data-design="dense"] #viewDocs .space-y-6 > * + * { margin-top: 10px; }
-        body[data-design="dense"] :is(#viewDocs, #viewCode) .text-apple-secondary { color: #555; }
-        body[data-design="dense"] :is(#viewDocs, #viewCode) .text-apple-tertiary { color: #666; }
-        body[data-design="dense"] :is(#viewDocs, #viewCode) button { border-radius: 2px; box-shadow: none; }
-        body[data-design="dense"] #viewCode > div:nth-child(2) { flex-wrap: wrap; gap: 4px; }
-        body[data-design="dense"] #copySnippetBtn { position: static; margin-bottom: 12px; }
-        body[data-design="dense"] #appleAlphabetGrid { gap: 4px; }
-        body[data-design="dense"] #appleAlphabetGrid > * { border-radius: 2px; padding: 6px; }
-        body[data-design="dense"] .text-apple-green { color: #176b35; }
-        body[data-design="dense"] .smooth-transition,
-        body[data-design="dense"] .transition-all { transition-duration: .12s; }
-        body[data-design="dense"] .portal-generator-context { display: none; }
-        body[data-design="dense"][data-view="generator"] .portal-generator-context { display: grid; }
+        body[data-layout="portal"] > header > nav button + button { border-left: 1px solid var(--portal-border); }
+        body[data-layout="portal"] > header > nav button span { display: inline; }
+        body[data-layout="portal"] > header > nav button[aria-current="page"] { background: var(--portal-blue); color: white; }
+        body[data-layout="portal"] .portal-quicknav { display: grid; grid-template-columns: repeat(6, 1fr); background: white; border: 1px solid var(--portal-border); border-top: 3px solid var(--portal-blue); }
+        body[data-layout="portal"] .portal-quicknav > * { padding: 8px 6px; text-align: center; color: var(--portal-blue); font-weight: 700; }
+        body[data-layout="portal"] .portal-quicknav > * + * { border-left: 1px solid var(--portal-border); }
+        body[data-layout="portal"] .portal-quicknav > *:hover { background: #eef6ff; }
+        body[data-layout="portal"] .portal-breadcrumbs { display: flex; gap: 8px; padding: 8px 0; font-size: 11px; color: #666; }
+        body[data-layout="portal"] .portal-title { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+        body[data-layout="portal"] .portal-title h1 { font-size: 24px; font-weight: 700; line-height: 1.2; }
+        body[data-layout="portal"] .portal-title p { color: #555; margin-top: 4px; font-size: 12px; }
+        body[data-layout="portal"] .portal-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+        body[data-layout="portal"] .portal-badge { display: inline-block; padding: 2px 6px; background: #eaf3fc; color: #004b8f; font-size: 10px; font-weight: 700; border: 1px solid #b7cee5; border-radius: 2px; }
+        body[data-layout="portal"] .portal-badge-green { color: #176335; background: #edf8ef; border-color: #b4d6bc; }
+        body[data-layout="portal"] .portal-badge-orange { color: #824000; background: #fff0d8; border-color: #e7b876; }
+        body[data-layout="portal"] .portal-notice { padding: 7px 10px; border: 1px solid #ded09d; background: #fff8d7; margin-bottom: 10px; font-size: 12px; }
+        body[data-layout="portal"] .portal-notice strong { color: #a10000; margin-right: 6px; }
+        body[data-layout="portal"] > main { display: grid; grid-template-columns: 180px minmax(0, 1fr) 220px; gap: 10px; padding: 0; align-items: start; }
+        body[data-layout="portal"] .app-content { display: block; min-width: 0; }
+        body[data-layout="portal"] .portal-sidebar,
+        body[data-layout="portal"] .portal-aside { display: grid; gap: 10px; min-width: 0; }
+        body[data-layout="portal"] .portal-box { background: white; border: 1px solid var(--portal-border); min-width: 0; }
+        body[data-layout="portal"] .portal-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 9px; background: #efefef; border-top: 3px solid var(--portal-blue); border-bottom: 1px solid var(--portal-border); font-size: 14px; font-weight: 700; }
+        body[data-layout="portal"] .portal-heading small { font-size: 10px; font-weight: 400; color: #555; }
+        body[data-layout="portal"] .portal-body { padding: 8px 10px; }
+        body[data-layout="portal"] .portal-links { display: grid; }
+        body[data-layout="portal"] .portal-links > * { display: block; padding: 7px 9px; text-align: left; border-bottom: 1px dotted #ccc; color: var(--portal-blue); font-size: 12px; }
+        body[data-layout="portal"] .portal-links > *:last-child { border-bottom: 0; }
+        body[data-layout="portal"] .portal-links > *:hover { background: #eef6ff; }
+        body[data-layout="portal"] .portal-links button[aria-pressed="true"] { background: #eaf3fc; font-weight: 700; box-shadow: inset 3px 0 var(--portal-blue); }
+        body[data-layout="portal"] .portal-steps { counter-reset: portal-step; }
+        body[data-layout="portal"] .portal-steps li { position: relative; padding: 7px 0 7px 27px; border-bottom: 1px dotted #ccc; font-size: 12px; }
+        body[data-layout="portal"] .portal-steps li::before { counter-increment: portal-step; content: counter(portal-step, decimal-leading-zero); position: absolute; left: 0; color: var(--portal-blue); font-weight: 700; }
+        body[data-layout="portal"] .portal-steps small { display: block; color: #555; }
+        body[data-layout="portal"] .portal-shortcuts { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; font-size: 12px; }
+        body[data-layout="portal"] kbd { border-radius: 2px; font-size: 10px; }
+        body[data-layout="portal"] .portal-callout { border: 1px solid #e7b876; border-top: 3px solid #e88b14; padding: 10px; background: #fffaf0; font-size: 12px; }
+        body[data-layout="portal"] .portal-callout strong { display: block; font-size: 15px; margin: 5px 0; }
+        body[data-layout="portal"] .portal-callout p { color: #555; margin-bottom: 6px; }
+        body[data-layout="portal"] #viewGenerator { max-width: none !important; padding: 0; align-items: stretch; justify-content: start; border: 1px solid var(--portal-border); background: white; transition: none !important; }
+        body[data-layout="portal"] #viewGenerator.hidden { display: none; }
+        body[data-layout="portal"] .portal-form-top { padding: 10px 12px 0; }
+        body[data-layout="portal"] .portal-form-top p { color: #555; font-size: 12px; margin-bottom: 8px; }
+        body[data-layout="portal"] .portal-control-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; }
+        body[data-layout="portal"] .portal-control-row > span { min-width: 52px; font-weight: 700; }
+        body[data-layout="portal"] .portal-segment { display: inline-flex; gap: 0; border: 1px solid #bbb; border-radius: 2px; overflow: hidden; }
+        body[data-layout="portal"] .portal-segment button { padding: 5px 12px; color: var(--portal-blue); background: #fafafa; }
+        body[data-layout="portal"] .portal-segment button + button { border-left: 1px solid #bbb; }
+        body[data-layout="portal"] .portal-segment button[aria-pressed="true"] { color: white; background: var(--portal-blue); }
+        body[data-layout="portal"] .generator-form { display: flex; flex-direction: column; padding: 10px 12px 0; }
+        body[data-layout="portal"] #slugMethodContainer { position: static; justify-content: start; order: -2; margin: 0 0 10px; opacity: 1; pointer-events: auto; transition: none; gap: 10px; font-size: 12px; }
+        body[data-layout="portal"] #slugMethodContainer > span { min-width: 52px; font-weight: 700; }
+        body[data-layout="portal"] #slugMethodContainer > div { padding: 0; border: 1px solid #bbb; border-radius: 2px; background: #fafafa; }
+        body[data-layout="portal"] #slugMethodContainer button { padding: 5px 12px; border-radius: 0; box-shadow: none; font: inherit; color: var(--portal-blue); }
+        body[data-layout="portal"] #slugMethodContainer button + button { border-left: 1px solid #bbb; }
+        body[data-layout="portal"] #slugMethodContainer button[aria-pressed="true"] { background: var(--portal-blue); color: white; }
+        body[data-layout="portal"] #denseHeadlineLabel { order: -1; font-size: 12px; font-weight: 700; margin-bottom: 5px; }
+        body[data-layout="portal"] #mainSearchContainer { border: 1px solid #aaa; border-radius: 2px; box-shadow: none; }
+        body[data-layout="portal"] #mainSearchContainer:focus-within { border-color: var(--portal-blue); }
+        body[data-layout="portal"] #mainInputRow { height: 54px; padding: 0 10px; gap: 8px; }
+        body[data-layout="portal"] #headlineInput { font-size: 16px; letter-spacing: normal; }
+        body[data-layout="portal"] #headlineInput::placeholder,
+        body[data-layout="portal"] #hierarchicalSlugInput::placeholder { color: #757575; }
+        body[data-layout="portal"] #modeToggleBtn,
+        body[data-layout="portal"] #copySlugBtn,
+        body[data-layout="portal"] #copyHierarchicalBtn { border-radius: 2px; }
+        body[data-layout="portal"] #slugUrlSubbar { height: auto; min-height: 66px; padding: 7px 10px; flex-wrap: wrap; gap: 4px 8px; background: #f5f5f5; border-color: #ccc; }
+        body[data-layout="portal"] #densePathLabel { width: 100%; font-size: 11px; color: #555; font-weight: 700; }
+        body[data-layout="portal"] .portal-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        body[data-layout="portal"] .portal-button { padding: 7px 12px; border: 1px solid #aaa; background: #f6f6f6; border-radius: 2px; color: #333; font-size: 12px; font-weight: 700; }
+        body[data-layout="portal"] .portal-button-primary { background: var(--portal-red); border-color: #a90000; color: white; flex: 1; }
+        body[data-layout="portal"] .portal-button-primary:hover:not(:disabled) { background: #ab0000; }
+        body[data-layout="portal"] .portal-source { margin-top: 8px; color: #555; font-size: 11px; overflow-wrap: anywhere; }
+        body[data-layout="portal"] .portal-source span { color: #222; }
+        body[data-layout="portal"] #whisperContainer { order: 1; min-height: 36px; height: auto; margin: 0; padding: 8px; }
+        body[data-layout="portal"] #whisperText { font-size: 11px; }
+        body[data-layout="portal"] .portal-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: #d5d5d5; border-top: 1px solid #ccc; order: 2; }
+        body[data-layout="portal"] .portal-stats > div { padding: 7px 10px; background: #fafafa; }
+        body[data-layout="portal"] .portal-stats dt { color: #666; font-size: 10px; }
+        body[data-layout="portal"] .portal-stats dd { font-size: 12px; font-weight: 700; }
+        body[data-layout="portal"] .portal-workflow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+        body[data-layout="portal"] .portal-workflow > div { border: 1px solid #ccc; border-top: 2px solid var(--portal-blue); padding: 8px; background: white; font-size: 11px; color: #555; }
+        body[data-layout="portal"] .portal-workflow strong { display: block; color: #222; font-size: 12px; margin-bottom: 3px; }
+        body[data-layout="portal"] .portal-lower { display: grid; grid-template-columns: 1.25fr 1fr 1fr; gap: 10px; margin-top: 10px; }
+        body[data-layout="portal"] .portal-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        body[data-layout="portal"] .portal-table :is(th, td) { padding: 7px 8px; border-bottom: 1px solid #ddd; text-align: left; }
+        body[data-layout="portal"] .portal-table th { background: #f5f5f5; font-weight: 700; }
+        body[data-layout="portal"] .portal-table code { color: var(--portal-blue); }
+        body[data-layout="portal"] .portal-alphabet { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+        body[data-layout="portal"] .portal-alphabet button { border: 1px solid #d3d3d3; background: #f8f8f8; padding: 4px 0; font-size: 12px; }
+        body[data-layout="portal"] .portal-alphabet button:hover { background: #eaf3fc; border-color: #7ca7cd; }
+        body[data-layout="portal"] .portal-alphabet small { display: block; color: var(--portal-blue); font: 10px/1.4 monospace; }
+        body[data-layout="portal"] .portal-caption { font-size: 11px; color: #555; margin-top: 6px; }
+        body[data-layout="portal"] .portal-example { display: block; width: 100%; text-align: left; padding: 8px 0; border-bottom: 1px dotted #ccc; color: var(--portal-blue); font-size: 12px; }
+        body[data-layout="portal"] .portal-example small { display: block; font-family: monospace; color: #666; overflow-wrap: anywhere; }
+        body[data-layout="portal"] .portal-sitemap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 16px; padding: 12px; background: #eaeaea; border-top: 3px solid #999; border-bottom: 1px solid #ccc; }
+        body[data-layout="portal"] .portal-sitemap h2 { font-size: 12px; font-weight: 700; margin-bottom: 4px; }
+        body[data-layout="portal"] .portal-sitemap :is(a, button) { display: block; text-align: left; font-size: 11px; padding: 3px 0; color: var(--portal-blue); }
+        body[data-layout="portal"] > footer { padding: 10px 0 16px; color: #666; font-size: 10px; }
+        body[data-layout="portal"] :is(#viewDocs, #viewCode) { max-width: none; padding: 12px; background: white; border: 1px solid #ccc; }
+        body[data-layout="portal"] :is(#viewDocs, #viewCode) > * + * { margin-top: 12px; }
+        body[data-layout="portal"] :is(#viewDocs, #viewCode) > div:first-child { padding-bottom: 10px; }
+        body[data-layout="portal"] :is(#viewDocs, #viewCode) h2 { font-size: 20px; }
+        body[data-layout="portal"] :is(#viewDocs, #viewCode) .rounded-2xl { border-radius: 2px; box-shadow: none; padding: 12px; border-color: #ccc; }
+        body[data-layout="portal"] #viewDocs .space-y-6 > * + * { margin-top: 10px; }
+        body[data-layout="portal"] :is(#viewDocs, #viewCode) .text-apple-secondary { color: #555; }
+        body[data-layout="portal"] :is(#viewDocs, #viewCode) .text-apple-tertiary { color: #666; }
+        body[data-layout="portal"] :is(#viewDocs, #viewCode) button { border-radius: 2px; box-shadow: none; }
+        body[data-layout="portal"] #viewCode > div:nth-child(2) { flex-wrap: wrap; gap: 4px; }
+        body[data-layout="portal"] #copySnippetBtn { position: static; margin-bottom: 12px; }
+        body[data-layout="portal"] #appleAlphabetGrid { gap: 4px; }
+        body[data-layout="portal"] #appleAlphabetGrid > * { border-radius: 2px; padding: 6px; }
+        body[data-layout="portal"] .text-apple-green { color: #176b35; }
+        body[data-layout="portal"] .smooth-transition,
+        body[data-layout="portal"] .transition-all { transition-duration: .12s; }
+        body[data-layout="portal"] .portal-generator-context { display: none; }
+        body[data-layout="portal"][data-view="generator"] .portal-generator-context { display: grid; }
+
+        /* Третий дизайн: Sumi Matsuri — тушь, васи и функциональные японские цвета. */
+        body[data-design="japanese"] {
+            --portal-blue: #234e70;
+            --portal-red: #c92a20;
+            --portal-border: #81745f;
+            --jp-paper: #fffdf7;
+            --jp-washi: #f4ead3;
+            --jp-sumi: #17130f;
+            --jp-indigo: #234e70;
+            --jp-matcha: #607744;
+            --jp-yamabuki: #d99a1b;
+            --jp-plum: #86485b;
+            --jp-sakura: #eab6b1;
+            color: var(--jp-sumi);
+            font-family: 'Yu Gothic', 'Hiragino Kaku Gothic ProN', Meiryo, Arial, sans-serif;
+            background-color: var(--jp-washi);
+            background-image:
+                linear-gradient(90deg, rgba(73, 56, 32, .035) 1px, transparent 1px),
+                linear-gradient(rgba(73, 56, 32, .025) 1px, transparent 1px),
+                radial-gradient(circle at 8% 12%, rgba(201, 42, 32, .08) 0 84px, transparent 86px),
+                radial-gradient(circle at 94% 38%, rgba(35, 78, 112, .07) 0 105px, transparent 107px);
+            background-size: 32px 32px, 32px 32px, auto, auto;
+        }
+        body[data-design="japanese"] .japanese-only { display: block !important; }
+        body[data-design="japanese"] .japanese-inline { display: inline-flex !important; }
+        body[data-design="japanese"] a,
+        body[data-design="japanese"] .portal-link { color: var(--jp-indigo); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+        body[data-design="japanese"] a:hover,
+        body[data-design="japanese"] .portal-link:hover { color: var(--portal-red); }
+        body[data-design="japanese"] :is(button, a, input):focus-visible { outline-color: var(--portal-red) !important; }
+        body[data-design="japanese"] .portal-utility {
+            padding-inline: 10px;
+            color: #fff8e8;
+            background: var(--jp-sumi);
+            border-bottom: 4px solid var(--portal-red);
+        }
+        body[data-design="japanese"] .portal-utility a,
+        body[data-design="japanese"] .portal-utility button { color: #fff8e8; }
+        body[data-design="japanese"] .portal-utility a:hover,
+        body[data-design="japanese"] .portal-utility button:hover { color: #ffd15c; }
+        body[data-design="japanese"] .design-mode-label {
+            margin-left: 9px;
+            padding: 1px 6px;
+            color: #fff;
+            background: var(--portal-red);
+            font-weight: 700;
+            letter-spacing: .08em;
+        }
+        body[data-design="japanese"] > header {
+            position: relative;
+            padding: 12px 10px 10px;
+            background: rgba(255, 253, 247, .9);
+            border-inline: 1px solid #c8b99f;
+            border-bottom: 2px solid var(--jp-sumi);
+        }
+        body[data-design="japanese"] #navHomeBtn > div {
+            width: 52px;
+            height: 52px;
+            padding: 0;
+            border: 3px double #fff5e4;
+            border-radius: 50%;
+            background: var(--portal-red);
+            box-shadow: 2px 3px 0 var(--jp-sumi), inset 0 0 0 2px rgba(71, 0, 0, .2);
+            transform: rotate(-3deg);
+        }
+        body[data-design="japanese"] #navHomeBtn:hover > div { transform: rotate(2deg); }
+        body[data-design="japanese"] .portal-brand > strong {
+            font: 31px/.9 'Keetano Katakana', 'Yu Gothic', sans-serif;
+            letter-spacing: .025em;
+        }
+        body[data-design="japanese"] .portal-brand > small { color: #574d3e; letter-spacing: .08em; }
+        body[data-design="japanese"] .jp-brand-note {
+            align-items: center;
+            gap: 5px;
+            margin: 4px 0 0 6px;
+            color: var(--portal-red);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .14em;
+        }
+        body[data-design="japanese"] > header > nav {
+            overflow: hidden;
+            border: 1px solid var(--jp-sumi);
+            background: var(--jp-paper);
+        }
+        body[data-design="japanese"] > header > nav button { color: var(--jp-sumi); border-bottom: 4px solid transparent; }
+        body[data-design="japanese"] > header > nav button:nth-child(1) { border-bottom-color: var(--portal-red); }
+        body[data-design="japanese"] > header > nav button:nth-child(2) { border-bottom-color: var(--jp-indigo); }
+        body[data-design="japanese"] > header > nav button:nth-child(3) { border-bottom-color: var(--jp-matcha); }
+        body[data-design="japanese"] > header > nav button[aria-current="page"] { background: var(--jp-sumi); color: #fff8e8; }
+        body[data-design="japanese"] .portal-quicknav {
+            border: 1px solid var(--jp-sumi);
+            border-top: 0;
+            box-shadow: 0 3px 0 rgba(23, 19, 15, .16);
+        }
+        body[data-design="japanese"] .portal-quicknav > * {
+            position: relative;
+            min-height: 51px;
+            padding-top: 18px;
+            color: var(--jp-sumi);
+            background: var(--jp-paper);
+            border-top: 6px solid var(--portal-red);
+        }
+        body[data-design="japanese"] .portal-quicknav > :nth-child(2) { border-top-color: var(--jp-matcha); }
+        body[data-design="japanese"] .portal-quicknav > :nth-child(3) { border-top-color: var(--jp-indigo); }
+        body[data-design="japanese"] .portal-quicknav > :nth-child(4) { border-top-color: var(--jp-yamabuki); }
+        body[data-design="japanese"] .portal-quicknav > :nth-child(5) { border-top-color: var(--jp-plum); }
+        body[data-design="japanese"] .portal-quicknav > :nth-child(6) { border-top-color: var(--jp-sumi); }
+        body[data-design="japanese"] .portal-quicknav > *::before {
+            position: absolute;
+            top: 3px;
+            left: 0;
+            right: 0;
+            color: #766b59;
+            font: 9px/1 'Yu Gothic', Meiryo, sans-serif;
+            letter-spacing: .16em;
+        }
+        body[data-design="japanese"] .portal-quicknav > :nth-child(1)::before { content: '記事'; }
+        body[data-design="japanese"] .portal-quicknav > :nth-child(2)::before { content: '分類'; }
+        body[data-design="japanese"] .portal-quicknav > :nth-child(3)::before { content: '音写'; }
+        body[data-design="japanese"] .portal-quicknav > :nth-child(4)::before { content: '翻訳'; }
+        body[data-design="japanese"] .portal-quicknav > :nth-child(5)::before { content: '規格'; }
+        body[data-design="japanese"] .portal-quicknav > :nth-child(6)::before { content: '実装'; }
+        body[data-design="japanese"] .portal-quicknav > *:hover { background: #fff3d9; color: var(--portal-red); }
+        body[data-design="japanese"] .jp-art-panel {
+            position: relative;
+            height: 142px;
+            overflow: hidden;
+            background: var(--jp-paper);
+            border: 1px solid var(--jp-sumi);
+            border-top: 0;
+        }
+        body[data-design="japanese"] .jp-art-panel > * { pointer-events: none; }
+        body[data-design="japanese"] .jp-art-panel::before {
+            content: '';
+            position: absolute;
+            width: 108px;
+            height: 108px;
+            left: 190px;
+            top: 18px;
+            border-radius: 50%;
+            background: var(--portal-red);
+            box-shadow: inset -8px 4px 0 rgba(255, 255, 255, .12);
+            transform: rotate(-7deg);
+        }
+        body[data-design="japanese"] .jp-art-panel::after {
+            content: '';
+            position: absolute;
+            width: 94px;
+            height: 94px;
+            right: 32px;
+            top: 20px;
+            border: 13px solid var(--jp-sumi);
+            border-right-color: transparent;
+            border-bottom-width: 9px;
+            border-radius: 50%;
+            filter: drop-shadow(2px 2px 0 rgba(23, 19, 15, .14));
+            transform: rotate(-23deg);
+        }
+        body[data-design="japanese"] .jp-bamboo { position: absolute; inset: 0 auto 0 24px; width: 150px; transform: rotate(7deg); }
+        body[data-design="japanese"] .jp-bamboo i {
+            position: absolute;
+            width: 15px;
+            height: 126px;
+            left: 26px;
+            top: 5px;
+            border-radius: 70% 30% 45% 55%;
+            background: linear-gradient(90deg, transparent, var(--jp-sumi) 17%, #3a332a 70%, transparent 92%);
+            transform: rotate(7deg);
+        }
+        body[data-design="japanese"] .jp-bamboo i:nth-child(2) { left: 66px; top: 22px; height: 103px; transform: rotate(18deg); }
+        body[data-design="japanese"] .jp-bamboo i:nth-child(3) { left: 106px; top: -12px; height: 119px; transform: rotate(-13deg); }
+        body[data-design="japanese"] .jp-bamboo i::before,
+        body[data-design="japanese"] .jp-bamboo i::after { content: ''; position: absolute; left: -4px; width: 23px; height: 3px; background: var(--jp-sumi); transform: rotate(-5deg); }
+        body[data-design="japanese"] .jp-bamboo i::before { top: 38%; }
+        body[data-design="japanese"] .jp-bamboo i::after { top: 69%; }
+        body[data-design="japanese"] .jp-art-copy { position: absolute; z-index: 2; left: 310px; top: 29px; }
+        body[data-design="japanese"] .jp-art-copy small { display: block; color: var(--jp-indigo); font-weight: 700; letter-spacing: .22em; }
+        body[data-design="japanese"] .jp-art-copy strong {
+            display: block;
+            margin-top: 4px;
+            font: 46px/1 'Keetano Katakana', Arial, sans-serif;
+            letter-spacing: .025em;
+            transform: rotate(-1deg);
+        }
+        body[data-design="japanese"] .jp-art-copy strong::after {
+            content: '';
+            display: block;
+            width: 105%;
+            height: 8px;
+            margin: -4px 0 0 -8px;
+            background: linear-gradient(90deg, transparent, var(--portal-red) 6% 82%, transparent);
+            opacity: .88;
+            transform: skewX(-17deg) rotate(-1deg);
+        }
+        body[data-design="japanese"] .jp-seal {
+            position: absolute;
+            z-index: 3;
+            left: 690px;
+            bottom: 21px;
+            padding: 5px 7px;
+            color: var(--portal-red);
+            border: 2px solid var(--portal-red);
+            font: 14px/1 'Yu Gothic', Meiryo, sans-serif;
+            transform: rotate(5deg);
+        }
+        body[data-design="japanese"] .jp-branch { position: absolute; right: 133px; top: 36px; width: 125px; height: 4px; background: var(--jp-sumi); transform: rotate(-13deg); }
+        body[data-design="japanese"] .jp-branch::before,
+        body[data-design="japanese"] .jp-branch::after { content: ''; position: absolute; width: 7px; height: 7px; border-radius: 50%; background: var(--portal-red); box-shadow: 18px -6px 0 var(--portal-red), 37px 4px 0 var(--jp-sakura), 59px -8px 0 var(--portal-red), 82px 1px 0 var(--portal-red); }
+        body[data-design="japanese"] .jp-branch::before { left: 6px; top: -12px; }
+        body[data-design="japanese"] .jp-branch::after { left: 31px; top: 8px; transform: scale(.72); }
+        body[data-design="japanese"] .portal-breadcrumbs { color: #6f6250; border-bottom: 1px solid #c8b99f; }
+        body[data-design="japanese"] .portal-title { position: relative; padding: 8px 10px 7px; background: rgba(255, 253, 247, .76); border-inline: 1px solid #c8b99f; }
+        body[data-design="japanese"] .portal-title h1 {
+            font: 800 28px/1.08 'Yu Gothic', Meiryo, Arial, sans-serif;
+            letter-spacing: .015em;
+        }
+        body[data-design="japanese"] .portal-title h1::after {
+            content: '';
+            display: block;
+            width: 84%;
+            height: 5px;
+            margin-top: 3px;
+            background: linear-gradient(90deg, var(--jp-sumi), rgba(23, 19, 15, .08));
+            transform: skewX(-22deg);
+        }
+        body[data-design="japanese"] .portal-title p { color: #574d3e; }
+        body[data-design="japanese"] .portal-badge {
+            color: #fff9ea;
+            border-color: transparent;
+            background: var(--jp-indigo);
+            box-shadow: 2px 2px 0 rgba(23, 19, 15, .24);
+        }
+        body[data-design="japanese"] .portal-badge:nth-child(2) { background: var(--jp-plum); }
+        body[data-design="japanese"] .portal-badge-green { color: #fff; background: var(--jp-matcha); }
+        body[data-design="japanese"] .portal-badge-orange { color: #2b1b00; background: var(--jp-yamabuki); border-color: var(--jp-sumi); }
+        body[data-design="japanese"] .portal-notice { background: #fff1c7; border: 1px solid var(--jp-sumi); border-left: 9px solid var(--jp-yamabuki); box-shadow: 3px 3px 0 rgba(23, 19, 15, .13); }
+        body[data-design="japanese"] .portal-notice strong { padding: 2px 5px; color: white; background: var(--portal-red); }
+        body[data-design="japanese"] .portal-box,
+        body[data-design="japanese"] #viewGenerator {
+            background: var(--jp-paper);
+            border: 1px solid var(--jp-sumi);
+            box-shadow: 4px 4px 0 rgba(23, 19, 15, .14);
+        }
+        body[data-design="japanese"] #viewGenerator { border-width: 2px; }
+        body[data-design="japanese"] .portal-heading {
+            color: #fff8e8;
+            background: var(--jp-sumi);
+            border-top: 0;
+            border-left: 7px solid var(--portal-red);
+            font: 700 14px/1.2 'Yu Gothic', Meiryo, Arial, sans-serif;
+            letter-spacing: .025em;
+        }
+        body[data-design="japanese"] .portal-heading small { color: #ffe59b; font: 10px/1 'Yu Gothic', Meiryo, sans-serif; letter-spacing: .12em; }
+        body[data-design="japanese"] #viewGenerator > .portal-heading { background: var(--portal-red); border-left-color: var(--jp-sumi); }
+        body[data-design="japanese"] .portal-links > * { color: #2c251d; border-color: #b9ab94; }
+        body[data-design="japanese"] .portal-links > *::first-letter { color: var(--portal-red); }
+        body[data-design="japanese"] .portal-links > *:hover { color: var(--portal-red); background: #fff0d0; }
+        body[data-design="japanese"] .portal-links button[aria-pressed="true"] { background: #f8d9d2; box-shadow: inset 5px 0 var(--portal-red); }
+        body[data-design="japanese"] .portal-steps li::before { color: white; background: var(--portal-red); padding: 1px 3px; }
+        body[data-design="japanese"] .portal-callout { background: #f8ebc8; border: 1px solid var(--jp-sumi); border-top: 7px solid var(--jp-yamabuki); box-shadow: 4px 4px 0 rgba(23, 19, 15, .14); }
+        body[data-design="japanese"] .portal-callout strong { font-family: 'Yu Gothic', Meiryo, Arial, sans-serif; font-size: 17px; }
+        body[data-design="japanese"] .portal-form-top p,
+        body[data-design="japanese"] .portal-source,
+        body[data-design="japanese"] .portal-caption { color: #685c49; }
+        body[data-design="japanese"] .portal-segment,
+        body[data-design="japanese"] #slugMethodContainer > div { border: 1px solid var(--jp-sumi); background: #f8efdb; }
+        body[data-design="japanese"] .portal-segment button,
+        body[data-design="japanese"] #slugMethodContainer button { color: var(--jp-sumi); background: #f8efdb; }
+        body[data-design="japanese"] .portal-segment button[aria-pressed="true"],
+        body[data-design="japanese"] #slugMethodContainer button[aria-pressed="true"] { color: white; background: var(--jp-indigo); }
+        body[data-design="japanese"] #mainSearchContainer { border: 2px solid var(--jp-sumi); background: #fffefa; box-shadow: inset 5px 0 var(--portal-red); }
+        body[data-design="japanese"] #matrixFxCanvas { display: none; }
+        body[data-design="japanese"] #mainSearchContainer:focus-within { border-color: var(--portal-red); box-shadow: inset 5px 0 var(--portal-red), 0 0 0 3px rgba(201, 42, 32, .13); }
+        body[data-design="japanese"] #slugUrlSubbar { background: #f2e6ce; border-color: #a6977c; }
+        body[data-design="japanese"] .portal-button { border: 1px solid var(--jp-sumi); background: #f6edd9; color: var(--jp-sumi); box-shadow: 2px 2px 0 rgba(23, 19, 15, .18); }
+        body[data-design="japanese"] .portal-button-primary { color: white; background: var(--portal-red); border-color: var(--jp-sumi); font: 700 13px/1.2 'Yu Gothic', Meiryo, Arial, sans-serif; letter-spacing: .04em; }
+        body[data-design="japanese"] .portal-button-primary:hover:not(:disabled) { background: #a91d16; transform: translate(1px, 1px); box-shadow: 1px 1px 0 rgba(23, 19, 15, .18); }
+        body[data-design="japanese"] .portal-stats { background: var(--jp-sumi); }
+        body[data-design="japanese"] .portal-stats > div { background: #f7e4df; border-top: 4px solid var(--portal-red); }
+        body[data-design="japanese"] .portal-stats > div:nth-child(2) { background: #e3ebdf; border-top-color: var(--jp-matcha); }
+        body[data-design="japanese"] .portal-stats > div:nth-child(3) { background: #e1e9ef; border-top-color: var(--jp-indigo); }
+        body[data-design="japanese"] .portal-workflow > div { color: #574d3e; background: var(--jp-paper); border: 1px solid var(--jp-sumi); border-top: 6px solid var(--portal-red); box-shadow: 3px 3px 0 rgba(23, 19, 15, .12); }
+        body[data-design="japanese"] .portal-workflow > div:nth-child(2) { border-top-color: var(--jp-indigo); }
+        body[data-design="japanese"] .portal-workflow > div:nth-child(3) { border-top-color: var(--jp-matcha); }
+        body[data-design="japanese"] .portal-workflow strong { color: var(--jp-sumi); font-family: 'Yu Gothic', Meiryo, Arial, sans-serif; font-size: 12px; }
+        body[data-design="japanese"] .portal-table :is(th, td) { border-color: #c8b99f; }
+        body[data-design="japanese"] .portal-table thead th { color: white; background: var(--jp-indigo); }
+        body[data-design="japanese"] .portal-table tbody th { background: #f0e5d0; }
+        body[data-design="japanese"] .portal-table code { color: var(--portal-red); }
+        body[data-design="japanese"] .portal-alphabet button { color: var(--jp-sumi); border-color: #aa9a81; background: #f8efdc; }
+        body[data-design="japanese"] .portal-alphabet button:nth-child(4n+1) { border-top: 3px solid var(--portal-red); }
+        body[data-design="japanese"] .portal-alphabet button:nth-child(4n+2) { border-top: 3px solid var(--jp-indigo); }
+        body[data-design="japanese"] .portal-alphabet button:nth-child(4n+3) { border-top: 3px solid var(--jp-matcha); }
+        body[data-design="japanese"] .portal-alphabet button:nth-child(4n) { border-top: 3px solid var(--jp-yamabuki); }
+        body[data-design="japanese"] .portal-alphabet button:hover { color: white; background: var(--portal-red); border-color: var(--jp-sumi); }
+        body[data-design="japanese"] .portal-alphabet small { color: var(--jp-indigo); }
+        body[data-design="japanese"] .portal-alphabet button:hover small { color: white; }
+        body[data-design="japanese"] .portal-example { color: var(--jp-indigo); border-color: #aa9a81; }
+        body[data-design="japanese"] .portal-example:hover { color: var(--portal-red); background: #fff3db; }
+        body[data-design="japanese"] .portal-sitemap { color: #fff6e4; background: var(--jp-sumi); border-top: 7px solid var(--portal-red); border-bottom-color: var(--jp-sumi); }
+        body[data-design="japanese"] .portal-sitemap h2 { color: #ffd86f; font-family: 'Yu Gothic', Meiryo, Arial, sans-serif; font-size: 12px; }
+        body[data-design="japanese"] .portal-sitemap :is(a, button) { color: #f2d9b1; }
+        body[data-design="japanese"] .portal-sitemap :is(a, button):hover { color: white; }
+        body[data-design="japanese"] > footer { color: #625745; border-top: 1px solid #ad9d83; }
+        body[data-design="japanese"] :is(#viewDocs, #viewCode) { background: var(--jp-paper); border: 2px solid var(--jp-sumi); box-shadow: 4px 4px 0 rgba(23, 19, 15, .14); }
+        body[data-design="japanese"] :is(#viewDocs, #viewCode) h2 { font: 800 22px/1.15 'Yu Gothic', Meiryo, Arial, sans-serif; }
+        body[data-design="japanese"] :is(#viewDocs, #viewCode) .rounded-2xl { background: #fffefa; border: 1px solid var(--jp-sumi); border-left: 6px solid var(--jp-indigo); }
+        body[data-design="japanese"] #viewDocs .space-y-6 > :nth-child(2) { border-left-color: var(--portal-red); }
+        body[data-design="japanese"] #viewDocs .space-y-6 > :nth-child(3) { border-left-color: var(--jp-matcha); }
+        body[data-design="japanese"] #viewDocs .space-y-6 > :nth-child(4) { border-left-color: var(--jp-yamabuki); }
+        body[data-design="japanese"] :is(#viewDocs, #viewCode) .text-apple-secondary { color: #584d3e; }
+        body[data-design="japanese"] :is(#viewDocs, #viewCode) .text-apple-tertiary { color: #766a58; }
+        body[data-design="japanese"] #appleAlphabetGrid > * { background: #f4ead6; border-color: #b8a88d; }
 
         @media (max-width: 1000px) {
-            body[data-design="dense"] > main { grid-template-columns: 165px minmax(0, 1fr); }
-            body[data-design="dense"] .portal-aside { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); }
-            body[data-design="dense"] .portal-lower { grid-template-columns: 1fr 1fr; }
-            body[data-design="dense"] .portal-lower > :last-child { grid-column: 1 / -1; }
+            body[data-layout="portal"] > main { grid-template-columns: 165px minmax(0, 1fr); }
+            body[data-layout="portal"] .portal-aside { grid-column: 1 / -1; grid-template-columns: repeat(3, 1fr); }
+            body[data-layout="portal"] .portal-lower { grid-template-columns: 1fr 1fr; }
+            body[data-layout="portal"] .portal-lower > :last-child { grid-column: 1 / -1; }
         }
         @media (max-width: 640px) {
-            body[data-design="dense"] .portal-width,
-            body[data-design="dense"] > :is(header, main, footer) { width: calc(100% - 16px); }
-            body[data-design="dense"] > header { padding: 10px 0; }
-            body[data-design="dense"] > header > nav { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); }
-            body[data-design="dense"] > header > nav button { height: 40px; padding: 0 8px; }
-            body[data-design="dense"] .portal-utility { font-size: 10px; }
-            body[data-design="dense"] .portal-utility nav { flex-wrap: wrap; gap: 12px; }
-            body[data-design="dense"] .portal-utility nav > * { min-height: 28px; display: inline-flex; align-items: center; }
-            body[data-design="dense"] .portal-quicknav { grid-template-columns: repeat(3, 1fr); }
-            body[data-design="dense"] .portal-quicknav > * { min-height: 40px; border-bottom: 1px solid #ddd; font-size: 12px; }
-            body[data-design="dense"] .portal-quicknav > :nth-child(4) { border-left: 0; }
-            body[data-design="dense"] .portal-title h1 { font-size: 22px; }
-            body[data-design="dense"] > main { grid-template-columns: minmax(0, 1fr); }
-            body[data-design="dense"] .app-content { grid-row: 1; }
-            body[data-design="dense"] .portal-sidebar { grid-template-columns: 1fr 1fr; }
-            body[data-design="dense"] .portal-aside { grid-template-columns: 1fr 1fr; }
-            body[data-design="dense"] .portal-aside > :last-child { grid-column: 1 / -1; }
-            body[data-design="dense"] .portal-lower { grid-template-columns: minmax(0, 1fr); }
-            body[data-design="dense"] .portal-sitemap { grid-template-columns: 1fr 1fr; gap: 12px; }
-            body[data-design="dense"] .portal-sitemap :is(a, button) { min-height: 32px; }
-            body[data-design="dense"] :is(.portal-segment, #slugMethodContainer) button { min-height: 36px; }
-            body[data-design="dense"] .portal-links > * { min-height: 38px; }
-            body[data-design="dense"] .portal-button { min-height: 40px; }
-            body[data-design="dense"] :is(#modeToggleBtn, #copySlugBtn, #copyHierarchicalBtn) { width: 36px; height: 36px; }
-            body[data-design="dense"] #clearHierarchicalBtn { width: 28px; height: 32px; }
-            body[data-design="dense"] #hierarchicalSlugInput { font-size: 16px; }
-            body[data-design="dense"] .portal-alphabet button { min-height: 44px; }
-            body[data-design="dense"] .portal-workflow { gap: 4px; }
+            body[data-layout="portal"] .portal-width,
+            body[data-layout="portal"] > :is(header, main, footer) { width: calc(100% - 16px); }
+            body[data-layout="portal"] > header { padding: 10px 0; }
+            body[data-layout="portal"] > header > nav { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); }
+            body[data-layout="portal"] > header > nav button { height: 40px; padding: 0 8px; }
+            body[data-layout="portal"] .portal-utility { font-size: 10px; }
+            body[data-layout="portal"] .portal-utility nav { flex-wrap: wrap; gap: 12px; }
+            body[data-layout="portal"] .portal-utility nav > * { min-height: 28px; display: inline-flex; align-items: center; }
+            body[data-layout="portal"] .portal-quicknav { grid-template-columns: repeat(3, 1fr); }
+            body[data-layout="portal"] .portal-quicknav > * { min-height: 40px; border-bottom: 1px solid #ddd; font-size: 12px; }
+            body[data-layout="portal"] .portal-quicknav > :nth-child(4) { border-left: 0; }
+            body[data-layout="portal"] .portal-title h1 { font-size: 22px; }
+            body[data-layout="portal"] > main { grid-template-columns: minmax(0, 1fr); }
+            body[data-layout="portal"] .app-content { grid-row: 1; }
+            body[data-layout="portal"] .portal-sidebar { grid-template-columns: 1fr 1fr; }
+            body[data-layout="portal"] .portal-aside { grid-template-columns: 1fr 1fr; }
+            body[data-layout="portal"] .portal-aside > :last-child { grid-column: 1 / -1; }
+            body[data-layout="portal"] .portal-lower { grid-template-columns: minmax(0, 1fr); }
+            body[data-layout="portal"] .portal-sitemap { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+            body[data-layout="portal"] .portal-sitemap section { min-width: 0; }
+            body[data-layout="portal"] .portal-sitemap h2,
+            body[data-layout="portal"] .portal-sitemap :is(a, button) { overflow-wrap: anywhere; }
+            body[data-layout="portal"] .portal-sitemap :is(a, button) { min-height: 32px; }
+            body[data-layout="portal"] :is(.portal-segment, #slugMethodContainer) button { min-height: 36px; }
+            body[data-layout="portal"] .portal-links > * { min-height: 38px; }
+            body[data-layout="portal"] .portal-button { min-height: 40px; }
+            body[data-layout="portal"] :is(#modeToggleBtn, #copySlugBtn, #copyHierarchicalBtn) { width: 36px; height: 36px; }
+            body[data-layout="portal"] #clearHierarchicalBtn { width: 28px; height: 32px; }
+            body[data-layout="portal"] #hierarchicalSlugInput { font-size: 16px; }
+            body[data-layout="portal"] .portal-alphabet button { min-height: 44px; }
+            body[data-layout="portal"] .portal-workflow { gap: 4px; }
+            body[data-design="japanese"] .jp-art-panel { height: 116px; }
+            body[data-design="japanese"] #navHomeBtn { max-width: 100%; min-width: 0; }
+            body[data-design="japanese"] .portal-brand { min-width: 0; }
+            body[data-design="japanese"] .portal-brand > strong { font-size: clamp(20px, 7vw, 26px); white-space: nowrap; }
+            body[data-design="japanese"] .portal-brand > small { display: block; font-size: 9px; white-space: nowrap; }
+            body[data-design="japanese"] .jp-brand-note { display: none !important; }
+            body[data-design="japanese"] .jp-art-panel::before { left: 39px; width: 82px; height: 82px; top: 17px; opacity: .92; }
+            body[data-design="japanese"] .jp-art-panel::after { width: 69px; height: 69px; right: -23px; top: 18px; border-width: 10px; border-right-color: transparent; opacity: .48; }
+            body[data-design="japanese"] .jp-bamboo { left: -27px; opacity: .32; transform: scale(.58) rotate(7deg); transform-origin: left center; }
+            body[data-design="japanese"] .jp-art-copy { left: 101px; top: 23px; }
+            body[data-design="japanese"] .jp-art-copy small { font-size: 9px; }
+            body[data-design="japanese"] .jp-art-copy strong { font-size: clamp(24px, 8vw, 34px); }
+            body[data-design="japanese"] .jp-seal { left: auto; right: 12px; bottom: 9px; }
+            body[data-design="japanese"] .jp-branch { display: none; }
+            body[data-design="japanese"] .portal-title h1 { font-size: 23px; }
         }
         @media (prefers-reduced-motion: reduce) {
-            body[data-design="dense"] *, body[data-design="dense"] *::before { transition: none !important; animation: none !important; }
+            body[data-layout="portal"] *, body[data-layout="portal"] *::before { transition: none !important; animation: none !important; }
         }
     </style>
 </head>
-<body data-design="classic" data-view="generator" class="min-h-screen flex flex-col justify-between selection:bg-apple-blue selection:text-white">
+<body data-design="classic" data-layout="classic" data-view="generator" class="min-h-screen flex flex-col justify-between selection:bg-apple-blue selection:text-white">
 
     <div class="dense-only portal-utility portal-width">
-        <span>R7-UTILITY / Инструменты для работы с контентом</span>
+        <span>R7-UTILITY / Инструменты для работы с контентом <b class="design-mode-label" id="designModeLabel">02 / Плотный портал</b></span>
         <nav aria-label="Служебная навигация">
             <a href="https://github.com/maaduukaar/r7-utility" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
             <button type="button" class="portal-link" data-portal-view="docs">Справка</button>
-            <button type="button" class="portal-link" data-portal-action="design">Классический вид ↔</button>
+            <button type="button" class="portal-link design-switch-label" data-portal-action="design">Японский арт-вид →</button>
         </nav>
     </div>
 
     <!-- Верхняя панель управления (Header в стиле macOS Menu Bar) -->
     <header class="w-full max-w-6xl mx-auto px-4 py-4 sm:px-6 sm:py-6 flex items-center justify-between z-30">
         <!-- Логотип / Название -->
-        <button id="navHomeBtn" type="button" aria-label="Плотный дизайн Japanese Dense Web" aria-pressed="false" class="flex items-center text-apple-text hover:opacity-85 transition-all group select-none shrink-0" title="Включить дизайн Japanese Dense Web">
+        <button id="navHomeBtn" type="button" aria-label="Текущий дизайн: классический. Следующий: плотный портал" class="flex items-center text-apple-text hover:opacity-85 transition-all group select-none shrink-0" title="Включить плотный портальный дизайн">
             <!-- Компактный бейдж-глиф транслитерации (Ё → yo) -->
             <div class="h-7 px-2.5 rounded-[8px] bg-gradient-to-b from-[#2c2c2e] to-[#1c1c1e] text-white shadow-sm flex items-center justify-center gap-1.5 border border-black/10 group-hover:scale-105 transition-transform">
                 <span class="text-[11px] font-bold tracking-tight text-white">Ё</span>
                 <i class="fa-solid fa-arrow-right text-[8px] text-white/50"></i>
                 <span class="code-font text-[11px] font-bold text-white tracking-tight">yo</span>
             </div>
-            <span class="dense-only portal-brand"><strong>WP Slug<span style="color: #c90000">.</span></strong><small>Генератор адресов WordPress</small></span>
+            <span class="dense-only portal-brand"><strong>WP Slug<span style="color: #c90000">.</span></strong><small>Генератор адресов WordPress</small><span class="japanese-only japanese-inline jp-brand-note">墨祭 · SUMI MATSURI</span></span>
         </button>
 
         <!-- Навигация: Генератор / Справка / Код (на смартфонах компактные круглые кнопки с иконками, на десктопе с подписями) -->
@@ -421,6 +763,12 @@
             <button type="button" data-portal-view="docs">Таблица ISO 9</button>
             <button type="button" data-portal-view="code">Примеры кода</button>
         </nav>
+        <div class="japanese-only jp-art-panel" aria-hidden="true">
+            <span class="jp-bamboo"><i></i><i></i><i></i></span>
+            <span class="jp-art-copy"><small>言葉を URL へ · КОТОБА</small><strong>Слово в адрес</strong></span>
+            <span class="jp-seal">変換</span>
+            <span class="jp-branch"></span>
+        </div>
         <nav class="portal-breadcrumbs" aria-label="Хлебные крошки">
             <a href="https://github.com/maaduukaar/r7-utility" target="_blank" rel="noopener noreferrer">R7-Utility</a><span aria-hidden="true">›</span>
             <button type="button" class="portal-link" data-portal-view="generator">WordPress Slug</button><span aria-hidden="true">›</span>
@@ -891,7 +1239,7 @@ def wp_slugify(text: str) -> str:
         <section><h2>Генератор</h2><button type="button" data-portal-type="post">Слаги статей</button><button type="button" data-portal-type="category">Слаги рубрик</button><button type="button" data-portal-method="translate">Перевод на английский</button></section>
         <section><h2>Разработчикам</h2><button type="button" data-portal-lang="js">Код на JavaScript</button><button type="button" data-portal-lang="php">Код на PHP</button><button type="button" data-portal-lang="py">Код на Python</button></section>
         <section><h2>Первоисточники</h2><a href="https://wordpress.org/plugins/cyr2lat/" target="_blank" rel="noopener noreferrer">Плагин Cyr-To-Lat ↗</a><a href="https://github.com/mihdan/cyr2lat" target="_blank" rel="noopener noreferrer">Исходный код плагина ↗</a><a href="https://developer.wordpress.org/reference/functions/sanitize_title_with_dashes/" target="_blank" rel="noopener noreferrer">Функции WordPress ↗</a></section>
-        <section><h2>R7-Utility</h2><a href="list-diff-checker.html">Сравнение списков</a><a href="table-converter.html">Конвертер таблиц</a><button type="button" data-portal-action="design">Вернуться к классическому виду ↔</button></section>
+        <section><h2>R7-Utility</h2><a href="list-diff-checker.html">Сравнение списков</a><a href="table-converter.html">Конвертер таблиц</a><button type="button" class="design-switch-label" data-portal-action="design">Японский арт-вид →</button></section>
     </div>
 
     <!-- Нижняя ненавязчивая строка статуса (на мобильных по центру в две аккуратные строки, на десктопе по краям) -->
@@ -997,9 +1345,39 @@ def wp_slugify(text: str) -> str:
         ].map(name => [name, document.getElementById(`dense${name}`)]));
         const portalTypeButtons = document.querySelectorAll('[data-portal-type]');
         const portalMethodButtons = document.querySelectorAll('[data-portal-method]');
+        const designModeLabel = document.getElementById('designModeLabel');
+        const designSwitchLabels = document.querySelectorAll('.design-switch-label');
+        const DESIGN_ORDER = ['classic', 'dense', 'japanese'];
+        const DESIGN_INFO = {
+            classic: {
+                name: 'классический',
+                marker: '01 / Классический',
+                nextButton: 'Плотный портал →'
+            },
+            dense: {
+                name: 'плотный портал',
+                marker: '02 / Плотный портал',
+                nextButton: 'Японский арт-вид →'
+            },
+            japanese: {
+                name: 'японский Sumi Matsuri',
+                marker: '03 / 墨祭 Sumi Matsuri',
+                nextButton: 'Классический вид →'
+            }
+        };
+
+        function updateDesignControls() {
+            const current = DESIGN_ORDER.includes(document.body.dataset.design) ? document.body.dataset.design : 'classic';
+            const next = DESIGN_ORDER[(DESIGN_ORDER.indexOf(current) + 1) % DESIGN_ORDER.length];
+            document.body.dataset.layout = current === 'classic' ? 'classic' : 'portal';
+            navHomeBtn.setAttribute('aria-label', `Текущий дизайн: ${DESIGN_INFO[current].name}. Следующий: ${DESIGN_INFO[next].name}`);
+            navHomeBtn.title = `Включить дизайн: ${DESIGN_INFO[next].name}`;
+            designModeLabel.textContent = DESIGN_INFO[current].marker;
+            designSwitchLabels.forEach(button => { button.textContent = DESIGN_INFO[current].nextButton; });
+        }
 
         function updateDenseUI() {
-            if (document.body.dataset.design !== 'dense') return;
+            if (document.body.dataset.layout !== 'portal') return;
             const isSlug = state.mode === 'slug';
             const isCategory = state.generatorType === 'category';
             const label = isSlug ? 'Готовый слаг' : (isCategory ? 'Название рубрики' : 'Заголовок статьи');
@@ -1027,10 +1405,9 @@ def wp_slugify(text: str) -> str:
             // Завершаем возможный переход между Статьями и Рубриками до смены компоновки.
             clearModeTransitionTimers();
             if (state.mode === 'input') updateInputModeUI();
-            const isDense = document.body.dataset.design !== 'dense';
-            document.body.dataset.design = isDense ? 'dense' : 'classic';
-            navHomeBtn.setAttribute('aria-pressed', String(isDense));
-            navHomeBtn.title = isDense ? 'Вернуться к классическому дизайну' : 'Включить дизайн Japanese Dense Web';
+            const current = DESIGN_ORDER.includes(document.body.dataset.design) ? document.body.dataset.design : 'classic';
+            document.body.dataset.design = DESIGN_ORDER[(DESIGN_ORDER.indexOf(current) + 1) % DESIGN_ORDER.length];
+            updateDesignControls();
             // Смена оформления сохраняет открытый раздел, заголовок, результат и путь.
             updateDenseUI();
             adjustInputWidth();
@@ -3296,7 +3673,7 @@ def wp_slugify(text: str) -> str:
         function adjustInputWidth() {
             if (!headlineInput || !viewGenerator) return;
             updateDenseUI();
-            if (document.body.dataset.design === 'dense') return;
+            if (document.body.dataset.layout === 'portal') return;
 
             if (!window.textRuler) {
                 window.textRuler = document.createElement('span');
@@ -3685,7 +4062,7 @@ def wp_slugify(text: str) -> str:
             const nextType = targetType || (state.generatorType === 'post' ? 'category' : 'post');
             state.generatorType = nextType;
 
-            if (document.body.dataset.design === 'dense') {
+            if (document.body.dataset.layout === 'portal') {
                 updateInputModeUI();
                 adjustInputWidth();
                 if (onComplete) onComplete();
@@ -4759,6 +5136,7 @@ def wp_slugify(text: str) -> str:
 
         // Инициализация
         document.addEventListener('DOMContentLoaded', () => {
+            updateDesignControls();
             MatrixFx.init();
             NMTManager.initCache();
             try {
