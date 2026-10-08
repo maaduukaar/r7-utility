@@ -2354,20 +2354,32 @@ def wp_slugify(text: str) -> str:
 
                 ctx.clearRect(0, 0, w, h);
 
-                const step = this.dotSize + this.spacing;
-                const cols = Math.floor(w / step);
-                const rows = Math.floor(h / step);
-                if (cols <= 0 || rows <= 0) return;
+                // Отступ крайнего слоя точек от внутренних стенок формы
+                const edgeMargin = 7.5;
+                const stepTarget = this.dotSize + this.spacing; // ~8px
 
-                const offsetX = (w - (cols - 1) * step) / 2;
-                const offsetY = (h - (rows - 1) * step) / 2;
+                const cols = Math.max(3, Math.round((w - 2 * edgeMargin) / stepTarget) + 1);
+                const rows = Math.max(3, Math.round((h - 2 * edgeMargin) / stepTarget) + 1);
+
+                const stepX = (w - 2 * edgeMargin) / (cols - 1);
+                const stepY = (h - 2 * edgeMargin) / (rows - 1);
 
                 const progress = reducedMotion ? 0.5 : (elapsed % this.waveDuration) / this.waveDuration;
 
                 for (let r = 0; r < rows; r++) {
                     for (let c = 0; c < cols; c++) {
-                        const baseX = offsetX + c * step;
-                        const baseY = offsetY + r * step;
+                        const baseX = edgeMargin + c * stepX;
+                        const baseY = edgeMargin + r * stepY;
+
+                        // Расстояние от внешнего контура (в шагах сетки)
+                        const distFromEdge = Math.min(c, cols - 1 - c, r, rows - 1 - r);
+                        const isEdge = distFromEdge === 0;
+
+                        // Коэффициент закрепленности (приклеенности к краям формы):
+                        // Крайний слой (isEdge) неподвижен (motionFactor = 0),
+                        // Предкрайний слой плавно передает натяжение (0.55),
+                        // Внутренние слои свободно шевелятся (1.0).
+                        const motionFactor = isEdge ? 0 : (distFromEdge === 1 ? 0.55 : 1.0);
 
                         // Нормализованные координаты (0..1)
                         const nx = c / Math.max(1, cols - 1);
@@ -2391,16 +2403,20 @@ def wp_slugify(text: str) -> str:
                             flicker = Math.sin((elapsed * 0.007) + flickerSeed) * 0.5 + 0.5;
                         }
 
-                        // Смещение (Bulge displacement) на гребне волны
-                        const disp = wave * this.waveIntensity;
+                        // Смещение (Bulge displacement) на гребне волны:
+                        // внутренние точки шевелятся, а края остаются приклеенными к форме
+                        const disp = wave * this.waveIntensity * motionFactor;
                         const drawX = baseX + disp * 0.4;
                         const drawY = baseY - disp * 0.4;
 
                         // Масштабирование точки на гребне волны
-                        const currentRadius = (this.dotSize / 2) * (1 + 0.45 * wave);
+                        const scaleBoost = isEdge ? 0.25 : 0.45;
+                        const currentRadius = (this.dotSize / 2) * (1 + scaleBoost * wave);
 
-                        // Итоговая прозрачность: заполнение всей белой формы от края до края включая скругления углов
-                        const alpha = Math.max(0, Math.min(1, 0.14 + 0.16 * flicker + 0.70 * wave));
+                        // Итоговая прозрачность: крайний слой чуть плотнее очерчивает форму
+                        const baseAlpha = isEdge ? 0.20 : 0.14;
+                        const flickerAlpha = isEdge ? 0.10 * flicker : 0.16 * flicker;
+                        const alpha = Math.max(0, Math.min(1, baseAlpha + flickerAlpha + 0.70 * wave));
                         if (alpha <= 0.01) continue;
 
                         ctx.beginPath();
