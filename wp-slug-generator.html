@@ -1563,6 +1563,18 @@ def wp_slugify(text: str) -> str:
 
         function revealDesignPart(element, effect, delay, duration) {
             const style = getComputedStyle(element);
+            if (effect === 'flyLeft' || effect === 'flyRight') {
+                // Расстояние до края окна: вся панель начинает движение за экраном.
+                const rect = element.getBoundingClientRect();
+                const fromLeft = effect === 'flyLeft';
+                const startX = fromLeft ? -rect.right - 32 : document.documentElement.clientWidth - rect.left + 32;
+                animateDesignPart(element, [
+                    { transform: `translateX(${startX}px)` },
+                    { transform: `translateX(${fromLeft ? 12 : -12}px)`, offset: .76 },
+                    { transform: style.transform }
+                ], { delay, duration });
+                return;
+            }
             const end = { transform: style.transform, opacity: style.opacity, clipPath: 'inset(0% 0% 0% 0%)' };
             const poses = {
                 cut: [
@@ -1667,12 +1679,12 @@ def wp_slugify(text: str) -> str:
                 ['.portal-title', ['cut'], 620, 0, 1100],
                 ['.portal-title .portal-badge', ['stamp'], 1220, 140, 650],
                 ['.portal-notice', ['rise'], 1100, 0, 960],
-                ['.portal-sidebar > *', ['fold', 'cut'], 1040, 250, 1160],
+                ['.portal-sidebar', ['flyLeft'], 1040, 0, 1160],
                 ['#viewGenerator, #viewDocs, #viewCode', ['doors'], 820, 0, 1380],
                 ['#viewGenerator > .portal-heading', ['cut'], 1340, 0, 720],
                 ['.portal-form-top, .generator-form', ['fold', 'rise'], 1420, 160, 1110],
                 ['.portal-stats > *, .portal-workflow > *', ['fold', 'drop', 'rise'], 1700, 90, 640],
-                ['.portal-aside > *', ['drop', 'fold', 'stamp'], 1150, 250, 1210],
+                ['.portal-aside', ['flyRight'], 1150, 0, 1210],
                 ['.portal-lower > *', ['fold', 'doors', 'drop'], 1460, 150, 1030],
                 ['.portal-sitemap', ['cut'], 1840, 0, 950],
                 ['body > footer', ['rise'], 1990, 0, 1010]
