@@ -1575,8 +1575,13 @@ def wp_slugify(text: str) -> str:
                 ], { delay, duration });
                 return;
             }
-            const end = { transform: style.transform, opacity: style.opacity, clipPath: 'inset(0% 0% 0% 0%)' };
+            // Возврат генератора не обрезает тень: строка и тень движутся одним слоем.
+            const end = { transform: style.transform, opacity: style.opacity, clipPath: effect === 'settle' ? 'none' : 'inset(0% 0% 0% 0%)' };
             const poses = {
+                settle: [
+                    { transform: 'translateY(16px) scale(.97)', opacity: 0 },
+                    { transform: 'translateY(-2px) scale(1.005)', opacity: end.opacity, offset: .72 }
+                ],
                 cut: [
                     { transform: 'translateX(-42px) skewX(-8deg)', clipPath: 'inset(0% 100% 0% 0%)' },
                     { transform: 'translateX(5px) skewX(0deg)', clipPath: end.clipPath, offset: .72 }
@@ -1691,8 +1696,8 @@ def wp_slugify(text: str) -> str:
                 ['body > footer', ['rise'], 1990, 0, 1010]
             ] : [
                 ['body > header > nav', ['cut'], 25, 0, 170],
-                ['#viewGenerator, #viewDocs, #viewCode', ['fold'], 90, 0, 290],
-                ['.generator-form', ['doors'], 200, 0, 300],
+                ['#viewGenerator', ['settle'], 60, 0, 440],
+                ['#viewDocs, #viewCode', ['fold'], 90, 0, 290],
                 ['body > footer', ['rise'], 320, 0, 180]
             ];
             // Сначала измеряем все блоки: трансформации родителей не влияют на отбор детей.
