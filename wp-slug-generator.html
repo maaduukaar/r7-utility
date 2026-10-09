@@ -687,6 +687,10 @@
         body[data-design="japanese"] #slugMethodContainer button[aria-pressed="true"] { color: white; background: var(--jp-indigo); }
         body[data-design="japanese"] #mainSearchContainer { border: 2px solid var(--jp-sumi); background: #fffefa; box-shadow: inset 5px 0 var(--portal-red); }
         body[data-design="japanese"] #matrixFxCanvas { display: block; }
+        body[data-design="japanese"] #mainSearchContainer.matrix-fx-active #headlineInput:is(:focus, :focus-visible) {
+            outline: none !important;
+            box-shadow: none !important;
+        }
         body[data-design="japanese"] #mainSearchContainer:focus-within { border-color: var(--portal-red); box-shadow: inset 5px 0 var(--portal-red), 0 0 0 3px rgba(201, 42, 32, .13); }
         body[data-design="japanese"] #slugUrlSubbar { background: #f2e6ce; border-color: #a6977c; }
         body[data-design="japanese"] .portal-button { border: 1px solid var(--jp-sumi); background: #f6edd9; color: var(--jp-sumi); box-shadow: 2px 2px 0 rgba(23, 19, 15, .18); }
@@ -3571,6 +3575,7 @@ def wp_slugify(text: str) -> str:
 
                 this.isStopping = false;
                 this.isActive = true;
+                mainSearchContainer.classList.add('matrix-fx-active');
                 this.resize();
                 if (this.width <= 0 || this.height <= 0) {
                     requestAnimationFrame(() => {
@@ -3797,6 +3802,7 @@ def wp_slugify(text: str) -> str:
                     if (this.ctx && this.width && this.height) {
                         this.ctx.clearRect(0, 0, this.width, this.height);
                     }
+                    mainSearchContainer.classList.remove('matrix-fx-active');
                     this.fadeTimeout = null;
                 }, 300);
             },
@@ -3819,6 +3825,7 @@ def wp_slugify(text: str) -> str:
                 if (this.ctx && this.width && this.height) {
                     this.ctx.clearRect(0, 0, this.width, this.height);
                 }
+                mainSearchContainer.classList.remove('matrix-fx-active');
             }
         };
 
