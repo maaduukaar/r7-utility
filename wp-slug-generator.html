@@ -120,6 +120,32 @@
             to { clip-path: polygon(220% 0, 320% 0, 220% 100%, 120% 100%); }
         }
 
+        /* На время сборки темы движением управляет одна общая сцена. */
+        body[data-design-transition] { overflow-anchor: none; }
+        body[data-design-transition] *,
+        body[data-design-transition] *::before,
+        body[data-design-transition] *::after { transition: none !important; }
+        body[data-design-transition] #navHomeBtn { position: relative; z-index: 60; }
+        body[data-design-transition] #navHomeBtn .theme-hint-scan { visibility: hidden; }
+        body[data-design-transition] :is(.portal-quicknav, header > nav) { overflow: visible; }
+        .theme-mat-host { visibility: hidden; }
+        body[data-design-transition] .jp-art-panel.theme-mat-host { overflow: visible; }
+        .theme-mat-layer {
+            position: absolute;
+            z-index: 4;
+            visibility: visible;
+            pointer-events: none;
+            perspective: 900px;
+        }
+        .theme-mat-slat {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            overflow: hidden;
+            transform-origin: 50% 0;
+            backface-visibility: hidden;
+        }
+
         /* Нежный медленный фейд для подсказок */
         .whisper-fade {
             transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1438,7 +1464,8 @@ def wp_slugify(text: str) -> str:
         let themeHintTimer = null;
 
         function canShowThemeHint() {
-            return document.body.dataset.design === 'classic' && !document.hidden && !themeHintMotion.matches;
+            return document.body.dataset.design === 'classic' && !document.hidden && !themeHintMotion.matches
+                && !document.body.hasAttribute('data-design-transition');
         }
 
         function stopThemeHint() {
@@ -1509,17 +1536,195 @@ def wp_slugify(text: str) -> str:
             portalMethodButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.portalMethod === state.slugMethod)));
         }
 
+        // Анимации меняют только изображение элементов, сохраняя поля и обработчики.
+        const designMotion = { animations: [], cleanups: [], run: 0 };
+
+        function finishDesignMotion() {
+            const wasRunning = document.body.hasAttribute('data-design-transition');
+            designMotion.run++;
+            designMotion.animations.splice(0).forEach(animation => animation.cancel());
+            designMotion.cleanups.splice(0).forEach(cleanup => cleanup());
+            delete document.body.dataset.designTransition;
+            if (wasRunning) syncThemeHint();
+        }
+
+        function animateDesignPart(element, frames, options = {}) {
+            const animation = element.animate(frames, {
+                duration: 500, easing: 'cubic-bezier(.2,.75,.25,1)', fill: 'both', ...options
+            });
+            designMotion.animations.push(animation);
+            return animation;
+        }
+
+        function isDesignPartVisible(element) {
+            const rect = element.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < innerHeight + 60;
+        }
+
+        function revealDesignPart(element, effect, delay) {
+            const style = getComputedStyle(element);
+            const end = { transform: style.transform, opacity: style.opacity, clipPath: 'inset(0% 0% 0% 0%)' };
+            const poses = {
+                cut: [
+                    { transform: 'translateX(-42px) skewX(-8deg)', clipPath: 'inset(0% 100% 0% 0%)' },
+                    { transform: 'translateX(5px) skewX(0deg)', clipPath: end.clipPath, offset: .72 }
+                ],
+                doors: [
+                    { transform: 'perspective(800px) rotateY(-38deg)', clipPath: 'inset(0% 50% 0% 50%)' },
+                    { transform: 'perspective(800px) rotateY(4deg)', clipPath: end.clipPath, offset: .72 }
+                ],
+                fold: [
+                    { transform: 'perspective(800px) translateY(-24px) rotateX(-82deg)', clipPath: 'inset(0% 0% 100% 0%)' },
+                    { transform: 'perspective(800px) translateY(4px) rotateX(7deg)', clipPath: end.clipPath, offset: .72 }
+                ],
+                drop: [
+                    { transform: 'translateY(-54px) rotate(3deg)', opacity: 0 },
+                    { transform: 'translateY(7px) rotate(-1deg) scaleY(.96)', opacity: end.opacity, offset: .68 }
+                ],
+                rise: [
+                    { transform: 'translateY(36px) skewY(-3deg)', clipPath: 'inset(100% 0% 0% 0%)' },
+                    { transform: 'translateY(-4px) skewY(0deg)', clipPath: end.clipPath, offset: .75 }
+                ],
+                stamp: [
+                    { transform: 'scale(1.28) rotate(-8deg)', opacity: 0 },
+                    { transform: 'scale(.94) rotate(2deg)', opacity: end.opacity, offset: .65 }
+                ]
+            };
+            // Верхний край — ось раскрытия, как у ширмы или подвешенного листа.
+            animateDesignPart(element, [...poses[effect], end].map(frame => ({
+                transformOrigin: effect === 'fold' ? '50% 0' : '50% 50%', ...frame
+            })), { delay, duration: effect === 'stamp' ? 380 : 520 });
+        }
+
+        function revealDesignMat(panel, delay) {
+            // Копии только декоративной панели: каждая показывает свою горизонтальную полосу.
+            const { width, height } = panel.getBoundingClientRect();
+            const style = getComputedStyle(panel);
+            const layer = document.createElement('div');
+            layer.className = 'theme-mat-layer';
+            layer.setAttribute('aria-hidden', 'true');
+            layer.inert = true;
+            Object.assign(layer.style, {
+                left: `-${style.borderLeftWidth}`, top: `-${style.borderTopWidth}`,
+                width: `${width}px`, height: `${height}px`
+            });
+            const template = panel.cloneNode(true);
+            const count = 8;
+            for (let i = 0; i < count; i++) {
+                const strip = document.createElement('div');
+                strip.className = 'theme-mat-slat';
+                const top = height * i / count;
+                strip.style.top = `${top}px`;
+                strip.style.height = `${height / count + .5}px`;
+                const face = template.cloneNode(true);
+                // Inline-размеры удерживают единый рисунок в полосах на любой ширине окна.
+                face.style.cssText = `position:absolute; left:0; top:${-top}px; width:${width}px; height:${height}px; margin:0; visibility:visible;`;
+                strip.appendChild(face);
+                layer.appendChild(strip);
+                animateDesignPart(strip, [
+                    { transform: 'translateY(-18px) rotateX(-88deg)', opacity: 0 },
+                    { transform: 'translateY(2px) rotateX(9deg)', opacity: 1, offset: .72 },
+                    { transform: 'translateY(0) rotateX(0deg)', opacity: 1 }
+                ], { delay: delay + i * 38, duration: 440 });
+            }
+            panel.classList.add('theme-mat-host');
+            panel.appendChild(layer);
+            designMotion.cleanups.push(() => {
+                layer.remove();
+                panel.classList.remove('theme-mat-host');
+            });
+        }
+
+        function playDesignMotion(before, japanese) {
+            const run = designMotion.run;
+            const badge = navHomeBtn.querySelector('.theme-badge');
+            const rect = badge.getBoundingClientRect();
+            const style = getComputedStyle(badge);
+            const dx = before.rect.x + before.rect.width / 2 - rect.x - rect.width / 2;
+            const dy = before.rect.y + before.rect.height / 2 - rect.y - rect.height / 2;
+            const sx = before.rect.width / badge.offsetWidth;
+            const sy = before.rect.height / badge.offsetHeight;
+            // FLIP: новая печать начинает движение в точном месте прежнего бейджа.
+            animateDesignPart(badge, [
+                { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`, borderRadius: before.radius, backgroundColor: before.color },
+                { transform: `translate(${dx * .85}px, ${dy * .85}px) rotate(-14deg) scale(${sx * 1.18}, ${sy * .55})`, borderRadius: '3px', backgroundColor: '#ef4e31', offset: .22 },
+                { transform: `translate(${dx * .18}px, ${dy * .18}px) rotate(12deg) scale(.78, 1.26)`, borderRadius: '18px 4px 18px 4px', backgroundColor: '#c92a20', offset: .48 },
+                { transform: 'rotate(-6deg) scale(1.12, .94)', borderRadius: japanese ? '50%' : '10px', backgroundColor: japanese ? '#c92a20' : '#242426', offset: .73 },
+                { transform: style.transform, borderRadius: style.borderRadius, backgroundColor: japanese ? '#c92a20' : '#242426' }
+            ].map(frame => ({ ...frame, backgroundImage: 'none' })), { duration: japanese ? 660 : 500 });
+
+            animateDesignPart(document.body, [
+                { backgroundColor: before.paper }, { backgroundColor: getComputedStyle(document.body).backgroundColor }
+            ], { duration: 360 });
+
+            const groups = japanese ? [
+                ['.portal-utility', ['cut'], 0, 0],
+                ['body > header > nav', ['doors'], 70, 0],
+                ['.portal-brand', ['cut'], 100, 0],
+                ['.portal-quicknav > *', ['fold'], 100, 35],
+                ['.portal-breadcrumbs', ['cut'], 180, 0],
+                ['.portal-title', ['cut'], 200, 0],
+                ['.portal-title .portal-badge', ['stamp'], 300, 35],
+                ['.portal-notice', ['rise'], 240, 0],
+                ['.portal-sidebar > *', ['fold', 'cut'], 230, 65],
+                ['#viewGenerator, #viewDocs, #viewCode', ['doors'], 230, 0],
+                ['#viewGenerator > .portal-heading', ['cut'], 310, 0],
+                ['.portal-form-top, .generator-form', ['fold', 'rise'], 330, 35],
+                ['.portal-stats > *, .portal-workflow > *', ['fold', 'drop', 'rise'], 380, 25],
+                ['.portal-aside > *', ['drop', 'fold', 'stamp'], 260, 60],
+                ['.portal-lower > *', ['fold', 'doors', 'drop'], 320, 40],
+                ['.portal-sitemap', ['cut'], 360, 0],
+                ['body > footer', ['rise'], 400, 0]
+            ] : [
+                ['body > header > nav', ['cut'], 40, 0],
+                ['#viewGenerator, #viewDocs, #viewCode', ['fold'], 80, 0],
+                ['.generator-form', ['doors'], 150, 0],
+                ['body > footer', ['rise'], 120, 0]
+            ];
+            // Сначала измеряем все блоки: трансформации родителей не влияют на отбор детей.
+            const parts = groups.flatMap(([selector, effects, delay, stagger]) =>
+                [...document.querySelectorAll(selector)].filter(isDesignPartVisible).map((element, i) => ({
+                    element, effect: effects[i % effects.length], delay: delay + i * stagger
+                }))
+            );
+            const panel = document.querySelector('.jp-art-panel');
+            if (japanese && isDesignPartVisible(panel)) revealDesignMat(panel, 130);
+            parts.forEach(({ element, effect, delay }) => revealDesignPart(element, effect, delay));
+            Promise.allSettled(designMotion.animations.map(animation => animation.finished)).then(() => {
+                if (designMotion.run === run) finishDesignMotion();
+            });
+        }
+
+        window.addEventListener('resize', finishDesignMotion);
+        window.addEventListener('pagehide', finishDesignMotion);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) finishDesignMotion();
+        });
+        themeHintMotion.addEventListener('change', () => {
+            if (themeHintMotion.matches) finishDesignMotion();
+        });
+
         function toggleDesign() {
+            const badge = navHomeBtn.querySelector('.theme-badge');
+            const before = {
+                rect: badge.getBoundingClientRect(), radius: getComputedStyle(badge).borderRadius,
+                color: document.body.dataset.design === 'japanese' || navHomeBtn.matches(':hover') ? '#c92a20' : '#242426',
+                paper: getComputedStyle(document.body).backgroundColor
+            };
+            finishDesignMotion();
             stopIntroShowcase(true);
             // Завершаем возможный переход между Статьями и Рубриками до смены компоновки.
             clearModeTransitionTimers();
             if (state.mode === 'input') updateInputModeUI();
             const current = DESIGN_ORDER.includes(document.body.dataset.design) ? document.body.dataset.design : 'classic';
+            const animate = !themeHintMotion.matches && !document.hidden && typeof badge.animate === 'function';
+            if (animate) document.body.dataset.designTransition = 'active';
             document.body.dataset.design = DESIGN_ORDER[(DESIGN_ORDER.indexOf(current) + 1) % DESIGN_ORDER.length];
             updateDesignControls();
             // Смена оформления сохраняет открытый раздел, заголовок, результат и путь.
             updatePortalUI();
             adjustInputWidth();
+            if (animate) playDesignMotion(before, document.body.dataset.design === 'japanese');
         }
 
         function selectPortalType(type) {
@@ -5119,6 +5324,7 @@ def wp_slugify(text: str) -> str:
         // --- Переключение представлений (Генератор / Справка / Код) ---
 
         function switchView(target) {
+            finishDesignMotion();
             document.body.dataset.view = target;
             portalUI.CurrentView.textContent = { generator: 'Генератор', docs: 'Справка', code: 'Примеры кода' }[target];
             [[navGeneratorBtn, 'generator'], [navDocsBtn, 'docs'], [navCodeBtn, 'code']].forEach(([button, view]) => {
