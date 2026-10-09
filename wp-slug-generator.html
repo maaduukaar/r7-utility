@@ -100,10 +100,20 @@
             background: linear-gradient(135deg, #f4ad38, #ed3b2e 30%, #c92a20 72%, #a92d50);
             box-shadow: inset 0 0 0 1px rgba(255, 238, 201, .3);
             font: 400 11px/1 'Han Zi', sans-serif;
-            clip-path: polygon(-120% 0, -20% 0, -120% 100%, -220% 100%);
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+            opacity: 0;
+            transition: opacity .36s ease;
+            will-change: opacity;
         }
         body[data-design="classic"] #navHomeBtn.theme-hint-active .theme-hint-scan {
+            opacity: 1;
             animation: theme-hint-scan 2.6s ease-in-out;
+        }
+        body[data-design="classic"] #navHomeBtn:hover > .theme-badge .theme-hint-scan {
+            z-index: 1;
+            opacity: 1;
+            animation: none !important;
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%) !important;
         }
         @keyframes theme-hint-scan {
             from { clip-path: polygon(-120% 0, -20% 0, -120% 100%, -220% 100%); }
@@ -1441,8 +1451,8 @@ def wp_slugify(text: str) -> str:
             clearTimeout(themeHintTimer);
             themeHintTimer = null;
             if (!canShowThemeHint()) return;
-            // Новый случайный интервал между началами волн: от 30 до 120 секунд.
-            const delay = 30000 + Math.floor(Math.random() * 90001);
+            // Случайный интервал между волнами: от 10 до 120 секунд.
+            const delay = 10000 + Math.floor(Math.random() * 110001);
             themeHintTimer = setTimeout(() => {
                 themeHintTimer = null;
                 if (!canShowThemeHint()) return;
