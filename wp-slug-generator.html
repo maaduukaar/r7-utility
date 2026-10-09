@@ -686,7 +686,7 @@
         body[data-design="japanese"] .portal-segment button[aria-pressed="true"],
         body[data-design="japanese"] #slugMethodContainer button[aria-pressed="true"] { color: white; background: var(--jp-indigo); }
         body[data-design="japanese"] #mainSearchContainer { border: 2px solid var(--jp-sumi); background: #fffefa; box-shadow: inset 5px 0 var(--portal-red); }
-        body[data-design="japanese"] #matrixFxCanvas { display: none; }
+        body[data-design="japanese"] #matrixFxCanvas { display: block; }
         body[data-design="japanese"] #mainSearchContainer:focus-within { border-color: var(--portal-red); box-shadow: inset 5px 0 var(--portal-red), 0 0 0 3px rgba(201, 42, 32, .13); }
         body[data-design="japanese"] #slugUrlSubbar { background: #f2e6ce; border-color: #a6977c; }
         body[data-design="japanese"] .portal-button { border: 1px solid var(--jp-sumi); background: #f6edd9; color: var(--jp-sumi); box-shadow: 2px 2px 0 rgba(23, 19, 15, .18); }
@@ -3464,8 +3464,9 @@ def wp_slugify(text: str) -> str:
         }
 
         /**
-         * Canvas 2D MatrixFx: Анимированная точечная матрица с волновым эффектом Once UI
-         * Вариант 1 (Apple Tensor Wave): диагональная S-волна + flicker + Apple Blue палитра
+         * Canvas 2D MatrixFx:
+         * - классическая тема: диагональная S-волна с круглой синей матрицей;
+         * - японская тема: лёгкие вертикальные потоки из красных квадратов.
          */
         const MatrixFx = {
             canvas: null,
@@ -3484,6 +3485,56 @@ def wp_slugify(text: str) -> str:
             waveDuration: 2600, // длительность цикла S-волны в мс
             waveIntensity: 4.5, // амплитуда смещения точек на гребне
             waveWidth: 0.22,    // ширина гребня волны
+
+            drawJapaneseMatrix(elapsed, reducedMotion) {
+                const ctx = this.ctx;
+                const w = this.width;
+                const h = this.height;
+                if (!ctx || w <= 0 || h <= 0) return;
+
+                const margin = 6;
+                const targetStep = 8;
+                const cols = Math.max(5, Math.floor((w - margin * 2) / targetStep) + 1);
+                const rows = Math.max(4, Math.floor((h - margin * 2) / targetStep) + 1);
+                const stepX = (w - margin * 2) / Math.max(1, cols - 1);
+                const stepY = (h - margin * 2) / Math.max(1, rows - 1);
+                const cycleRows = rows + 9;
+
+                for (let c = 0; c < cols; c++) {
+                    // У каждой колонки собственная скорость и фаза, поэтому рисунок не идёт общей волной.
+                    const columnSeed = ((c * 47) % 101) / 101;
+                    const speed = 0.0022 + columnSeed * 0.0017;
+                    const head = reducedMotion
+                        ? columnSeed * cycleRows - 3
+                        : ((elapsed * speed + columnSeed * cycleRows * 1.7) % cycleRows) - 4;
+
+                    for (let r = 0; r < rows; r++) {
+                        const cellSeed = ((c * 29 + r * 53) % 97) / 97;
+                        let trailDistance = head - r;
+                        if (trailDistance < 0) trailDistance += cycleRows;
+                        const inTrail = trailDistance <= 6;
+                        const trail = inTrail ? Math.exp(-trailDistance * 0.58) : 0;
+                        const flicker = reducedMotion
+                            ? cellSeed
+                            : Math.sin(elapsed * 0.0035 + cellSeed * Math.PI * 8) * 0.5 + 0.5;
+                        const baseAlpha = 0.025 + flicker * 0.035;
+                        const alpha = Math.min(0.48, baseAlpha + trail * 0.39);
+                        if (alpha < 0.035) continue;
+
+                        const x = margin + c * stepX;
+                        const y = margin + r * stepY;
+                        const size = 1.7 + trail * 1.9;
+                        const red = trail > 0.72 ? '237, 59, 46' : '201, 42, 32';
+                        ctx.fillStyle = `rgba(${red}, ${alpha})`;
+                        ctx.fillRect(
+                            Math.round(x - size / 2),
+                            Math.round(y - size / 2),
+                            Math.max(1, Math.round(size)),
+                            Math.max(1, Math.round(size))
+                        );
+                    }
+                }
+            },
 
             init() {
                 this.canvas = document.getElementById('matrixFxCanvas');
@@ -3556,6 +3607,11 @@ def wp_slugify(text: str) -> str:
                 if (!ctx || w <= 0 || h <= 0) return;
 
                 ctx.clearRect(0, 0, w, h);
+
+                if (document.body.dataset.design === 'japanese') {
+                    this.drawJapaneseMatrix(elapsed, reducedMotion);
+                    return;
+                }
 
                 // Плотный отступ крайнего слоя точек от физических стенок формы
                 const targetMargin = 4.5;
@@ -3860,7 +3916,7 @@ def wp_slugify(text: str) -> str:
             (async () => {
                 let progressHandler = null;
                 const startTime = performance.now();
-                // Минимальная кинематографическая длительность волны подбора
+                // Минимальная кинематографическая длительность эффекта подбора
                 const minDuration = 550;
 
                 try {
@@ -3896,7 +3952,7 @@ def wp_slugify(text: str) -> str:
                         await NMTManager.translateBatch(toTranslate);
                     }
 
-                    // Гарантируем, что волна MatrixFx успеет красиво пробежать и плавно проявиться/погаснуть
+                    // Гарантируем, что MatrixFx успеет проявиться и плавно погаснуть
                     const elapsed = performance.now() - startTime;
                     if (elapsed < minDuration) {
                         await new Promise(r => setTimeout(r, minDuration - elapsed));
