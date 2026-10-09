@@ -79,6 +79,37 @@
             font-family: 'SF Mono', 'JetBrains Mono', monospace;
         }
 
+        /* Цвет и гарнитура японской темы проявляются в одной диагональной полосе. */
+        #navHomeBtn > .theme-badge {
+            position: relative;
+            overflow: hidden;
+            isolation: isolate;
+        }
+        #navHomeBtn .theme-hint-scan { display: none; }
+        body[data-design="classic"] #navHomeBtn .theme-hint-scan {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: inherit;
+            padding: inherit;
+            border-radius: inherit;
+            pointer-events: none;
+            color: #fff8e8;
+            background: linear-gradient(135deg, #f4ad38, #ed3b2e 30%, #c92a20 72%, #a92d50);
+            box-shadow: inset 0 0 0 1px rgba(255, 238, 201, .3);
+            font: 400 11px/1 'Han Zi', sans-serif;
+            clip-path: polygon(-120% 0, -20% 0, -120% 100%, -220% 100%);
+        }
+        body[data-design="classic"] #navHomeBtn.theme-hint-active .theme-hint-scan {
+            animation: theme-hint-scan 2.6s ease-in-out;
+        }
+        @keyframes theme-hint-scan {
+            from { clip-path: polygon(-120% 0, -20% 0, -120% 100%, -220% 100%); }
+            to { clip-path: polygon(220% 0, 320% 0, 220% 100%, 120% 100%); }
+        }
+
         /* Нежный медленный фейд для подсказок */
         .whisper-fade {
             transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
@@ -737,6 +768,7 @@
             body[data-design="japanese"] .portal-title h1 { font-size: 23px; }
         }
         @media (prefers-reduced-motion: reduce) {
+            body[data-design="classic"] #navHomeBtn .theme-hint-scan { display: none; animation: none; }
             body[data-layout="portal"] *, body[data-layout="portal"] *::before { transition: none !important; animation: none !important; }
         }
     </style>
@@ -757,10 +789,13 @@
         <!-- Логотип / Название -->
         <button id="navHomeBtn" type="button" aria-label="Текущий дизайн: классический. Следующий: японский Sumi Matsuri" class="flex items-center text-apple-text hover:opacity-85 transition-all group select-none shrink-0" title="Включить дизайн: японский Sumi Matsuri">
             <!-- Компактный бейдж-глиф транслитерации (Ё → yo) -->
-            <div class="h-7 px-2.5 rounded-[8px] bg-gradient-to-b from-[#2c2c2e] to-[#1c1c1e] text-white shadow-sm flex items-center justify-center gap-1.5 border border-black/10 group-hover:scale-105 transition-transform">
+            <div class="theme-badge h-7 px-2.5 rounded-[8px] bg-gradient-to-b from-[#2c2c2e] to-[#1c1c1e] text-white shadow-sm flex items-center justify-center gap-1.5 border border-black/10 group-hover:scale-105 transition-transform">
                 <span class="text-[11px] font-bold tracking-tight text-white">Ё</span>
                 <i class="fa-solid fa-arrow-right text-[8px] text-white/50"></i>
                 <span class="code-font text-[11px] font-bold text-white tracking-tight">yo</span>
+                <span class="theme-hint-scan" aria-hidden="true">
+                    <span>Ё</span><i class="fa-solid fa-arrow-right text-[8px]"></i><span>yo</span>
+                </span>
             </div>
             <span class="portal-only portal-brand"><strong>WP Slug<span style="color: #c90000">.</span></strong><small>Генератор адресов WordPress</small><span class="japanese-only japanese-inline jp-brand-note">墨祭 · SUMI MATSURI</span></span>
         </button>
@@ -1389,6 +1424,46 @@ def wp_slugify(text: str) -> str:
             }
         };
 
+        const themeHintMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        let themeHintTimer = null;
+
+        function canShowThemeHint() {
+            return document.body.dataset.design === 'classic' && !document.hidden && !themeHintMotion.matches;
+        }
+
+        function stopThemeHint() {
+            clearTimeout(themeHintTimer);
+            themeHintTimer = null;
+            navHomeBtn.classList.remove('theme-hint-active');
+        }
+
+        function scheduleThemeHint() {
+            clearTimeout(themeHintTimer);
+            themeHintTimer = null;
+            if (!canShowThemeHint()) return;
+            // Новый случайный интервал между началами волн: от 30 до 120 секунд.
+            const delay = 30000 + Math.floor(Math.random() * 90001);
+            themeHintTimer = setTimeout(() => {
+                themeHintTimer = null;
+                if (!canShowThemeHint()) return;
+                navHomeBtn.classList.add('theme-hint-active');
+                scheduleThemeHint();
+            }, delay);
+        }
+
+        function syncThemeHint() {
+            stopThemeHint();
+            scheduleThemeHint();
+        }
+
+        navHomeBtn.querySelector('.theme-hint-scan').addEventListener('animationend', event => {
+            if (event.animationName === 'theme-hint-scan') navHomeBtn.classList.remove('theme-hint-active');
+        });
+        document.addEventListener('visibilitychange', syncThemeHint);
+        themeHintMotion.addEventListener('change', syncThemeHint);
+        window.addEventListener('pagehide', stopThemeHint);
+        window.addEventListener('pageshow', syncThemeHint);
+
         function updateDesignControls() {
             const current = DESIGN_ORDER.includes(document.body.dataset.design) ? document.body.dataset.design : 'classic';
             const next = DESIGN_ORDER[(DESIGN_ORDER.indexOf(current) + 1) % DESIGN_ORDER.length];
@@ -1397,6 +1472,7 @@ def wp_slugify(text: str) -> str:
             navHomeBtn.title = `Включить дизайн: ${DESIGN_INFO[next].name}`;
             designModeLabel.textContent = DESIGN_INFO[current].marker;
             designSwitchLabels.forEach(button => { button.textContent = DESIGN_INFO[current].nextButton; });
+            syncThemeHint();
         }
 
         function updatePortalUI() {
