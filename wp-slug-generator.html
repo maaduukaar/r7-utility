@@ -1669,7 +1669,8 @@ def wp_slugify(text: str) -> str:
                 { backgroundColor: before.paper }, { backgroundColor: getComputedStyle(document.body).backgroundColor }
             ], { duration: 680 });
 
-            // Сцена до 3 секунд: задержка, шаг между соседями и своя длительность каждой группы.
+            // Японская сцена — до 3 секунд, возврат — до 1 секунды.
+            // Для каждой группы: задержка, шаг между соседями и длительность.
             const groups = japanese ? [
                 ['.portal-utility', ['cut'], 0, 0, 650],
                 ['body > header > nav', ['doors'], 180, 0, 1050],
@@ -1689,10 +1690,10 @@ def wp_slugify(text: str) -> str:
                 ['.portal-sitemap', ['cut'], 1840, 0, 950],
                 ['body > footer', ['rise'], 1990, 0, 1010]
             ] : [
-                ['body > header > nav', ['cut'], 160, 0, 1000],
-                ['#viewGenerator, #viewDocs, #viewCode', ['fold'], 540, 0, 1740],
-                ['.generator-form', ['doors'], 1220, 0, 1780],
-                ['body > footer', ['rise'], 1920, 0, 1080]
+                ['body > header > nav', ['cut'], 50, 0, 340],
+                ['#viewGenerator, #viewDocs, #viewCode', ['fold'], 180, 0, 580],
+                ['.generator-form', ['doors'], 400, 0, 600],
+                ['body > footer', ['rise'], 640, 0, 360]
             ];
             // Сначала измеряем все блоки: трансформации родителей не влияют на отбор детей.
             const parts = groups.flatMap(([selector, effects, delay, stagger, duration]) =>
