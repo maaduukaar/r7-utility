@@ -162,8 +162,8 @@
             background: rgba(0, 0, 0, 0.25);
         }
 
-        /* Общая портальная композиция для плотного и японского дизайнов. */
-        .dense-only { display: none; }
+        /* Портальная композиция японского дизайна. */
+        .portal-only { display: none; }
         .japanese-only { display: none !important; }
         .app-content { display: contents; }
 
@@ -176,7 +176,7 @@
             color: #222;
             font: 13px/1.45 Arial, 'Helvetica Neue', sans-serif;
         }
-        body[data-layout="portal"] .dense-only { display: block; }
+        body[data-layout="portal"] .portal-only { display: block; }
         body[data-layout="portal"] [hidden] { display: none !important; }
         body[data-layout="portal"] .portal-width,
         body[data-layout="portal"] > header,
@@ -284,7 +284,7 @@
         body[data-layout="portal"] #slugMethodContainer button { padding: 5px 12px; border-radius: 0; box-shadow: none; font: inherit; color: var(--portal-blue); }
         body[data-layout="portal"] #slugMethodContainer button + button { border-left: 1px solid #bbb; }
         body[data-layout="portal"] #slugMethodContainer button[aria-pressed="true"] { background: var(--portal-blue); color: white; }
-        body[data-layout="portal"] #denseHeadlineLabel { order: -1; font-size: 12px; font-weight: 700; margin-bottom: 5px; }
+        body[data-layout="portal"] #portalHeadlineLabel { order: -1; font-size: 12px; font-weight: 700; margin-bottom: 5px; }
         body[data-layout="portal"] #mainSearchContainer { border: 1px solid #aaa; border-radius: 2px; box-shadow: none; }
         body[data-layout="portal"] #mainSearchContainer:focus-within { border-color: var(--portal-blue); }
         body[data-layout="portal"] #mainInputRow { height: 54px; padding: 0 10px; gap: 8px; }
@@ -295,7 +295,7 @@
         body[data-layout="portal"] #copySlugBtn,
         body[data-layout="portal"] #copyHierarchicalBtn { border-radius: 2px; }
         body[data-layout="portal"] #slugUrlSubbar { height: auto; min-height: 66px; padding: 7px 10px; flex-wrap: wrap; gap: 4px 8px; background: #f5f5f5; border-color: #ccc; }
-        body[data-layout="portal"] #densePathLabel { width: 100%; font-size: 11px; color: #555; font-weight: 700; }
+        body[data-layout="portal"] #portalPathLabel { width: 100%; font-size: 11px; color: #555; font-weight: 700; }
         body[data-layout="portal"] .portal-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
         body[data-layout="portal"] .portal-button { padding: 7px 12px; border: 1px solid #aaa; background: #f6f6f6; border-radius: 2px; color: #333; font-size: 12px; font-weight: 700; }
         body[data-layout="portal"] .portal-button-primary { background: var(--portal-red); border-color: #a90000; color: white; flex: 1; }
@@ -346,7 +346,7 @@
         body[data-layout="portal"] .portal-generator-context { display: none; }
         body[data-layout="portal"][data-view="generator"] .portal-generator-context { display: grid; }
 
-        /* Третий дизайн: Sumi Matsuri — тушь, васи и функциональные японские цвета. */
+        /* Японский дизайн Sumi Matsuri — тушь, васи и функциональные японские цвета. */
         body[data-design="japanese"] {
             --portal-blue: #234e70;
             --portal-red: #c92a20;
@@ -742,8 +742,8 @@
 </head>
 <body data-design="classic" data-layout="classic" data-view="generator" class="min-h-screen flex flex-col justify-between selection:bg-apple-blue selection:text-white">
 
-    <div class="dense-only portal-utility portal-width">
-        <span>R7-UTILITY / Инструменты для работы с контентом <b class="design-mode-label" id="designModeLabel">02 / Плотный портал</b></span>
+    <div class="portal-only portal-utility portal-width">
+        <span>R7-UTILITY / Инструменты для работы с контентом <b class="design-mode-label" id="designModeLabel">02 / 墨祭 Sumi Matsuri</b></span>
         <nav aria-label="Служебная навигация">
             <a href="https://github.com/maaduukaar/r7-utility" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
             <button type="button" class="portal-link" data-portal-view="docs">Справка</button>
@@ -754,14 +754,14 @@
     <!-- Верхняя панель управления (Header в стиле macOS Menu Bar) -->
     <header class="w-full max-w-6xl mx-auto px-4 py-4 sm:px-6 sm:py-6 flex items-center justify-between z-30">
         <!-- Логотип / Название -->
-        <button id="navHomeBtn" type="button" aria-label="Текущий дизайн: классический. Следующий: плотный портал" class="flex items-center text-apple-text hover:opacity-85 transition-all group select-none shrink-0" title="Включить плотный портальный дизайн">
+        <button id="navHomeBtn" type="button" aria-label="Текущий дизайн: классический. Следующий: японский Sumi Matsuri" class="flex items-center text-apple-text hover:opacity-85 transition-all group select-none shrink-0" title="Включить дизайн: японский Sumi Matsuri">
             <!-- Компактный бейдж-глиф транслитерации (Ё → yo) -->
             <div class="h-7 px-2.5 rounded-[8px] bg-gradient-to-b from-[#2c2c2e] to-[#1c1c1e] text-white shadow-sm flex items-center justify-center gap-1.5 border border-black/10 group-hover:scale-105 transition-transform">
                 <span class="text-[11px] font-bold tracking-tight text-white">Ё</span>
                 <i class="fa-solid fa-arrow-right text-[8px] text-white/50"></i>
                 <span class="code-font text-[11px] font-bold text-white tracking-tight">yo</span>
             </div>
-            <span class="dense-only portal-brand"><strong>WP Slug<span style="color: #c90000">.</span></strong><small>Генератор адресов WordPress</small><span class="japanese-only japanese-inline jp-brand-note">墨祭 · SUMI MATSURI</span></span>
+            <span class="portal-only portal-brand"><strong>WP Slug<span style="color: #c90000">.</span></strong><small>Генератор адресов WordPress</small><span class="japanese-only japanese-inline jp-brand-note">墨祭 · SUMI MATSURI</span></span>
         </button>
 
         <!-- Навигация: Генератор / Справка / Код (на смартфонах компактные круглые кнопки с иконками, на десктопе с подписями) -->
@@ -781,7 +781,7 @@
         </nav>
     </header>
 
-    <div class="dense-only portal-width">
+    <div class="portal-only portal-width">
         <nav class="portal-quicknav" aria-label="Быстрый доступ">
             <button type="button" data-portal-type="post">Статьи</button>
             <button type="button" data-portal-type="category">Рубрики</button>
@@ -799,7 +799,7 @@
         <nav class="portal-breadcrumbs" aria-label="Хлебные крошки">
             <a href="https://github.com/maaduukaar/r7-utility" target="_blank" rel="noopener noreferrer">R7-Utility</a><span aria-hidden="true">›</span>
             <button type="button" class="portal-link" data-portal-view="generator">WordPress Slug</button><span aria-hidden="true">›</span>
-            <span id="denseCurrentView" aria-current="page">Генератор</span>
+            <span id="portalCurrentView" aria-current="page">Генератор</span>
         </nav>
         <div class="portal-title">
             <div><h1>Генератор слагов WordPress</h1><p>Заголовок → транслитерация или перевод → готовый URL-ярлык</p></div>
@@ -811,7 +811,7 @@
     <!-- ОСНОВНОЙ КОНТЕНТ -->
     <main class="flex-grow flex items-center justify-center px-5 w-full relative">
 
-        <aside class="dense-only portal-sidebar" aria-label="Разделы и инструменты">
+        <aside class="portal-only portal-sidebar" aria-label="Разделы и инструменты">
             <section class="portal-box">
                 <h2 class="portal-heading">Генератор <small>01</small></h2>
                 <div class="portal-links">
@@ -846,8 +846,8 @@
         <!-- ========================================================================= -->
         <div id="viewGenerator" class="w-full py-12 flex flex-col items-center justify-center relative" style="max-width: 580px; transition: max-width 0.22s cubic-bezier(0.16, 1, 0.3, 1);">
 
-            <h2 class="dense-only portal-heading">Создать URL-ярлык <span class="portal-badge portal-badge-green" id="denseStatus" role="status">Готов к вводу</span></h2>
-            <div class="dense-only portal-form-top">
+            <h2 class="portal-only portal-heading">Создать URL-ярлык <span class="portal-badge portal-badge-green" id="portalStatus" role="status">Готов к вводу</span></h2>
+            <div class="portal-only portal-form-top">
                 <p>Введите заголовок, выберите способ преобразования и получите слаг.</p>
                 <div class="portal-control-row"><span>Объект</span><div class="portal-segment" role="group" aria-label="Тип контента"><button type="button" data-portal-type="post">Статья</button><button type="button" data-portal-type="category">Рубрика</button></div></div>
             </div>
@@ -859,7 +859,7 @@
 
             <!-- Главная поисковая полоса (Spotlight Input Bar) с контейнером переключателя -->
             <div class="generator-form relative w-full">
-                <label class="dense-only" id="denseHeadlineLabel" for="headlineInput">Заголовок статьи</label>
+                <label class="portal-only" id="portalHeadlineLabel" for="headlineInput">Заголовок статьи</label>
                 <div id="mainSearchContainer" class="w-full bg-white rounded-2xl shadow-apple-float border border-apple-border transition-all duration-300 relative overflow-hidden group">
                     
                     <div id="mainInputRow" class="relative w-full flex items-center px-5 h-16 sm:h-[72px] gap-5">
@@ -892,7 +892,7 @@
 
                     <!-- Строка для обновления старого полного слага или ввода суффикса раздела -->
                     <div id="slugUrlSubbar" class="px-4 sm:px-5 h-11 bg-apple-bg/60 border-t border-apple-borderSubtle hidden items-center gap-2.5 text-xs">
-                        <label class="dense-only" id="densePathLabel" for="hierarchicalSlugInput">Старый URL → заменить последний сегмент</label>
+                        <label class="portal-only" id="portalPathLabel" for="hierarchicalSlugInput">Старый URL → заменить последний сегмент</label>
                         <div id="subbarIconContainer" class="text-apple-tertiary flex items-center justify-center w-5 text-[11px] shrink-0" title="Иерархический слаг">
                             <i id="subbarIcon" class="fa-solid fa-folder-tree"></i>
                         </div>
@@ -914,7 +914,7 @@
 
                 <!-- Компактный переключатель метода генерации (Транслит ⟷ Перевод) под поисковой строкой (абсолютное позиционирование для исключения смещения страницы) -->
                 <div id="slugMethodContainer" class="absolute top-full left-0 right-0 mt-3.5 flex items-center justify-center select-none pill-fade opacity-0 pointer-events-none">
-                    <span class="dense-only">Метод</span>
+                    <span class="portal-only">Метод</span>
                     <div class="inline-flex items-center p-0.5 bg-black/[0.04] border border-black/[0.06] rounded-full text-[11px] font-medium tracking-tight">
                         <button type="button" id="methodTranslitBtn"
                             class="px-2.5 py-0.5 rounded-full transition-[background-color,color,box-shadow] duration-150 cursor-pointer focus:outline-none bg-white text-apple-text shadow-[0_1px_2px_rgba(0,0,0,0.06)]"
@@ -928,23 +928,23 @@
                         </button>
                     </div>
                 </div>
-                <div class="dense-only portal-actions">
-                    <button type="button" class="portal-button portal-button-primary" id="denseGenerateBtn" data-portal-action="generate">Сформировать слаг →</button>
-                    <button type="button" class="portal-button" id="denseEditBtn" data-portal-action="edit" hidden>Редактировать</button>
+                <div class="portal-only portal-actions">
+                    <button type="button" class="portal-button portal-button-primary" id="portalGenerateBtn" data-portal-action="generate">Сформировать слаг →</button>
+                    <button type="button" class="portal-button" id="portalEditBtn" data-portal-action="edit" hidden>Редактировать</button>
                     <button type="button" class="portal-button" data-portal-action="clear">Очистить</button>
                 </div>
-                <p class="dense-only portal-source" id="denseSource" hidden>Исходный заголовок: <span id="denseSourceText"></span></p>
+                <p class="portal-only portal-source" id="portalSource" hidden>Исходный заголовок: <span id="portalSourceText"></span></p>
             </div>
 
-            <dl class="dense-only portal-stats">
-                <div><dt>Тип контента</dt><dd id="denseType">Статья</dd></div>
-                <div><dt>Преобразование</dt><dd id="denseMethod">Транслитерация</dd></div>
-                <div><dt>Символов в слаге</dt><dd id="denseLength">—</dd></div>
+            <dl class="portal-only portal-stats">
+                <div><dt>Тип контента</dt><dd id="portalType">Статья</dd></div>
+                <div><dt>Преобразование</dt><dd id="portalMethod">Транслитерация</dd></div>
+                <div><dt>Символов в слаге</dt><dd id="portalLength">—</dd></div>
             </dl>
 
         </div>
 
-        <div class="dense-only portal-workflow portal-generator-context" aria-label="Возможности генератора">
+        <div class="portal-only portal-workflow portal-generator-context" aria-label="Возможности генератора">
             <div><strong>01 / Транслит</strong>Буквы по таблице Cyr-To-Lat. Пробелы становятся дефисами.</div>
             <div><strong>02 / Перевод</strong>Словарь Р7 + нейросеть. Английский слаг по смыслу.</div>
             <div><strong>03 / Полный путь</strong>Сохранение родительских папок при замене слага статьи.</div>
@@ -1200,7 +1200,7 @@ def wp_slugify(text: str) -> str:
 
         </div>
 
-        <aside class="dense-only portal-aside" aria-label="Подсказки по работе">
+        <aside class="portal-only portal-aside" aria-label="Подсказки по работе">
             <section class="portal-box">
                 <h2 class="portal-heading">Быстрый старт</h2>
                 <ol class="portal-body portal-steps">
@@ -1227,7 +1227,7 @@ def wp_slugify(text: str) -> str:
         </aside>
     </main>
 
-    <div class="dense-only portal-width portal-lower portal-generator-context">
+    <div class="portal-only portal-width portal-lower portal-generator-context">
         <section class="portal-box">
             <h2 class="portal-heading">Какой метод выбрать? <small>СРАВНЕНИЕ</small></h2>
             <table class="portal-table">
@@ -1246,8 +1246,8 @@ def wp_slugify(text: str) -> str:
         <section class="portal-box">
             <h2 class="portal-heading">Алфавит под рукой <small>ISO 9 · B</small></h2>
             <div class="portal-body">
-                <div id="denseAlphabet" class="portal-alphabet" aria-label="Таблица транслитерации"></div>
-                <p class="portal-caption" id="denseAlphabetFeedback" role="status">Нажмите букву, чтобы скопировать латиницу. ∅ — знак опускается.</p>
+                <div id="portalAlphabet" class="portal-alphabet" aria-label="Таблица транслитерации"></div>
+                <p class="portal-caption" id="portalAlphabetFeedback" role="status">Нажмите букву, чтобы скопировать латиницу. ∅ — знак опускается.</p>
             </div>
         </section>
         <section class="portal-box">
@@ -1262,7 +1262,7 @@ def wp_slugify(text: str) -> str:
         </section>
     </div>
 
-    <div class="dense-only portal-width portal-sitemap" role="navigation" aria-label="Карта приложения">
+    <div class="portal-only portal-width portal-sitemap" role="navigation" aria-label="Карта приложения">
         <section><h2>Генератор</h2><button type="button" data-portal-type="post">Слаги статей</button><button type="button" data-portal-type="category">Слаги рубрик</button><button type="button" data-portal-method="translate">Перевод на английский</button></section>
         <section><h2>Разработчикам</h2><button type="button" data-portal-lang="js">Код на JavaScript</button><button type="button" data-portal-lang="php">Код на PHP</button><button type="button" data-portal-lang="py">Код на Python</button></section>
         <section><h2>Первоисточники</h2><a href="https://wordpress.org/plugins/cyr2lat/" target="_blank" rel="noopener noreferrer">Плагин Cyr-To-Lat ↗</a><a href="https://github.com/mihdan/cyr2lat" target="_blank" rel="noopener noreferrer">Исходный код плагина ↗</a><a href="https://developer.wordpress.org/reference/functions/sanitize_title_with_dashes/" target="_blank" rel="noopener noreferrer">Функции WordPress ↗</a></section>
@@ -1366,29 +1366,24 @@ def wp_slugify(text: str) -> str:
         const copySnippetBtn = document.getElementById('copySnippetBtn');
 
         // Дизайн намеренно не сохраняется: при открытии страницы всегда классический вид.
-        const denseUI = Object.fromEntries([
+        const portalUI = Object.fromEntries([
             'HeadlineLabel', 'PathLabel', 'Status', 'GenerateBtn', 'EditBtn',
             'Source', 'SourceText', 'Type', 'Method', 'Length', 'CurrentView'
-        ].map(name => [name, document.getElementById(`dense${name}`)]));
+        ].map(name => [name, document.getElementById(`portal${name}`)]));
         const portalTypeButtons = document.querySelectorAll('[data-portal-type]');
         const portalMethodButtons = document.querySelectorAll('[data-portal-method]');
         const designModeLabel = document.getElementById('designModeLabel');
         const designSwitchLabels = document.querySelectorAll('.design-switch-label');
-        const DESIGN_ORDER = ['classic', 'dense', 'japanese'];
+        const DESIGN_ORDER = ['classic', 'japanese'];
         const DESIGN_INFO = {
             classic: {
                 name: 'классический',
                 marker: '01 / Классический',
-                nextButton: 'Плотный портал →'
-            },
-            dense: {
-                name: 'плотный портал',
-                marker: '02 / Плотный портал',
                 nextButton: 'Японский арт-вид →'
             },
             japanese: {
                 name: 'японский Sumi Matsuri',
-                marker: '03 / 墨祭 Sumi Matsuri',
+                marker: '02 / 墨祭 Sumi Matsuri',
                 nextButton: 'Классический вид →'
             }
         };
@@ -1403,26 +1398,26 @@ def wp_slugify(text: str) -> str:
             designSwitchLabels.forEach(button => { button.textContent = DESIGN_INFO[current].nextButton; });
         }
 
-        function updateDenseUI() {
+        function updatePortalUI() {
             if (document.body.dataset.layout !== 'portal') return;
             const isSlug = state.mode === 'slug';
             const isCategory = state.generatorType === 'category';
             const label = isSlug ? 'Готовый слаг' : (isCategory ? 'Название рубрики' : 'Заголовок статьи');
-            denseUI.HeadlineLabel.textContent = label;
+            portalUI.HeadlineLabel.textContent = label;
             headlineInput.setAttribute('aria-label', label);
-            denseUI.PathLabel.textContent = isCategory ? 'Суффикс раздела' : 'Старый URL → заменить последний сегмент';
-            denseUI.Type.textContent = isCategory ? 'Рубрика' : 'Статья';
-            denseUI.Method.textContent = state.slugMethod === 'translit' ? 'Транслитерация' : 'Перевод RU → EN';
-            denseUI.Length.textContent = isSlug ? String(state.currentSlug.length) : '—';
+            portalUI.PathLabel.textContent = isCategory ? 'Суффикс раздела' : 'Старый URL → заменить последний сегмент';
+            portalUI.Type.textContent = isCategory ? 'Рубрика' : 'Статья';
+            portalUI.Method.textContent = state.slugMethod === 'translit' ? 'Транслитерация' : 'Перевод RU → EN';
+            portalUI.Length.textContent = isSlug ? String(state.currentSlug.length) : '—';
             const isTranslating = headlineInput.classList.contains('caret-transparent');
-            denseUI.Status.textContent = !isSlug ? 'Готов к вводу' : state.currentSlug ? '✓ Слаг готов' : isTranslating ? 'Обработка…' : 'Нет символов для слага';
-            denseUI.Status.classList.toggle('portal-badge-green', !isSlug || Boolean(state.currentSlug));
-            denseUI.Status.classList.toggle('portal-badge-orange', isSlug && !state.currentSlug && !isTranslating);
-            denseUI.GenerateBtn.textContent = isSlug ? 'Копировать слаг' : 'Сформировать слаг →';
-            denseUI.GenerateBtn.disabled = isSlug ? !state.currentSlug : !headlineInput.value.trim();
-            denseUI.EditBtn.hidden = !isSlug;
-            denseUI.Source.hidden = !isSlug;
-            denseUI.SourceText.textContent = isSlug ? state.savedTitle : '';
+            portalUI.Status.textContent = !isSlug ? 'Готов к вводу' : state.currentSlug ? '✓ Слаг готов' : isTranslating ? 'Обработка…' : 'Нет символов для слага';
+            portalUI.Status.classList.toggle('portal-badge-green', !isSlug || Boolean(state.currentSlug));
+            portalUI.Status.classList.toggle('portal-badge-orange', isSlug && !state.currentSlug && !isTranslating);
+            portalUI.GenerateBtn.textContent = isSlug ? 'Копировать слаг' : 'Сформировать слаг →';
+            portalUI.GenerateBtn.disabled = isSlug ? !state.currentSlug : !headlineInput.value.trim();
+            portalUI.EditBtn.hidden = !isSlug;
+            portalUI.Source.hidden = !isSlug;
+            portalUI.SourceText.textContent = isSlug ? state.savedTitle : '';
             portalTypeButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.portalType === state.generatorType)));
             portalMethodButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.portalMethod === state.slugMethod)));
         }
@@ -1436,7 +1431,7 @@ def wp_slugify(text: str) -> str:
             document.body.dataset.design = DESIGN_ORDER[(DESIGN_ORDER.indexOf(current) + 1) % DESIGN_ORDER.length];
             updateDesignControls();
             // Смена оформления сохраняет открытый раздел, заголовок, результат и путь.
-            updateDenseUI();
+            updatePortalUI();
             adjustInputWidth();
         }
 
@@ -1444,7 +1439,7 @@ def wp_slugify(text: str) -> str:
             stopIntroShowcase(true);
             if (state.generatorType !== type) toggleGeneratorType();
             switchView('generator');
-            updateDenseUI();
+            updatePortalUI();
         }
 
         // Все дополнительные элементы вызывают общие действия приложения.
@@ -1485,12 +1480,12 @@ def wp_slugify(text: str) -> str:
                 headlineInput.dispatchEvent(new Event('input', { bubbles: true }));
                 headlineInput.focus();
             }
-            updateDenseUI();
+            updatePortalUI();
         });
 
-        function renderDenseAlphabet() {
-            const grid = document.getElementById('denseAlphabet');
-            const feedback = document.getElementById('denseAlphabetFeedback');
+        function renderPortalAlphabet() {
+            const grid = document.getElementById('portalAlphabet');
+            const feedback = document.getElementById('portalAlphabetFeedback');
             ALPHABET_LIST.forEach(({ ru, lat }) => {
                 const button = document.createElement('button');
                 button.type = 'button';
@@ -3699,7 +3694,7 @@ def wp_slugify(text: str) -> str:
          */
         function adjustInputWidth() {
             if (!headlineInput || !viewGenerator) return;
-            updateDenseUI();
+            updatePortalUI();
             if (document.body.dataset.layout === 'portal') return;
 
             if (!window.textRuler) {
@@ -3974,7 +3969,7 @@ def wp_slugify(text: str) -> str:
             }
             hierarchicalSlugInput.setAttribute('aria-label', type === 'category' ? 'Суффикс раздела' : 'Старый полный URL или путь');
             updateSubbarControlsVisibility();
-            updateDenseUI();
+            updatePortalUI();
         }
 
         /**
@@ -4261,7 +4256,7 @@ def wp_slugify(text: str) -> str:
                 methodTranslitBtn.classList.remove(...activeClasses);
                 methodTranslitBtn.classList.add(...inactiveClasses);
             }
-            updateDenseUI();
+            updatePortalUI();
         }
 
         /**
@@ -5038,7 +5033,7 @@ def wp_slugify(text: str) -> str:
 
         function switchView(target) {
             document.body.dataset.view = target;
-            denseUI.CurrentView.textContent = { generator: 'Генератор', docs: 'Справка', code: 'Примеры кода' }[target];
+            portalUI.CurrentView.textContent = { generator: 'Генератор', docs: 'Справка', code: 'Примеры кода' }[target];
             [[navGeneratorBtn, 'generator'], [navDocsBtn, 'docs'], [navCodeBtn, 'code']].forEach(([button, view]) => {
                 if (view === target) button.setAttribute('aria-current', 'page');
                 else button.removeAttribute('aria-current');
@@ -5177,7 +5172,7 @@ def wp_slugify(text: str) -> str:
             updateSlugCopyBtnVisibility();
 
             renderAppleAlphabet();
-            renderDenseAlphabet();
+            renderPortalAlphabet();
             adjustInputWidth();
             headlineInput.focus();
 
