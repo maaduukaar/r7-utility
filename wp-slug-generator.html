@@ -1696,9 +1696,8 @@ def wp_slugify(text: str) -> str:
                 ['body > footer', ['rise'], 1990, 0, 1010]
             ] : [
                 ['body > header > nav', ['cut'], 25, 0, 170],
-                ['#viewGenerator', ['settle'], 60, 0, 440],
-                ['#viewDocs, #viewCode', ['fold'], 90, 0, 290],
-                ['body > footer', ['rise'], 320, 0, 180]
+                ['#viewGenerator, body > footer', ['settle'], 60, 0, 440],
+                ['#viewDocs, #viewCode', ['fold'], 90, 0, 290]
             ];
             // Сначала измеряем все блоки: трансформации родителей не влияют на отбор детей.
             const parts = groups.flatMap(([selector, effects, delay, stagger, duration]) =>
