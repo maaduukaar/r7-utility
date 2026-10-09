@@ -1561,7 +1561,7 @@ def wp_slugify(text: str) -> str:
             return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < innerHeight + 60;
         }
 
-        function revealDesignPart(element, effect, delay) {
+        function revealDesignPart(element, effect, delay, duration) {
             const style = getComputedStyle(element);
             const end = { transform: style.transform, opacity: style.opacity, clipPath: 'inset(0% 0% 0% 0%)' };
             const poses = {
@@ -1593,7 +1593,7 @@ def wp_slugify(text: str) -> str:
             // Верхний край — ось раскрытия, как у ширмы или подвешенного листа.
             animateDesignPart(element, [...poses[effect], end].map(frame => ({
                 transformOrigin: effect === 'fold' ? '50% 0' : '50% 50%', ...frame
-            })), { delay, duration: effect === 'stamp' ? 380 : 520 });
+            })), { delay, duration });
         }
 
         function revealDesignMat(panel, delay) {
@@ -1625,7 +1625,7 @@ def wp_slugify(text: str) -> str:
                     { transform: 'translateY(-18px) rotateX(-88deg)', opacity: 0 },
                     { transform: 'translateY(2px) rotateX(9deg)', opacity: 1, offset: .72 },
                     { transform: 'translateY(0) rotateX(0deg)', opacity: 1 }
-                ], { delay: delay + i * 38, duration: 440 });
+                ], { delay: delay + i * 160, duration: 1050 + i * 50 });
             }
             panel.classList.add('theme-mat-host');
             panel.appendChild(layer);
@@ -1651,45 +1651,47 @@ def wp_slugify(text: str) -> str:
                 { transform: `translate(${dx * .18}px, ${dy * .18}px) rotate(12deg) scale(.78, 1.26)`, borderRadius: '18px 4px 18px 4px', backgroundColor: '#c92a20', offset: .48 },
                 { transform: 'rotate(-6deg) scale(1.12, .94)', borderRadius: japanese ? '50%' : '10px', backgroundColor: japanese ? '#c92a20' : '#242426', offset: .73 },
                 { transform: style.transform, borderRadius: style.borderRadius, backgroundColor: japanese ? '#c92a20' : '#242426' }
-            ].map(frame => ({ ...frame, backgroundImage: 'none' })), { duration: japanese ? 660 : 500 });
+            ].map(frame => ({ ...frame, backgroundImage: 'none' })), { duration: japanese ? 950 : 800 });
 
             animateDesignPart(document.body, [
                 { backgroundColor: before.paper }, { backgroundColor: getComputedStyle(document.body).backgroundColor }
-            ], { duration: 360 });
+            ], { duration: 680 });
 
+            // Сцена до 3 секунд: задержка, шаг между соседями и своя длительность каждой группы.
             const groups = japanese ? [
-                ['.portal-utility', ['cut'], 0, 0],
-                ['body > header > nav', ['doors'], 70, 0],
-                ['.portal-brand', ['cut'], 100, 0],
-                ['.portal-quicknav > *', ['fold'], 100, 35],
-                ['.portal-breadcrumbs', ['cut'], 180, 0],
-                ['.portal-title', ['cut'], 200, 0],
-                ['.portal-title .portal-badge', ['stamp'], 300, 35],
-                ['.portal-notice', ['rise'], 240, 0],
-                ['.portal-sidebar > *', ['fold', 'cut'], 230, 65],
-                ['#viewGenerator, #viewDocs, #viewCode', ['doors'], 230, 0],
-                ['#viewGenerator > .portal-heading', ['cut'], 310, 0],
-                ['.portal-form-top, .generator-form', ['fold', 'rise'], 330, 35],
-                ['.portal-stats > *, .portal-workflow > *', ['fold', 'drop', 'rise'], 380, 25],
-                ['.portal-aside > *', ['drop', 'fold', 'stamp'], 260, 60],
-                ['.portal-lower > *', ['fold', 'doors', 'drop'], 320, 40],
-                ['.portal-sitemap', ['cut'], 360, 0],
-                ['body > footer', ['rise'], 400, 0]
+                ['.portal-utility', ['cut'], 0, 0, 650],
+                ['body > header > nav', ['doors'], 180, 0, 1050],
+                ['.portal-brand', ['cut'], 140, 0, 800],
+                ['.portal-quicknav > *', ['fold'], 260, 125, 950],
+                ['.portal-breadcrumbs', ['cut'], 700, 0, 700],
+                ['.portal-title', ['cut'], 620, 0, 1100],
+                ['.portal-title .portal-badge', ['stamp'], 1220, 140, 650],
+                ['.portal-notice', ['rise'], 1100, 0, 960],
+                ['.portal-sidebar > *', ['fold', 'cut'], 1040, 250, 1160],
+                ['#viewGenerator, #viewDocs, #viewCode', ['doors'], 820, 0, 1380],
+                ['#viewGenerator > .portal-heading', ['cut'], 1340, 0, 720],
+                ['.portal-form-top, .generator-form', ['fold', 'rise'], 1420, 160, 1110],
+                ['.portal-stats > *, .portal-workflow > *', ['fold', 'drop', 'rise'], 1700, 90, 640],
+                ['.portal-aside > *', ['drop', 'fold', 'stamp'], 1150, 250, 1210],
+                ['.portal-lower > *', ['fold', 'doors', 'drop'], 1460, 150, 1030],
+                ['.portal-sitemap', ['cut'], 1840, 0, 950],
+                ['body > footer', ['rise'], 1990, 0, 1010]
             ] : [
-                ['body > header > nav', ['cut'], 40, 0],
-                ['#viewGenerator, #viewDocs, #viewCode', ['fold'], 80, 0],
-                ['.generator-form', ['doors'], 150, 0],
-                ['body > footer', ['rise'], 120, 0]
+                ['body > header > nav', ['cut'], 160, 0, 1000],
+                ['#viewGenerator, #viewDocs, #viewCode', ['fold'], 540, 0, 1740],
+                ['.generator-form', ['doors'], 1220, 0, 1780],
+                ['body > footer', ['rise'], 1920, 0, 1080]
             ];
             // Сначала измеряем все блоки: трансформации родителей не влияют на отбор детей.
-            const parts = groups.flatMap(([selector, effects, delay, stagger]) =>
+            const parts = groups.flatMap(([selector, effects, delay, stagger, duration]) =>
                 [...document.querySelectorAll(selector)].filter(isDesignPartVisible).map((element, i) => ({
-                    element, effect: effects[i % effects.length], delay: delay + i * stagger
+                    element, effect: effects[i % effects.length], delay: delay + i * stagger,
+                    duration: duration + (i % 3) * 70
                 }))
             );
             const panel = document.querySelector('.jp-art-panel');
-            if (japanese && isDesignPartVisible(panel)) revealDesignMat(panel, 130);
-            parts.forEach(({ element, effect, delay }) => revealDesignPart(element, effect, delay));
+            if (japanese && isDesignPartVisible(panel)) revealDesignMat(panel, 480);
+            parts.forEach(({ element, effect, delay, duration }) => revealDesignPart(element, effect, delay, duration));
             Promise.allSettled(designMotion.animations.map(animation => animation.finished)).then(() => {
                 if (designMotion.run === run) finishDesignMotion();
             });
