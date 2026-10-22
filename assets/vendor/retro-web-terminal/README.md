@@ -8,6 +8,7 @@ diagnostics dashboard. The CRT shaders also render the scrollbar so it follows
 the same curvature, phosphor and glow as the terminal. A transparent curved
 hit area handles dragging, track clicks, touch and keyboard scrolling; the
 native scrollbar remains available when effects are off or WebGL fails.
+The command pager also shows a scrollbar on its alternate screen.
 The presets are unmodified. The dashboard's keyboard captions refer to returning
 to the command prompt.
 

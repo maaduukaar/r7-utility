@@ -7,7 +7,12 @@ export function createCrtScrollbar(
   root: HTMLElement,
   host: HTMLElement,
   terminal: Terminal,
-  onChange: (overlay: ScrollbarOverlay | undefined) => void
+  onChange: (overlay: ScrollbarOverlay | undefined) => void,
+  pager: {
+    position: () => { top: number; total: number; pageSize: number } | undefined
+    scrollTo: (top: number) => void
+    scrollLines: (amount: number) => void
+  }
 ) {
   const ns = 'http://www.w3.org/2000/svg'
   const svg = document.createElementNS(ns, 'svg')
@@ -57,10 +62,16 @@ export function createCrtScrollbar(
 
   function refresh() {
     const buffer = terminal.buffer.active
+    const page = pager.position()
+    const pagerActive = buffer.type === 'alternate' && page !== undefined
     const nativeTrack = host.querySelector<HTMLElement>('.scrollbar.vertical')
     const outer = root.getBoundingClientRect()
     const rect = nativeTrack?.getBoundingClientRect()
-    const visible = enabled && buffer.type === 'normal' && buffer.baseY > 0
+    const total = pagerActive ? page.total : terminal.rows + buffer.baseY
+    const pageSize = pagerActive ? page.pageSize : terminal.rows
+    const maxTop = Math.max(0, total - pageSize)
+    const top = pagerActive ? page.top : buffer.viewportY
+    const visible = enabled && (pagerActive ? maxTop > 0 : buffer.type === 'normal' && buffer.baseY > 0)
       && Boolean(rect?.width && rect.height && outer.width && outer.height)
     svg.toggleAttribute('hidden', !visible)
     if (!visible || !rect) {
@@ -76,14 +87,14 @@ export function createCrtScrollbar(
       height: rect.height
     }
     const height = Math.min(track.height, Math.max(24,
-      track.height * terminal.rows / (terminal.rows + buffer.baseY)))
+      track.height * pageSize / total))
     thumb = {
       ...track,
-      top: track.top + (track.height - height) * buffer.viewportY / buffer.baseY,
+      top: track.top + (track.height - height) * top / maxTop,
       height
     }
-    hit.setAttribute('aria-valuemax', String(buffer.baseY))
-    hit.setAttribute('aria-valuenow', String(buffer.viewportY))
+    hit.setAttribute('aria-valuemax', String(maxTop))
+    hit.setAttribute('aria-valuenow', String(top))
     const nextGeometry = `${JSON.stringify(track)}:${outer.width}:${outer.height}:${curvature}`
     if (geometry !== nextGeometry) {
       geometry = nextGeometry
@@ -126,8 +137,12 @@ export function createCrtScrollbar(
     const range = track.height - thumb.height
     if (range <= 0) return
     const progress = (y - track.top - fraction * thumb.height) / range
-    terminal.scrollToLine(Math.round(Math.max(0, Math.min(1, progress))
-      * terminal.buffer.active.baseY))
+    const page = pager.position()
+    const maxTop = page ? Math.max(0, page.total - page.pageSize)
+      : terminal.buffer.active.baseY
+    const top = Math.round(Math.max(0, Math.min(1, progress)) * maxTop)
+    if (page) pager.scrollTo(top)
+    else terminal.scrollToLine(top)
     refresh()
   }
 
@@ -161,15 +176,22 @@ export function createCrtScrollbar(
   hit.addEventListener('focus', () => { focused = true; refresh() }, options)
   hit.addEventListener('blur', () => { focused = false; refresh() }, options)
   hit.addEventListener('keydown', event => {
-    const current = terminal.buffer.active.viewportY
+    const page = pager.position()
+    const maxTop = page ? Math.max(0, page.total - page.pageSize)
+      : terminal.buffer.active.baseY
+    const current = page?.top ?? terminal.buffer.active.viewportY
     const positions: Record<string, number> = {
       ArrowUp: current - 1, ArrowDown: current + 1,
-      PageUp: current - terminal.rows, PageDown: current + terminal.rows,
-      Home: 0, End: terminal.buffer.active.baseY
+      PageUp: current - (page?.pageSize ?? terminal.rows),
+      PageDown: current + (page?.pageSize ?? terminal.rows),
+      Home: 0, End: maxTop
     }
     if (event.key === 'Escape') terminal.focus()
-    else if (event.key in positions) terminal.scrollToLine(Math.max(0,
-      Math.min(terminal.buffer.active.baseY, positions[event.key]!)))
+    else if (event.key in positions) {
+      const top = Math.max(0, Math.min(maxTop, positions[event.key]!))
+      if (page) pager.scrollTo(top)
+      else terminal.scrollToLine(top)
+    }
     else return
     event.preventDefault()
     event.stopPropagation()
@@ -178,8 +200,10 @@ export function createCrtScrollbar(
     if (!event.deltaY || event.ctrlKey) return
     const pixels = event.deltaY * (event.deltaMode === 1
       ? track.height / terminal.rows : event.deltaMode === 2 ? track.height : 1)
-    terminal.scrollLines(Math.sign(pixels) * Math.max(1,
-      Math.round(Math.abs(pixels) / (track.height / terminal.rows))))
+    const lines = Math.sign(pixels) * Math.max(1,
+      Math.round(Math.abs(pixels) / (track.height / terminal.rows)))
+    if (pager.position()) pager.scrollLines(lines)
+    else terminal.scrollLines(lines)
     event.preventDefault()
     event.stopPropagation()
   }, { ...options, passive: false })

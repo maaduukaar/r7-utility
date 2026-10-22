@@ -197,6 +197,11 @@ async function mount(view: HTMLElement, signal: AbortSignal, onExit: () => void,
             onRendererChange(mode) {
                 renderer = mode;
                 updateStatus();
+            },
+            pager: {
+                position: () => shell?.pagerPosition(),
+                scrollTo: top => shell?.scrollPager(top),
+                scrollLines: amount => shell?.scrollPagerLines(amount)
             }
         }, signal);
         if (signal.aborted || !source) {
@@ -321,6 +326,7 @@ async function mount(view: HTMLElement, signal: AbortSignal, onExit: () => void,
             dispose,
             escape() {
                 if (root.querySelector('.retro-terminal__scrollbar')?.contains(document.activeElement)) {
+                    shell?.escape();
                     source?.terminal.focus();
                     return true;
                 }

@@ -52,6 +52,11 @@ export interface TerminalSourceOptions {
   onData: (data: string) => void
   onResize: (size: { cols: number; rows: number }) => void
   onRendererChange: (mode: RendererMode) => void
+  pager: {
+    position: () => { top: number; total: number; pageSize: number } | undefined
+    scrollTo: (top: number) => void
+    scrollLines: (amount: number) => void
+  }
 }
 
 export interface TerminalSource {
@@ -284,7 +289,7 @@ export async function createTerminalSource(
       pipeline?.setScrollbar(overlay)
       lastCapture = performance.now()
       requestFrame()
-    })
+    }, initial.pager)
     cleanups.push(() => scrollbar?.dispose())
     add(core._renderService.onRender(capture))
     const captureLink = () => {

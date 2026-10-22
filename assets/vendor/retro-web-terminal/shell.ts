@@ -183,6 +183,22 @@ export function createSlugShell(terminal: Terminal, api: SlugServices, signal: A
         write('\x1b[?1049l\x1b[?25h');
         prompt();
     }
+    function pagerPosition() {
+        if (mode !== 'pager' || !pager) return undefined;
+        const total = wrap(pager.text, Math.max(8, terminal.cols - 1)).length;
+        const pageSize = Math.max(1, terminal.rows - 4);
+        return { top: pager.top, total, pageSize };
+    }
+    function scrollPager(top: number) {
+        if (mode !== 'pager' || !pager) return;
+        pager.top = top;
+        drawPage();
+    }
+    function scrollPagerLines(amount: number) {
+        if (mode !== 'pager' || !pager) return;
+        pager.top += amount;
+        drawPage();
+    }
     function lastResult() {
         if (!memory.last) throw new Error('Сначала введите заголовок и нажмите Enter.');
         return memory.last;
@@ -464,7 +480,7 @@ export function createSlugShell(terminal: Terminal, api: SlugServices, signal: A
     print('Заголовок → Enter. help — команды.');
     print(prefsLine()); print(); prompt();
     return {
-        input, paste, notice, escape, dispose,
+        input, paste, notice, escape, dispose, pagerPosition, scrollPager, scrollPagerLines,
         resize() { if (mode === 'pager') drawPage(); else if (mode === 'prompt') renderInput(); },
         resume() { write('\x1b[?1049l\x1b[?7h\x1b[?25h'); prompt(); },
         reset() { terminal.clear(); write('\x1b[2J\x1b[H'); prompt(); },
