@@ -811,9 +811,323 @@
             body[data-design="classic"] #navHomeBtn .theme-hint-scan { display: none; animation: none; }
             body[data-layout="portal"] *, body[data-layout="portal"] *::before { transition: none !important; animation: none !important; }
         }
+
+        /* Оболочка оригинального CRT-рендерера transitive-bullshit/retro-web-terminal. */
+        .retro-workbench { display: none; }
+        body[data-design="terminal"] {
+            display: block;
+            min-width: 320px;
+            min-height: 100svh;
+            margin: 0;
+            overflow-x: hidden;
+            background: #151714;
+        }
+        body[data-design="terminal"] > :not(#retroTerminalView):not(script) { display: none !important; }
+        body[data-design="terminal"] #retroTerminalView {
+            --retro-phosphor: #ffc078;
+            display: block;
+            min-height: 100svh;
+            padding: 24px 44px 20px;
+            color: #dedbd1;
+            background: radial-gradient(ellipse at 50% 45%, #323329 0, #20221c 34%, #171914 65%, #151714 100%);
+            font-family: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+            font-synthesis: none;
+            animation: retro-workbench-in .48s cubic-bezier(.16, 1, .3, 1) both;
+        }
+        .retro-workbench *,
+        .retro-workbench *::before,
+        .retro-workbench *::after { box-sizing: border-box; }
+        .retro-workbench button,
+        .retro-workbench a { font-family: inherit; -webkit-tap-highlight-color: transparent; }
+        .retro-workbench button { cursor: pointer; }
+        .retro-workbench button:focus-visible,
+        .retro-workbench a:focus-visible { outline: 2px solid var(--retro-phosphor); outline-offset: 4px; }
+        .retro-shell-header,
+        .retro-console-controls,
+        .retro-terminal-status,
+        .retro-shell-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+        }
+        .retro-shell-header { width: min(100%, 1320px); margin: 0 auto; }
+        .retro-brand { display: flex; align-items: center; gap: 13px; }
+        .retro-brand-mark { width: 26px; height: 25px; color: #bfc2ae; flex: 0 0 auto; }
+        .retro-brand-name { margin: 0; color: #dfdfd2; font-size: 13px; font-weight: 500; letter-spacing: -.03em; }
+        .retro-brand-name span { color: #85897b; font-weight: 400; }
+        .retro-header-actions { display: flex; align-items: center; gap: 25px; }
+        .retro-header-note { color: #777c6c; font-size: 10px; letter-spacing: .07em; }
+        .retro-source-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #a6ab99;
+            font-size: 11px;
+            text-decoration: none;
+        }
+        .retro-source-link:hover { color: #e5e6d7; }
+        .retro-source-link svg { width: 13px; height: 13px; }
+        .retro-console { width: min(100%, 1120px); margin: 28px auto 0; }
+        .retro-console-controls { padding: 0 26px 12px; }
+        .retro-theme-selector,
+        .retro-display-controls { display: flex; align-items: center; }
+        .retro-theme-selector { gap: 5px; }
+        .retro-control-label { margin-right: 14px; color: #929783; font-size: 10px; text-transform: uppercase; letter-spacing: .14em; }
+        .retro-theme-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 13px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+            color: #9b9f91;
+            background: transparent;
+            font-size: 11px;
+            transition: color .12s ease, background-color .12s ease, border-color .12s ease;
+        }
+        .retro-theme-button:hover { color: #e0e1d3; background: #30332a; }
+        .retro-theme-button[aria-pressed="true"] {
+            color: #e5e6d6;
+            border-color: #464a3e;
+            background: #33362c;
+            box-shadow: inset 0 1px 0 rgba(86, 91, 67, .17), 0 2px 4px rgba(9, 11, 9, .15);
+        }
+        .retro-theme-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--button-color); opacity: .45; }
+        .retro-theme-button[aria-pressed="true"] .retro-theme-dot { opacity: 1; box-shadow: 0 0 9px var(--button-color); }
+        .retro-theme-button[data-retro-theme="color"] .retro-theme-dot { background: conic-gradient(#f4c369, #d485ca, #75b7e5, #82ca9c, #f4c369); }
+        .retro-display-controls { gap: 18px; }
+        .retro-effects-switch,
+        .retro-reset-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 0;
+            border: 0;
+            color: #acb09f;
+            background: none;
+            font-size: 11px;
+        }
+        .retro-effects-switch:hover,
+        .retro-reset-button:hover { color: #e2e4d5; }
+        .retro-switch-track { position: relative; width: 25px; height: 14px; border: 1px solid #8d9872; border-radius: 12px; background: #a6b488; }
+        .retro-switch-track::after { position: absolute; top: 2px; left: 13px; width: 8px; height: 8px; border-radius: 50%; background: #272f1e; content: ''; transition: left .16s ease; }
+        .retro-effects-switch[aria-checked="false"] .retro-switch-track { border-color: #5b604f; background: #353a2e; }
+        .retro-effects-switch[aria-checked="false"] .retro-switch-track::after { left: 2px; background: #919784; }
+        .retro-reset-button svg { width: 13px; height: 13px; }
+        .retro-monitor {
+            --retro-bezel-top: clamp(45px, 4.6vw, 67px);
+            --retro-bezel-side: clamp(55px, 5.65vw, 82px);
+            --retro-bezel-bottom: clamp(55px, 5.7vw, 83px);
+            position: relative;
+            isolation: isolate;
+            border: solid transparent;
+            border-width: var(--retro-bezel-top) var(--retro-bezel-side) var(--retro-bezel-bottom);
+            border-image: url('assets/retro-monitor-frame.webp') 160 194 196 194 stretch;
+        }
+        .retro-monitor::before { position: absolute; z-index: -1; inset: -8px; border-radius: 25px; background: #090b08; box-shadow: 0 25px 40px 50px #0007; content: ''; }
+        .retro-screen {
+            position: relative;
+            height: clamp(330px, calc(100svh - 400px), 540px);
+            overflow: hidden;
+            isolation: isolate;
+            border-radius: 13px;
+            background: #090b08;
+            box-shadow: 0 0 0 6px #0e100d;
+        }
+        .retro-screen > .retro-terminal { width: 100%; height: 100%; }
+        .retro-loading {
+            position: absolute;
+            z-index: 8;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            color: var(--retro-phosphor);
+            background: #090b08;
+            font-size: 13px;
+            letter-spacing: .08em;
+            text-align: center;
+        }
+        .retro-workbench [hidden] { display: none !important; }
+        .retro-monitor--bare { border: 12px solid #363a30; border-image: none; border-radius: 24px; }
+        .retro-monitor--bare .retro-monitor-label,
+        .retro-monitor--bare .retro-power-indicator { display: none; }
+        .retro-monitor--bare .retro-screen { height: clamp(360px, 42vw, 560px); }
+        .retro-monitor-label { position: absolute; left: 9px; bottom: calc(var(--retro-bezel-bottom) * -.49); display: flex; align-items: center; gap: 12px; color: #554f42; pointer-events: none; font-size: 10px; letter-spacing: .14em; text-shadow: 0 1px 0 rgba(232, 223, 198, .7); }
+        .retro-monitor-label strong { font-size: 12px; font-weight: 500; letter-spacing: .02em; }
+        .retro-monitor-label span { opacity: .65; font-size: 8px; }
+        .retro-power-indicator { position: absolute; right: calc(var(--retro-bezel-side) * -.61); bottom: calc(var(--retro-bezel-bottom) * -.325); width: 9px; height: 3px; border-radius: 2px; background: #df8b38; box-shadow: 0 0 4px #ffad4d, 0 0 12px rgba(239, 165, 75, .42); pointer-events: none; }
+        .retro-terminal-status { padding: 12px 28px 0; color: #7c826f; font-size: 10px; }
+        .retro-status-left { display: flex; align-items: center; gap: 16px; }
+        .retro-session-mode { display: inline-flex; align-items: center; gap: 7px; color: #acb39b; }
+        .retro-status-dot { width: 5px; height: 5px; border-radius: 50%; background: #a1ae86; }
+        .retro-sample-data { padding-left: 16px; border-left: 1px solid #444a38; }
+        .retro-renderer-status { color: #899578; }
+        .retro-renderer-status[data-mode="fallback"] { color: #d4ad73; }
+        .retro-keyboard-hint { display: flex; align-items: center; gap: 8px; margin-left: auto; color: #959d86; }
+        .retro-workbench kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 19px; min-height: 19px; margin: 0; padding: 0 4px; border: 1px solid #454d38; border-bottom-width: 2px; border-radius: 4px; color: #bec6aa; background: transparent; box-shadow: none; font: inherit; line-height: 1; }
+        .retro-exit-button { display: inline-flex; align-items: center; gap: 9px; min-height: 34px; margin-left: 5px; padding: 6px 9px 6px 12px; border: 1px solid #879568; border-radius: 5px; color: #f2f3df; background: #363d2c; font-size: 11px; white-space: nowrap; }
+        .retro-exit-button:hover { border-color: #b6c594; color: #fff; background: #444c37; }
+        .retro-exit-button kbd { border-color: #87946b; color: #e4e9d0; background: #23281e; font-size: 10px; }
+        .retro-shell-footer { width: min(100%, 1064px); margin: 24px auto 0; padding-top: 14px; border-top: 1px solid #373d2d; color: #727a65; font-size: 10px; line-height: 1.7; }
+        .retro-shell-footer p { margin: 0; }
+        .retro-shell-footer strong { color: #9ca58c; font-weight: 400; }
+        .retro-shell-footer span { color: #7e8870; }
+        .retro-footer-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+        .retro-frame-button { border: 0; background: none; color: #a1ac90; font-size: 10px; }
+        .retro-pause-button { display: inline-flex; gap: 7px; align-items: center; border: 0; background: none; color: #bec6aa; font-size: inherit; }
+        .retro-tune-button {
+            position: fixed; z-index: 70; right: 16px; bottom: 16px;
+            width: 42px; height: 42px; display: grid; place-items: center;
+            border: 1px solid #45483d; border-radius: 50%; background: #242722; color: #c2c7b5;
+            box-shadow: 0 3px 12px #0006;
+        }
+        .retro-tune-button svg { width: 20px; height: 20px; }
+        .retro-tuning-panel {
+            position: fixed; z-index: 71; right: 16px; bottom: 68px;
+            width: min(320px, calc(100vw - 32px)); max-height: min(640px, calc(100svh - 92px));
+            overflow: auto; overscroll-behavior: contain; padding: 14px;
+            border: 1px solid #484c40; border-radius: 14px;
+            background: #22251f; color: #e0e3d4; box-shadow: 0 20px 60px #0008;
+            font-size: 11px; color-scheme: dark;
+        }
+        .retro-tuning-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .retro-tuning-title h2 { font-size: 12px; font-weight: 500; }
+        .retro-tuning-title button { width: 30px; height: 30px; border: 0; background: transparent; color: #b2b9a3; font-size: 20px; }
+        .retro-tuning-panel details { border-top: 1px solid #3a3f32; padding: 8px 0; }
+        .retro-tuning-panel summary { cursor: pointer; padding: 4px 0; color: #bbc5a5; }
+        .retro-tuning-row { display: flex; align-items: center; gap: 8px; min-height: 30px; }
+        .retro-tuning-row > span { flex: 0 0 70px; }
+        .retro-tuning-row input { accent-color: #b9c79d; min-width: 0; }
+        .retro-tuning-row input[type="range"] { flex: 1; width: 100%; }
+        .retro-tuning-row input[type="checkbox"] { margin-left: auto; width: 15px; height: 15px; }
+        .retro-tuning-row output { flex: 0 0 34px; text-align: right; font-variant-numeric: tabular-nums; color: #9ba98a; }
+        @keyframes retro-workbench-in { from { opacity: 0; } to { opacity: 1; } }
+
+        @media (max-width: 1000px) {
+            body[data-design="terminal"] #retroTerminalView { padding: 23px 24px; }
+            .retro-console { margin-top: 32px; }
+            .retro-console-controls { padding: 0 19px 14px; }
+            .retro-control-label,
+            .retro-header-note { display: none; }
+            .retro-terminal-status { padding-inline: 19px; }
+            .retro-status-left { gap: 10px; }
+            .retro-sample-data { padding-left: 10px; }
+        }
+        @media (max-width: 700px) {
+            body[data-design="terminal"] #retroTerminalView { padding: 19px 8px 22px; }
+            .retro-shell-header { padding-inline: 9px; }
+            .retro-brand-name { font-size: 12px; }
+            .retro-brand-mark { width: 23px; }
+            .retro-source-link { font-size: 0; gap: 0; }
+            .retro-source-link svg { width: 17px; height: 17px; }
+            .retro-console { margin-top: 28px; }
+            .retro-console-controls { flex-wrap: wrap; gap: 12px; padding: 0 10px 12px; }
+            .retro-theme-selector { gap: 1px; }
+            .retro-theme-button { gap: 6px; padding: 8px 9px; font-size: 10px; }
+            .retro-display-controls { gap: 14px; margin-left: auto; }
+            .retro-effects-switch,
+            .retro-reset-button { font-size: 10px; }
+            .retro-reset-label { display: none; }
+            .retro-monitor { --retro-bezel-top: 35px; --retro-bezel-side: 24px; --retro-bezel-bottom: 44px; }
+            .retro-screen { height: min(56vh, 430px); min-height: 320px; border-radius: 8px; }
+            .retro-monitor-label { bottom: -25px; gap: 7px; font-size: 8px; }
+            .retro-monitor-label strong { font-size: 9px; }
+            .retro-monitor-label span { display: none; }
+            .retro-power-indicator { bottom: -16px; width: 5px; height: 2px; }
+            .retro-terminal-status { flex-wrap: wrap; row-gap: 12px; padding: 16px 11px 0; font-size: 9px; }
+            .retro-renderer-status:not([data-mode="fallback"]) { display: none; }
+            .retro-status-left { flex-wrap: wrap; }
+            .retro-keyboard-hint { gap: 6px; }
+            .retro-exit-button { gap: 7px; margin-left: 2px; padding-left: 9px; font-size: 10px; }
+            .retro-shell-footer { align-items: flex-start; gap: 18px; width: calc(100% - 20px); margin: 28px 10px 0; font-size: 9px; }
+            .retro-shell-footer p { max-width: 250px; }
+        }
+        @media (max-width: 430px) {
+            .retro-theme-button { padding-inline: 7px; }
+            .retro-effects-switch { font-size: 0; gap: 0; }
+            .retro-reset-button { display: none; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            body[data-design="terminal"] #retroTerminalView { animation: none !important; }
+        }
     </style>
 </head>
 <body data-design="classic" data-layout="classic" data-view="generator" class="min-h-screen flex flex-col justify-between selection:bg-apple-blue selection:text-white">
+
+    <section id="retroTerminalView" class="retro-workbench" data-phosphor="amber" aria-label="Ретротерминал R7 Utility" aria-hidden="true">
+        <header class="retro-shell-header">
+            <div class="retro-brand">
+                <svg class="retro-brand-mark" viewBox="0 0 26 25" fill="none" aria-hidden="true">
+                    <rect x="1" y="1" width="24" height="20" rx="3" stroke="currentColor" stroke-width="1.2"></rect>
+                    <path d="m6 7 4 4-4 4m7 0h6M9 24h8" stroke="currentColor" stroke-width="1.2"></path>
+                </svg>
+                <h1 class="retro-brand-name">r7<span> / </span>terminal</h1>
+            </div>
+            <div class="retro-header-actions">
+                <span class="retro-header-note">SLUG SYSTEM · DIAGNOSTICS</span>
+                <a class="retro-source-link" href="https://github.com/transitive-bullshit/retro-web-terminal" target="_blank" rel="noopener noreferrer" aria-label="Исходный код Retro Web Terminal">
+                    View source
+                    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" stroke-width="1.3"></path></svg>
+                </a>
+            </div>
+        </header>
+
+        <main class="retro-console">
+            <div class="retro-console-controls">
+                <div class="retro-theme-selector" role="group" aria-label="Цвет люминофора">
+                    <span class="retro-control-label">Phosphor</span>
+                    <button class="retro-theme-button" type="button" data-retro-theme="amber" style="--button-color:#ffc078" aria-pressed="true"><span class="retro-theme-dot" aria-hidden="true"></span>Amber</button>
+                    <button class="retro-theme-button" type="button" data-retro-theme="green" style="--button-color:#91ed8c" aria-pressed="false"><span class="retro-theme-dot" aria-hidden="true"></span>Green</button>
+                    <button class="retro-theme-button" type="button" data-retro-theme="color" style="--button-color:#9bc5ff" aria-pressed="false"><span class="retro-theme-dot" aria-hidden="true"></span>Color CRT</button>
+                </div>
+                <div class="retro-display-controls">
+                    <button id="retroEffectsBtn" class="retro-effects-switch" type="button" role="switch" aria-label="Эффекты CRT" aria-checked="true"><span class="retro-switch-track" aria-hidden="true"></span>Effects</button>
+                    <button id="retroResetBtn" class="retro-reset-button" type="button" aria-label="Сбросить терминал и настройки текущей темы" title="Сбросить терминал и настройки текущей темы">
+                        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3 6a5 5 0 1 1 0 4M3 2v4h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                        <span class="retro-reset-label">Reset</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="retro-monitor">
+                <div class="retro-screen">
+                    <div id="retroLoading" class="retro-loading" role="status">INITIALIZING DISPLAY</div>
+                    <div id="retroRenderer" class="retro-terminal" aria-label="Ретротерминал: системная диагностика">
+                        <div class="retro-terminal__source"></div>
+                        <canvas class="retro-terminal__effects" aria-hidden="true"></canvas>
+                    </div>
+                </div>
+                <div class="retro-monitor-label" aria-hidden="true"><strong>R7 / 01</strong><span>CONTENT DISPLAY TERMINAL</span></div>
+                <span class="retro-power-indicator" aria-hidden="true"></span>
+            </div>
+
+            <div class="retro-terminal-status">
+                <div class="retro-status-left">
+                    <span class="retro-session-mode"><i class="retro-status-dot" aria-hidden="true"></i>Diagnostics</span>
+                    <span class="retro-sample-data">Simulated data</span>
+                    <span id="retroRendererStatus" class="retro-renderer-status" role="status">— × —</span>
+                </div>
+                <div class="retro-keyboard-hint">
+                    <button id="retroPauseBtn" class="retro-pause-button" type="button" aria-pressed="false" aria-label="Пауза диагностики"><kbd>p</kbd><span id="retroPauseLabel">pause</span></button>
+                    <button id="retroExitBtn" class="retro-exit-button" type="button">К генератору <kbd aria-hidden="true">Esc</kbd></button>
+                </div>
+            </div>
+        </main>
+
+        <footer class="retro-shell-footer">
+            <p><strong>1 / 2 / 3 — выбрать график. P — пауза.</strong><br>Esc — вернуться к генератору.</p>
+            <div class="retro-footer-actions"><button id="retroFrameBtn" class="retro-frame-button" type="button" aria-pressed="true">▣ Hide frame</button><span>Tune your display ↘</span></div>
+        </footer>
+        <button id="retroTuneBtn" class="retro-tune-button" type="button" aria-label="Настройки CRT-экрана" aria-expanded="false" aria-controls="retroTuningPanel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M4 7h16M4 17h16"></path><circle cx="9" cy="7" r="3" fill="#242722"></circle><circle cx="15" cy="17" r="3" fill="#242722"></circle></svg>
+        </button>
+        <aside id="retroTuningPanel" class="retro-tuning-panel" aria-label="Настройки CRT-экрана" hidden>
+            <div class="retro-tuning-title"><h2>Display tuning</h2><button id="retroTuningClose" type="button" aria-label="Закрыть настройки">×</button></div>
+            <div id="retroTuningControls"></div>
+        </aside>
+    </section>
 
     <div class="portal-only portal-utility portal-width">
         <span>R7-UTILITY / Инструменты для работы с контентом <b class="design-mode-label" id="designModeLabel">02 / 墨祭 Sumi Matsuri</b></span>
@@ -1463,6 +1777,101 @@ def wp_slugify(text: str) -> str:
                 nextButton: 'Классический вид →'
             }
         };
+
+        // Оригинальный xterm/WebGL CRT загружается только при открытии секретного режима.
+        const retroTerminalView = document.getElementById('retroTerminalView');
+        const retroExitBtn = document.getElementById('retroExitBtn');
+        let retroPreviousDesign = 'classic';
+        let retroAssetsPromise = null;
+        let retroSessionAbort = null;
+
+        function loadRetroAssets() {
+            if (retroAssetsPromise) return retroAssetsPromise;
+            const resources = [];
+            const stylesheet = new Promise((resolve, reject) => {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'assets/retro-terminal/terminal.css';
+                link.onload = resolve;
+                link.onerror = () => reject(new Error('CRT stylesheet could not load'));
+                resources.push(link);
+                document.head.append(link);
+            });
+            const script = new Promise((resolve, reject) => {
+                const element = document.createElement('script');
+                element.src = 'assets/retro-terminal/terminal.js';
+                element.onload = resolve;
+                element.onerror = () => reject(new Error('CRT renderer could not load'));
+                resources.push(element);
+                document.head.append(element);
+            });
+            retroAssetsPromise = Promise.all([stylesheet, script]).catch(error => {
+                resources.forEach(element => element.remove());
+                retroAssetsPromise = null;
+                throw error;
+            });
+            return retroAssetsPromise;
+        }
+
+        async function enterRetroTerminal() {
+            if (document.body.dataset.design === 'terminal') return;
+            retroPreviousDesign = DESIGN_ORDER.includes(document.body.dataset.design) ? document.body.dataset.design : 'classic';
+            finishDesignMotion();
+            stopThemeHint();
+            stopIntroShowcase(true);
+            clearModeTransitionTimers();
+            clearTimeout(typingDebounceTimer);
+            MatrixFx.stopImmediately();
+            document.body.dataset.design = 'terminal';
+            document.body.dataset.layout = 'terminal';
+            retroTerminalView.setAttribute('aria-hidden', 'false');
+            headlineInput.value = '';
+            state.savedTitle = '';
+            state.returnedFromSlug = false;
+            hideWhisper();
+            const loading = document.getElementById('retroLoading');
+            loading.hidden = false;
+            loading.textContent = 'INITIALIZING DISPLAY';
+            const controller = new AbortController();
+            retroSessionAbort = controller;
+            window.scrollTo({ top: 0, behavior: 'auto' });
+            retroExitBtn.focus({ preventScroll: true });
+            try {
+                await loadRetroAssets();
+                if (controller.signal.aborted) return;
+                await window.R7RetroTerminal.mount(retroTerminalView, controller.signal, exitRetroTerminal);
+            } catch (error) {
+                if (controller.signal.aborted) return;
+                controller.abort();
+                loading.hidden = false;
+                loading.textContent = 'Не удалось открыть терминал. Нажмите Esc и попробуйте снова.';
+                console.error('Retro terminal initialization failed', error);
+            }
+        }
+
+        function exitRetroTerminal() {
+            if (document.body.dataset.design !== 'terminal') return;
+            retroSessionAbort?.abort();
+            retroSessionAbort = null;
+            retroTerminalView.setAttribute('aria-hidden', 'true');
+            document.body.dataset.design = DESIGN_ORDER.includes(retroPreviousDesign) ? retroPreviousDesign : 'classic';
+            updateDesignControls();
+            updatePortalUI();
+            adjustInputWidth();
+            window.scrollTo({ top: 0, behavior: 'auto' });
+            headlineInput.focus({ preventScroll: true });
+        }
+
+        retroExitBtn.addEventListener('click', exitRetroTerminal);
+        document.addEventListener('keydown', event => {
+            if (document.body.dataset.design !== 'terminal' || event.key !== 'Escape') return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            const panel = document.getElementById('retroTuningPanel');
+            if (!panel.hidden) document.getElementById('retroTuningClose').click();
+            else exitRetroTerminal();
+        }, true);
+        window.addEventListener('pagehide', exitRetroTerminal);
 
         const themeHintMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
         let themeHintTimer = null;
@@ -5043,6 +5452,10 @@ def wp_slugify(text: str) -> str:
             }
             if (e.key === 'Enter') {
                 e.preventDefault();
+                if (state.mode === 'input' && headlineInput.value.trim().toLowerCase() === 'l33t') {
+                    enterRetroTerminal();
+                    return;
+                }
                 handleEnterAction();
             } else if (e.key === 'Backspace') {
                 // Если мы в режиме слага, Backspace возвращает к исходному заголовку!
