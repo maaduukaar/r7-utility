@@ -139,7 +139,11 @@ async function mount(view: HTMLElement, signal: AbortSignal, onExit: () => void,
         shell?.resume();
     }
     function toggleFrame(mode?: string) {
-        const framed = mode ? mode === 'show' : frame.getAttribute('aria-pressed') !== 'true';
+        const framed = ['show', 'on', 'вкл', 'включить'].includes(mode || '')
+            ? true
+            : ['hide', 'off', 'выкл', 'выключить'].includes(mode || '')
+                ? false
+                : frame.getAttribute('aria-pressed') !== 'true';
         frame.setAttribute('aria-pressed', String(framed));
         frame.textContent = framed ? '▣ Hide frame' : '▣ Show frame';
         get('.retro-monitor').classList.toggle('retro-monitor--bare', !framed);
@@ -257,6 +261,35 @@ async function mount(view: HTMLElement, signal: AbortSignal, onExit: () => void,
         shell = createSlugShell(source.terminal, services, signal, {
             exit: onExit, demo: startDashboard, frame: toggleFrame
         });
+        const pasteIntoShell = (text: string) => {
+            if (!text || signal.aborted) return;
+            if (dashboard) stopDashboard();
+            shell?.paste(text);
+            source?.terminal.focus();
+        };
+        root.addEventListener('paste', ((event: ClipboardEvent) => {
+            const text = event.clipboardData?.getData('text/plain') || '';
+            if (!text) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            pasteIntoShell(text);
+        }) as EventListener, { signal, capture: true });
+        root.addEventListener('contextmenu', ((event: MouseEvent) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (dashboard) stopDashboard();
+            source?.terminal.focus();
+            if (!navigator.clipboard?.readText) {
+                shell?.notice('Буфер обмена недоступен. Используйте Ctrl+V.');
+                return;
+            }
+            void navigator.clipboard.readText()
+                .then(text => {
+                    if (text) pasteIntoShell(text);
+                    else shell?.notice('Буфер обмена пуст.');
+                })
+                .catch(() => shell?.notice('Не удалось прочитать буфер. Используйте Ctrl+V.'));
+        }) as EventListener, { signal });
         const input = source.terminal.textarea;
         if (input) {
             input.setAttribute('aria-label', 'Команда или заголовок для слага');

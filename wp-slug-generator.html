@@ -950,7 +950,8 @@
             text-align: center;
         }
         .retro-workbench [hidden] { display: none !important; }
-        .retro-monitor--bare { border: 12px solid #363a30; border-image: none; border-radius: 24px; }
+        .retro-monitor--bare { border: 0; border-image: none; border-radius: 0; }
+        .retro-monitor--bare::before { display: none; }
         .retro-monitor--bare .retro-monitor-label,
         .retro-monitor--bare .retro-power-indicator { display: none; }
         .retro-monitor--bare .retro-screen { height: clamp(360px, 42vw, 560px); }
@@ -1073,7 +1074,7 @@
                     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" stroke-width="1.3"></path></svg>
                 </a>
             </div>
-            <button id="retroFrameBtn" class="retro-frame-button" type="button" aria-pressed="true">▣ Hide frame</button>
+            <button id="retroFrameBtn" class="retro-frame-button" type="button" aria-pressed="false" hidden>▣ Show frame</button>
         </header>
 
         <main class="retro-console">
@@ -1093,7 +1094,7 @@
                 </div>
             </div>
 
-            <div class="retro-monitor">
+            <div class="retro-monitor retro-monitor--bare">
                 <div class="retro-screen">
                     <div id="retroLoading" class="retro-loading" role="status">INITIALIZING DISPLAY</div>
                     <div id="retroRenderer" class="retro-terminal" aria-label="Терминал генератора слагов">
@@ -1839,7 +1840,6 @@ def wp_slugify(text: str) -> str:
             const controller = new AbortController();
             retroSessionAbort = controller;
             window.scrollTo({ top: 0, behavior: 'auto' });
-            document.getElementById('retroFrameBtn').focus({ preventScroll: true });
             try {
                 await loadRetroAssets();
                 if (controller.signal.aborted) return;

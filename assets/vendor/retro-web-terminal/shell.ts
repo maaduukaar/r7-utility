@@ -43,7 +43,7 @@ const commands: Record<string, string> = {
     links: 'links — первоисточники из справки. copy link <номер> — скопировать адрес.',
     examples: 'examples — примеры заголовков. examples <номер> — сформировать слаг из примера.',
     demo: 'demo — живая диагностика CRT. P / пробел — пауза; 1 / 2 / 3 — график; Esc / Q — обратно к строке ввода.',
-    frame: 'frame [hide|show] — скрыть или показать рамку. Без аргумента — переключить.',
+    frame: 'frame on | off | toggle — показать или убрать рамку ЭЛТ. Также: show / hide. Без параметра — переключить.',
     clear: 'clear — очистить экран. Результаты и параметры сохраняются. Также Ctrl+L.',
     reset: 'reset — сбросить параметры на «статья / транслитерация», убрать суффикс, URL и текущий результат. История сохраняется.',
     exit: 'exit — вернуться к обычному интерфейсу. Esc на пустой строке работает так же.'
@@ -286,7 +286,7 @@ export function createSlugShell(terminal: Terminal, api: SlugServices, signal: A
                 return openPage('R7 / КОМАНДЫ',
                     'Введите заголовок и нажмите Enter. Для принудительной генерации: slug <текст>.\n\n' +
                     Object.values(commands).join('\n\n') +
-                    '\n\nКЛАВИАТУРА\nTab — дополнить команду; ↑ / ↓ — история.\n← / →, Home / End — курсор.\nCtrl+U / K — стереть до / после курсора.\nCtrl+W — удалить слово. Ctrl+L — очистить экран.\nCtrl+C — отменить перевод или ввод. Esc — закрыть просмотр / демку, очистить ввод; на пустой строке — выход.\nВставка нескольких строк объединяется в один заголовок и не выполняет команды автоматически.');
+                    '\n\nКЛАВИАТУРА\nTab — дополнить команду; ↑ / ↓ — история.\n← / →, Home / End — курсор.\nCtrl+V или правый клик — вставить из буфера.\nCtrl+U / K — стереть до / после курсора.\nCtrl+W — удалить слово. Ctrl+L — очистить экран.\nCtrl+C — отменить перевод или ввод. Esc — закрыть просмотр / демку, очистить ввод; на пустой строке — выход.\nВставка нескольких строк объединяется в один заголовок и не выполняет команды автоматически.');
             case 'docs': return openPage('СТАНДАРТЫ И ЛОГИКА', api.docs());
             case 'alphabet': {
                 const entries = api.alphabet();
@@ -313,7 +313,7 @@ export function createSlugShell(terminal: Terminal, api: SlugServices, signal: A
                 return print(api.examples().map((title, i) => `${i + 1}. ${title}`).join('\n') + '\nexamples 1 — сформировать слаг.');
             case 'demo': mode = 'demo'; actions.demo(); return;
             case 'frame':
-                if (arg && arg !== 'hide' && arg !== 'show') throw new Error(commands.frame);
+                if (arg && !['hide', 'show', 'on', 'off', 'вкл', 'выкл', 'включить', 'выключить', 'toggle'].includes(arg)) throw new Error(commands.frame);
                 return print(actions.frame(arg) ? 'Рамка показана.' : 'Рамка скрыта.');
             case 'clear': terminal.clear(); write('\x1b[2J\x1b[H'); return;
             case 'reset':
@@ -357,6 +357,24 @@ export function createSlugShell(terminal: Terminal, api: SlugServices, signal: A
         line = (points.slice(0, cursor).join('') + addition + points.slice(cursor).join('')).slice(0, 8000);
         cursor = Math.min(chars(line).length, cursor + chars(addition).length);
         renderInput();
+    }
+    function paste(value: string) {
+        if (!active() || mode === 'busy' || !value) return false;
+        if (mode === 'pager') closePage();
+        if (mode !== 'prompt') return false;
+        insert(value);
+        terminal.focus();
+        return true;
+    }
+    function notice(message: string) {
+        if (!active() || mode !== 'prompt') return;
+        terminal.write('', () => {
+            if (!active() || mode !== 'prompt') return;
+            const current = line;
+            erasePrompt();
+            print(message);
+            prompt(current);
+        });
     }
     function cancel() {
         if (mode === 'busy') { operation?.abort(); return; }
@@ -446,7 +464,7 @@ export function createSlugShell(terminal: Terminal, api: SlugServices, signal: A
     print('Заголовок → Enter. help — команды.');
     print(prefsLine()); print(); prompt();
     return {
-        input, escape, dispose,
+        input, paste, notice, escape, dispose,
         resize() { if (mode === 'pager') drawPage(); else if (mode === 'prompt') renderInput(); },
         resume() { write('\x1b[?1049l\x1b[?7h\x1b[?25h'); prompt(); },
         reset() { terminal.clear(); write('\x1b[2J\x1b[H'); prompt(); },

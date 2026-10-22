@@ -14,7 +14,9 @@ No CSS simulation is used for CRT effects.
 
 Each session starts with the Green Phosphor preset and CRT effects enabled.
 The HTML retains the theme and display controls but hides them along with the
-extra labels and links. Only the brand and frame toggle appear above the screen.
+frame button, extra labels and links. Only the brand appears above the screen.
+The frame is off by default; the `frame on`, `frame off` and `frame toggle`
+commands control it.
 
 `shell.ts` provides the default interactive prompt. It calls `createRetroServices()`
 in the HTML for the existing slug algorithms, translation dictionary, NMT/cache,
@@ -28,6 +30,8 @@ Enter a title directly, or use `slug <title>`. `help` lists all commands:
 Titles that start with a command name can be entered using `slug <title>`.
 
 The editor supports Unicode, paste, history, Tab completion and cursor editing.
+Clipboard text can be inserted with Ctrl+V or a right click inside the terminal.
+Multiline clipboard content is flattened into one input without executing it.
 Long help and code use a paged viewer; Escape returns to the prompt. `demo`
 runs the original diagnostics in the alternate screen, preserving shell output.
 Ctrl+C cancels pending translation without terminating the shared NMT worker;
