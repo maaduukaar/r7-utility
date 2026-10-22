@@ -3928,11 +3928,16 @@ def wp_slugify(text: str) -> str:
                 },
                 links() {
                     const seen = new Set();
-                    return [...viewDocs.querySelectorAll('a[href]')].filter(link => {
+                    const links = [...viewDocs.querySelectorAll('a[href]')].filter(link => {
                         if (seen.has(link.href)) return false;
                         seen.add(link.href);
                         return true;
                     }).map(link => ({ title: normalize(link.textContent), url: link.href }));
+                    const terminalSource = 'https://github.com/transitive-bullshit/retro-web-terminal';
+                    if (!seen.has(terminalSource)) {
+                        links.push({ title: 'Retro Web Terminal (GitHub)', url: terminalSource });
+                    }
+                    return links;
                 },
                 examples: () => [...document.querySelectorAll('[data-portal-example]')].map(element => element.dataset.portalExample),
                 async copy(text) {
