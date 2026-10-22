@@ -1,4 +1,14 @@
-// Original shaders. All intermediate textures use unwarped screen coordinates.
+// Upstream CRT shaders with a scrollbar signal in unwarped screen coordinates.
+const scrollbarSignal = `
+uniform vec4 u_scrollbarRect;
+uniform float u_scrollbarOpacity;
+vec3 withScrollbar(vec2 uv, vec3 color) {
+  vec2 edge = min(uv - u_scrollbarRect.xy, u_scrollbarRect.xy + u_scrollbarRect.zw - uv);
+  vec2 coverage = smoothstep(-fwidth(uv), fwidth(uv), edge);
+  vec3 ink = u_monochrome > 0.5 ? vec3(1.0) : u_tint;
+  return mix(color, ink, coverage.x * coverage.y * u_scrollbarOpacity);
+}`
+
 export const vertexShader = `#version 300 es
 precision highp float;
 out vec2 v_uv;
@@ -21,6 +31,7 @@ uniform vec3 u_tint;
 uniform float u_monochrome;
 uniform float u_decay;
 uniform float u_persistence;
+${scrollbarSignal}
 void main() {
   vec2 uv = (v_uv - u_sourceRect.xy) / u_sourceRect.zw;
   vec3 color = u_background;
@@ -29,6 +40,7 @@ void main() {
     vec4 overlay = texture(u_overlay, uv);
     color = mix(source.rgb, overlay.rgb, overlay.a);
   }
+  color = withScrollbar(v_uv, color);
   if (u_monochrome > 0.5) {
     float signal = max(color.r, max(color.g, color.b));
     color = u_tint * signal;
@@ -101,6 +113,7 @@ uniform float u_flickerSpeed;
 uniform float u_glitch;
 uniform float u_glitchFrequency;
 uniform float u_vignette;
+${scrollbarSignal}
 float hash(vec2 p) {
   p = fract(p * vec2(123.34, 456.21));
   p += dot(p, p + 45.32);
@@ -113,6 +126,7 @@ vec3 currentSignal(vec2 uv) {
     vec4 overlay = texture(u_overlay, local);
     c = mix(texture(u_source, local).rgb, overlay.rgb, overlay.a);
   }
+  c = withScrollbar(uv, c);
   if (u_monochrome > 0.5) c = u_tint * max(c.r, max(c.g, c.b));
   return pow(max(c, vec3(0.0)), vec3(2.2));
 }

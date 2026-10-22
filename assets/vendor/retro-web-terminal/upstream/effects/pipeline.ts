@@ -27,6 +27,10 @@ export interface SourcePlacement {
   height: number
 }
 
+export interface ScrollbarOverlay extends SourcePlacement {
+  opacity: number
+}
+
 /** Owns only the effects context. xterm remains the terminal renderer. */
 export class EffectsPipeline {
   private readonly gl: WebGL2RenderingContext
@@ -41,6 +45,7 @@ export class EffectsPipeline {
   private bloom: [Target, Target] | undefined
   private historyIndex = 0
   private placement: SourcePlacement = { left: 0, top: 0, width: 1, height: 1 }
+  private scrollbar: ScrollbarOverlay | undefined
   private cssWidth = 1
   private cssHeight = 1
   private lastTime: number | undefined
@@ -278,6 +283,10 @@ export class EffectsPipeline {
     this.lastTime = undefined
   }
 
+  setScrollbar(overlay: ScrollbarOverlay | undefined): void {
+    this.scrollbar = overlay
+  }
+
   private texture(
     program: Program,
     name: string,
@@ -321,6 +330,15 @@ export class EffectsPipeline {
     )
     gl.uniform3fv(program.uniform('u_tint'), colorVector(theme.foreground))
     gl.uniform1f(program.uniform('u_monochrome'), theme.monochrome ? 1 : 0)
+    const bar = this.scrollbar
+    gl.uniform4f(
+      program.uniform('u_scrollbarRect'),
+      bar ? bar.left / this.cssWidth : 0,
+      bar ? 1 - (bar.top + bar.height) / this.cssHeight : 0,
+      bar ? bar.width / this.cssWidth : 0,
+      bar ? bar.height / this.cssHeight : 0
+    )
+    gl.uniform1f(program.uniform('u_scrollbarOpacity'), bar?.opacity ?? 0)
   }
 
   render(

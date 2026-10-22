@@ -8,6 +8,19 @@ export function curvePoint(x: number, y: number, amount: number) {
   }
 }
 
+/** Source-to-display map for the scrollbar's hit area, inverse of curvePoint. */
+export function uncurvePoint(x: number, y: number, amount: number) {
+  const sx = x * 2 - 1
+  const sy = y * 2 - 1
+  let px = sx
+  let py = sy
+  for (let i = 0; i < 12; i++) {
+    px = sx / (1 + amount * py * py)
+    py = sy / (1 + amount * px * px)
+  }
+  return { x: (px + 1) * 0.5, y: (py + 1) * 0.5 }
+}
+
 /** Exponential phosphor decay, independent of the display's frame rate. */
 export function decayFactor(
   elapsedSeconds: number,

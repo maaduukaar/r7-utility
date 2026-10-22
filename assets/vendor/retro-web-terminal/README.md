@@ -4,8 +4,12 @@ Source: https://github.com/transitive-bullshit/retro-web-terminal
 Commit: `cba0b1eb09b15409182f9666044c520fbe33dcf3` (version 0.2.0).
 
 `upstream/` contains the original terminal adapter, GLSL effects, presets and
-diagnostics dashboard. The renderer, shaders and presets are unmodified. The
-dashboard's keyboard captions refer to returning to the command prompt.
+diagnostics dashboard. The CRT shaders also render the scrollbar so it follows
+the same curvature, phosphor and glow as the terminal. A transparent curved
+hit area handles dragging, track clicks, touch and keyboard scrolling; the
+native scrollbar remains available when effects are off or WebGL fails.
+The presets are unmodified. The dashboard's keyboard captions refer to returning
+to the command prompt.
 
 `adapter.ts` mounts this renderer directly in the existing HTML. React is only a
 wrapper in the upstream library and is unnecessary for this integration. The

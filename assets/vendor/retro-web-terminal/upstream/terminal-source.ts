@@ -4,6 +4,7 @@ import type { RetroSettings, ThemeName } from './settings'
 import { themes } from './settings'
 import { EffectsPipeline } from './effects/pipeline'
 import { curvePoint } from './effects/math'
+import { createCrtScrollbar } from './scrollbar'
 
 export type RendererMode = 'webgl' | 'fallback'
 interface Position {
@@ -124,6 +125,7 @@ export async function createTerminalSource(
   let webgl: WebglAddon | undefined
   let sourceCanvas: HTMLCanvasElement | undefined
   let linkCanvas: HTMLCanvasElement | undefined
+  let scrollbar: ReturnType<typeof createCrtScrollbar> | undefined
   const cleanups: (() => void)[] = []
   const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
   let reducedMotion = motion.matches
@@ -218,6 +220,7 @@ export async function createTerminalSource(
   function fallback() {
     if (failed || disposed) return
     failed = true
+    updateScrollbar()
     stopAnimation()
     canvas.style.display = 'none'
     root.dataset.renderer = 'fallback'
@@ -231,6 +234,7 @@ export async function createTerminalSource(
   function measure() {
     if (disposed || host.clientWidth < 2 || host.clientHeight < 2) return
     fit.fit()
+    updateScrollbar()
     if (!pipeline || !sourceCanvas) return
     const outer = root.getBoundingClientRect()
     const source = sourceCanvas.getBoundingClientRect()
@@ -242,6 +246,11 @@ export async function createTerminalSource(
     })
     terminal.refresh(0, terminal.rows - 1)
     requestFrame()
+  }
+
+  function updateScrollbar() {
+    scrollbar?.update(!failed && !composing && settings.effectsEnabled,
+      settings.curvature.enabled ? settings.curvature.amount : 0)
   }
 
   function capture() {
@@ -271,6 +280,12 @@ export async function createTerminalSource(
     linkCanvas =
       host.querySelector<HTMLCanvasElement>('.xterm-link-layer') ?? undefined
     pipeline = new EffectsPipeline(canvas)
+    scrollbar = createCrtScrollbar(root, host, terminal, overlay => {
+      pipeline?.setScrollbar(overlay)
+      lastCapture = performance.now()
+      requestFrame()
+    })
+    cleanups.push(() => scrollbar?.dispose())
     add(core._renderService.onRender(capture))
     const captureLink = () => {
       if (!active() || !pipeline || !linkCanvas) return
@@ -377,11 +392,13 @@ export async function createTerminalSource(
   // Keep native IME candidate/composition UI at its exact unwarped input anchor.
   listen(host, 'compositionstart', (() => {
     composing = true
+    updateScrollbar()
     canvas.style.display = 'none'
     stopAnimation()
   }) as EventListener)
   listen(host, 'compositionend', (() => {
     composing = false
+    updateScrollbar()
     pipeline?.resetHistory()
     terminal.refresh(0, terminal.rows - 1)
     requestFrame()
@@ -398,6 +415,7 @@ export async function createTerminalSource(
       const enabledBefore = settings.effectsEnabled
       name = nextName
       settings = nextSettings
+      updateScrollbar()
       if (changedTheme) {
         terminal.options.theme = palette(name)
         root.style.setProperty('--retro-background', themes[name].background)

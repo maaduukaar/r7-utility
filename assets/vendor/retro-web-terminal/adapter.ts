@@ -320,6 +320,10 @@ async function mount(view: HTMLElement, signal: AbortSignal, onExit: () => void,
         return {
             dispose,
             escape() {
+                if (root.querySelector('.retro-terminal__scrollbar')?.contains(document.activeElement)) {
+                    source?.terminal.focus();
+                    return true;
+                }
                 if (dashboard) { stopDashboard(); return true; }
                 return shell?.escape() ?? false;
             }
