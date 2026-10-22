@@ -5,13 +5,34 @@ Commit: `cba0b1eb09b15409182f9666044c520fbe33dcf3` (version 0.2.0).
 
 `upstream/` contains the original terminal adapter, GLSL effects, presets and
 diagnostics dashboard. The renderer, shaders and presets are unmodified. The
-dashboard's keyboard captions refer to returning to the generator; no demo shell
-or slug commands are connected. Its type-only import is preserved.
+dashboard's keyboard captions refer to returning to the command prompt.
 
 `adapter.ts` mounts this renderer directly in the existing HTML. React is only a
 wrapper in the upstream library and is unnecessary for this integration. The
-adapter manages disposal, display controls and the original demo's diagnostics.
+adapter manages disposal, display controls, the command shell and diagnostics.
 No CSS simulation is used for CRT effects.
+
+Each session starts with the Green Phosphor preset and CRT effects enabled.
+The HTML retains the theme and display controls but hides them along with the
+extra labels and links. Only the brand and frame toggle appear above the screen.
+
+`shell.ts` provides the default interactive prompt. It calls `createRetroServices()`
+in the HTML for the existing slug algorithms, translation dictionary, NMT/cache,
+category suffixes, URL replacement, alphabet, documentation and code snippets.
+The bridge avoids triggering animations or changing focus in the hidden GUI.
+
+Enter a title directly, or use `slug <title>`. `help` lists all commands:
+`type`, `method`, `translit`, `translate`, `suffix`, `url`, `copy`, `edit`,
+`history`, `status`, `docs`, `alphabet`, `code js|php|py`, `links`, `examples`,
+`demo`, `frame`, `clear`, `reset`, `exit`. A leading `/` is also accepted.
+Titles that start with a command name can be entered using `slug <title>`.
+
+The editor supports Unicode, paste, history, Tab completion and cursor editing.
+Long help and code use a paged viewer; Escape returns to the prompt. `demo`
+runs the original diagnostics in the alternate screen, preserving shell output.
+Ctrl+C cancels pending translation without terminating the shared NMT worker;
+late results cannot overwrite the next command. Clipboard errors and NMT fallback
+are reported explicitly. Command/result history stays in memory for this tab.
 
 To rebuild the checked-in browser assets with Node.js:
 
@@ -28,4 +49,4 @@ when opened as a local HTML file. Deploy the HTML together with `assets/`.
 The same pinned xterm versions as upstream are required because the renderer
 captures xterm's completed WebGL frame through a private integration boundary.
 The upstream fallback displays the terminal without CRT effects if WebGL2 is
-unavailable; the UI reports that fallback explicitly.
+unavailable.

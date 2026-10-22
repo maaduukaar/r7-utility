@@ -340,7 +340,7 @@ export function dashboardLines(
     height - 1,
     width < 65
       ? 'Esc / q  BACK   p pause   1/2/3 metric'
-      : 'Esc / q  BACK TO GENERATOR    p / SPACE  PAUSE    1 / 2 / 3  METRIC',
+      : 'Esc / q  BACK TO SHELL    p / SPACE  PAUSE    1 / 2 / 3  METRIC',
     colors.ink
   )
   return screen.lines()

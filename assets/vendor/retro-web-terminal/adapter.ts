@@ -5,6 +5,7 @@ import './upstream/styles.css';
 import { createTerminalSource, type TerminalSource } from './upstream/terminal-source';
 import { resolveSettings, themes, parameterRanges, type ThemeName } from './upstream/settings';
 import { createDashboard } from './upstream/demo/dashboard';
+import { createSlugShell, type SlugServices } from './shell';
 
 const fontFamily = '"IBM Plex Mono", "SFMono-Regular", Consolas, monospace';
 const effectNames = {
@@ -13,7 +14,7 @@ const effectNames = {
     noise: 'Noise', flicker: 'Flicker', glitch: 'Glitch', vignette: 'Vignette'
 };
 
-async function mount(view: HTMLElement, signal: AbortSignal, onExit: () => void) {
+async function mount(view: HTMLElement, signal: AbortSignal, onExit: () => void, services: SlugServices) {
     const get = <T extends HTMLElement>(selector: string) => view.querySelector<T>(selector)!;
     const root = get<HTMLDivElement>('#retroRenderer');
     const host = get<HTMLDivElement>('.retro-terminal__source');
@@ -33,14 +34,19 @@ async function mount(view: HTMLElement, signal: AbortSignal, onExit: () => void)
     const controls = get<HTMLDivElement>('#retroTuningControls');
     const inputs = new Map<string, HTMLInputElement>();
     const outputs = new Map<string, HTMLOutputElement>();
-    let theme: ThemeName = 'amber';
-    let settings = resolveSettings(theme);
+    // Each session starts with green phosphor and CRT effects. The HTML keeps
+    // the other themes and display controls available in the code, but hidden.
+    let theme: ThemeName = 'green';
+    let settings = resolveSettings(theme, { effectsEnabled: true });
     let source: TerminalSource | undefined;
     let dashboard: ReturnType<typeof createDashboard> | undefined;
+    let shell: ReturnType<typeof createSlugShell> | undefined;
     let disposed = false;
     let paused = false;
     let renderer = 'webgl';
     let dimensions = { cols: 0, rows: 0 };
+    let keyboardInputHandled = false;
+    let composingInput = false;
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     const listen = (element: EventTarget, event: string, fn: EventListener) =>
@@ -118,7 +124,6 @@ async function mount(view: HTMLElement, signal: AbortSignal, onExit: () => void)
     }
     function startDashboard() {
         dashboard?.dispose();
-        source!.terminal.reset();
         source!.terminal.write('\x1b[?1049h\x1b[?25l\x1b[?7l\x1b[2J\x1b[H');
         dashboard = createDashboard({
             write: data => source!.terminal.write(data),
@@ -127,6 +132,25 @@ async function mount(view: HTMLElement, signal: AbortSignal, onExit: () => void)
         paused = false;
         dashboard.enter();
         setPaused(motion.matches);
+    }
+    function stopDashboard() {
+        dashboard?.dispose();
+        dashboard = undefined;
+        shell?.resume();
+    }
+    function toggleFrame(mode?: string) {
+        const framed = mode ? mode === 'show' : frame.getAttribute('aria-pressed') !== 'true';
+        frame.setAttribute('aria-pressed', String(framed));
+        frame.textContent = framed ? '▣ Hide frame' : '▣ Show frame';
+        get('.retro-monitor').classList.toggle('retro-monitor--bare', !framed);
+        return framed;
+    }
+    function handleInput(data: string) {
+        if (dashboard) {
+            if (data === '\x1b' || data === 'q' || data === 'Q' || data === '\x03') stopDashboard();
+            else if (data === 'p' || data === 'P' || data === ' ') setPaused(!paused);
+            else dashboard.input(data);
+        } else shell?.input(data);
     }
     const setPanel = (open: boolean) => {
         panel.hidden = !open;
@@ -138,6 +162,7 @@ async function mount(view: HTMLElement, signal: AbortSignal, onExit: () => void)
         if (disposed) return;
         disposed = true;
         dashboard?.dispose();
+        shell?.dispose();
         source?.dispose();
         source = undefined;
         delete root.dataset.renderer;
@@ -151,18 +176,18 @@ async function mount(view: HTMLElement, signal: AbortSignal, onExit: () => void)
 
     try {
         sync();
-        await document.fonts.load('14px "IBM Plex Mono"');
+        await document.fonts.load('14px "IBM Plex Mono"', 'R7 Генератор слагов');
         if (signal.aborted) return;
         source = await createTerminalSource(root, host, canvas, {
             theme, settings, fontFamily, fontSize: 14,
             onData(data) {
-                if (data === '\x1b' || data === 'q') onExit();
-                else if (data === 'p' || data === ' ') setPaused(!paused);
-                else dashboard?.input(data);
+                keyboardInputHandled = true;
+                handleInput(data);
             },
             onResize(size) {
                 dimensions = size;
                 dashboard?.resize(size.cols, size.rows);
+                shell?.resize();
                 updateStatus();
             },
             onRendererChange(mode) {
@@ -202,7 +227,8 @@ async function mount(view: HTMLElement, signal: AbortSignal, onExit: () => void)
         listen(get('#retroResetBtn'), 'click', () => {
             settings = resolveSettings(theme);
             apply();
-            startDashboard();
+            if (dashboard) startDashboard();
+            else shell?.reset();
             source?.terminal.focus();
         });
         listen(pause, 'click', () => setPaused(!paused));
@@ -210,11 +236,12 @@ async function mount(view: HTMLElement, signal: AbortSignal, onExit: () => void)
         listen(tuning, 'click', () => setPanel(panel.hidden));
         listen(get('#retroTuningClose'), 'click', () => setPanel(false));
         listen(frame, 'click', () => {
-            const framed = frame.getAttribute('aria-pressed') !== 'true';
-            frame.setAttribute('aria-pressed', String(framed));
-            frame.textContent = framed ? '▣ Hide frame' : '▣ Show frame';
-            get('.retro-monitor').classList.toggle('retro-monitor--bare', !framed);
+            toggleFrame();
+            source?.terminal.focus();
         });
+        listen(root, 'wheel', ((event: WheelEvent) => {
+            if (shell?.wheel(event.deltaY)) event.preventDefault();
+        }) as EventListener);
         listen(view, 'keydown', ((event: KeyboardEvent) => {
             if (event.key === 'Escape' && !panel.hidden) {
                 event.preventDefault();
@@ -227,10 +254,43 @@ async function mount(view: HTMLElement, signal: AbortSignal, onExit: () => void)
         source.update(theme, settings, fontFamily, 14);
         sync();
         updateStatus();
-        startDashboard();
+        shell = createSlugShell(source.terminal, services, signal, {
+            exit: onExit, demo: startDashboard, frame: toggleFrame
+        });
+        const input = source.terminal.textarea;
+        if (input) {
+            input.setAttribute('aria-label', 'Команда или заголовок для слага');
+            input.setAttribute('autocapitalize', 'off');
+            input.setAttribute('autocomplete', 'off');
+            input.setAttribute('autocorrect', 'off');
+            input.enterKeyHint = 'go';
+            input.spellcheck = false;
+            // xterm 6 ignores input-only text while screenReaderMode is enabled.
+            // Handle mobile keyboards without duplicating keypress/IME input.
+            // Capture on the ancestor before xterm's textarea keydown listener.
+            root.addEventListener('keydown', () => { keyboardInputHandled = false; }, { signal, capture: true });
+            root.addEventListener('keyup', () => { keyboardInputHandled = false; }, { signal, capture: true });
+            listen(input, 'compositionstart', () => { composingInput = true; });
+            listen(input, 'compositionend', () => { setTimeout(() => { composingInput = false; }, 0); });
+            listen(input, 'input', ((event: InputEvent) => {
+                if (!event.isComposing && !composingInput && !keyboardInputHandled) {
+                    if (event.inputType === 'insertText' && event.data) handleInput(event.data);
+                    else if (event.inputType === 'deleteContentBackward') handleInput('\x7f');
+                    else if (event.inputType === 'deleteContentForward') handleInput('\x1b[3~');
+                    else if (event.inputType === 'insertLineBreak' || event.inputType === 'insertParagraph') handleInput('\r');
+                }
+                keyboardInputHandled = false;
+            }) as EventListener);
+        }
         loading.hidden = true;
         source.terminal.focus();
-        return { dispose };
+        return {
+            dispose,
+            escape() {
+                if (dashboard) { stopDashboard(); return true; }
+                return shell?.escape() ?? false;
+            }
+        };
     } catch (error) {
         dispose();
         throw error;

@@ -824,7 +824,7 @@
         }
         body[data-design="terminal"] > :not(#retroTerminalView):not(script) { display: none !important; }
         body[data-design="terminal"] #retroTerminalView {
-            --retro-phosphor: #ffc078;
+            --retro-phosphor: #91ed8c;
             display: block;
             min-height: 100svh;
             padding: 24px 44px 20px;
@@ -975,7 +975,7 @@
         .retro-shell-footer strong { color: #9ca58c; font-weight: 400; }
         .retro-shell-footer span { color: #7e8870; }
         .retro-footer-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
-        .retro-frame-button { border: 0; background: none; color: #a1ac90; font-size: 10px; }
+        .retro-frame-button { flex-shrink: 0; min-height: 32px; padding: 6px 0; border: 0; background: none; color: #a1ac90; font-size: 10px; white-space: nowrap; }
         .retro-pause-button { display: inline-flex; gap: 7px; align-items: center; border: 0; background: none; color: #bec6aa; font-size: inherit; }
         .retro-tune-button {
             position: fixed; z-index: 70; right: 16px; bottom: 16px;
@@ -1056,7 +1056,8 @@
 </head>
 <body data-design="classic" data-layout="classic" data-view="generator" class="min-h-screen flex flex-col justify-between selection:bg-apple-blue selection:text-white">
 
-    <section id="retroTerminalView" class="retro-workbench" data-phosphor="amber" aria-label="Ретротерминал R7 Utility" aria-hidden="true">
+    <section id="retroTerminalView" class="retro-workbench" data-phosphor="green" aria-label="Ретротерминал R7 Utility" aria-hidden="true">
+        <!-- Дополнительные элементы интерфейса сохранены в коде и скрыты через hidden. -->
         <header class="retro-shell-header">
             <div class="retro-brand">
                 <svg class="retro-brand-mark" viewBox="0 0 26 25" fill="none" aria-hidden="true">
@@ -1065,21 +1066,22 @@
                 </svg>
                 <h1 class="retro-brand-name">r7<span> / </span>terminal</h1>
             </div>
-            <div class="retro-header-actions">
+            <div class="retro-header-actions" hidden>
                 <span class="retro-header-note">SLUG SYSTEM · DIAGNOSTICS</span>
                 <a class="retro-source-link" href="https://github.com/transitive-bullshit/retro-web-terminal" target="_blank" rel="noopener noreferrer" aria-label="Исходный код Retro Web Terminal">
                     View source
                     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 12 12 4M4 4h8v8" stroke="currentColor" stroke-width="1.3"></path></svg>
                 </a>
             </div>
+            <button id="retroFrameBtn" class="retro-frame-button" type="button" aria-pressed="true">▣ Hide frame</button>
         </header>
 
         <main class="retro-console">
-            <div class="retro-console-controls">
+            <div class="retro-console-controls" hidden>
                 <div class="retro-theme-selector" role="group" aria-label="Цвет люминофора">
                     <span class="retro-control-label">Phosphor</span>
-                    <button class="retro-theme-button" type="button" data-retro-theme="amber" style="--button-color:#ffc078" aria-pressed="true"><span class="retro-theme-dot" aria-hidden="true"></span>Amber</button>
-                    <button class="retro-theme-button" type="button" data-retro-theme="green" style="--button-color:#91ed8c" aria-pressed="false"><span class="retro-theme-dot" aria-hidden="true"></span>Green</button>
+                    <button class="retro-theme-button" type="button" data-retro-theme="amber" style="--button-color:#ffc078" aria-pressed="false"><span class="retro-theme-dot" aria-hidden="true"></span>Amber</button>
+                    <button class="retro-theme-button" type="button" data-retro-theme="green" style="--button-color:#91ed8c" aria-pressed="true"><span class="retro-theme-dot" aria-hidden="true"></span>Green</button>
                     <button class="retro-theme-button" type="button" data-retro-theme="color" style="--button-color:#9bc5ff" aria-pressed="false"><span class="retro-theme-dot" aria-hidden="true"></span>Color CRT</button>
                 </div>
                 <div class="retro-display-controls">
@@ -1094,16 +1096,16 @@
             <div class="retro-monitor">
                 <div class="retro-screen">
                     <div id="retroLoading" class="retro-loading" role="status">INITIALIZING DISPLAY</div>
-                    <div id="retroRenderer" class="retro-terminal" aria-label="Ретротерминал: системная диагностика">
+                    <div id="retroRenderer" class="retro-terminal" aria-label="Терминал генератора слагов">
                         <div class="retro-terminal__source"></div>
                         <canvas class="retro-terminal__effects" aria-hidden="true"></canvas>
                     </div>
                 </div>
-                <div class="retro-monitor-label" aria-hidden="true"><strong>R7 / 01</strong><span>CONTENT DISPLAY TERMINAL</span></div>
+                <div class="retro-monitor-label" aria-hidden="true" hidden><strong>R7 / 01</strong><span>CONTENT DISPLAY TERMINAL</span></div>
                 <span class="retro-power-indicator" aria-hidden="true"></span>
             </div>
 
-            <div class="retro-terminal-status">
+            <div class="retro-terminal-status" hidden>
                 <div class="retro-status-left">
                     <span class="retro-session-mode"><i class="retro-status-dot" aria-hidden="true"></i>Diagnostics</span>
                     <span class="retro-sample-data">Simulated data</span>
@@ -1116,11 +1118,11 @@
             </div>
         </main>
 
-        <footer class="retro-shell-footer">
+        <footer class="retro-shell-footer" hidden>
             <p><strong>1 / 2 / 3 — выбрать график. P — пауза.</strong><br>Esc — вернуться к генератору.</p>
-            <div class="retro-footer-actions"><button id="retroFrameBtn" class="retro-frame-button" type="button" aria-pressed="true">▣ Hide frame</button><span>Tune your display ↘</span></div>
+            <div class="retro-footer-actions"><span>Tune your display ↘</span></div>
         </footer>
-        <button id="retroTuneBtn" class="retro-tune-button" type="button" aria-label="Настройки CRT-экрана" aria-expanded="false" aria-controls="retroTuningPanel">
+        <button id="retroTuneBtn" class="retro-tune-button" type="button" aria-label="Настройки CRT-экрана" aria-expanded="false" aria-controls="retroTuningPanel" hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M4 7h16M4 17h16"></path><circle cx="9" cy="7" r="3" fill="#242722"></circle><circle cx="15" cy="17" r="3" fill="#242722"></circle></svg>
         </button>
         <aside id="retroTuningPanel" class="retro-tuning-panel" aria-label="Настройки CRT-экрана" hidden>
@@ -1784,6 +1786,7 @@ def wp_slugify(text: str) -> str:
         let retroPreviousDesign = 'classic';
         let retroAssetsPromise = null;
         let retroSessionAbort = null;
+        let retroSession = null;
 
         function loadRetroAssets() {
             if (retroAssetsPromise) return retroAssetsPromise;
@@ -1821,6 +1824,7 @@ def wp_slugify(text: str) -> str:
             stopIntroShowcase(true);
             clearModeTransitionTimers();
             clearTimeout(typingDebounceTimer);
+            activeNMTRequestId++;
             MatrixFx.stopImmediately();
             document.body.dataset.design = 'terminal';
             document.body.dataset.layout = 'terminal';
@@ -1835,11 +1839,11 @@ def wp_slugify(text: str) -> str:
             const controller = new AbortController();
             retroSessionAbort = controller;
             window.scrollTo({ top: 0, behavior: 'auto' });
-            retroExitBtn.focus({ preventScroll: true });
+            document.getElementById('retroFrameBtn').focus({ preventScroll: true });
             try {
                 await loadRetroAssets();
                 if (controller.signal.aborted) return;
-                await window.R7RetroTerminal.mount(retroTerminalView, controller.signal, exitRetroTerminal);
+                retroSession = await window.R7RetroTerminal.mount(retroTerminalView, controller.signal, exitRetroTerminal, createRetroServices());
             } catch (error) {
                 if (controller.signal.aborted) return;
                 controller.abort();
@@ -1853,6 +1857,7 @@ def wp_slugify(text: str) -> str:
             if (document.body.dataset.design !== 'terminal') return;
             retroSessionAbort?.abort();
             retroSessionAbort = null;
+            retroSession = null;
             retroTerminalView.setAttribute('aria-hidden', 'true');
             document.body.dataset.design = DESIGN_ORDER.includes(retroPreviousDesign) ? retroPreviousDesign : 'classic';
             updateDesignControls();
@@ -1869,7 +1874,7 @@ def wp_slugify(text: str) -> str:
             event.stopImmediatePropagation();
             const panel = document.getElementById('retroTuningPanel');
             if (!panel.hidden) document.getElementById('retroTuningClose').click();
-            else exitRetroTerminal();
+            else if (!retroSession?.escape()) exitRetroTerminal();
         }, true);
         window.addEventListener('pagehide', exitRetroTerminal);
 
@@ -3840,6 +3845,121 @@ def wp_slugify(text: str) -> str:
             return wpSlugify(text);
         }
 
+        // Терминал использует те же алгоритмы, словари, NMT-кэш и справочные
+        // материалы, что и обычный интерфейс. Здесь нет второй версии slugify.
+        function createRetroServices() {
+            const preferences = () => ({
+                type: state.generatorType,
+                method: state.slugMethod,
+                suffix: state.sectionSuffix
+            });
+            const normalize = text => text.replace(/\s+/g, ' ').trim();
+            return {
+                preferences,
+                configure(next) {
+                    if (['post', 'category'].includes(next.type)) state.generatorType = next.type;
+                    if (['translit', 'translate'].includes(next.method)) {
+                        state.slugMethod = next.method;
+                        try { sessionStorage.setItem('wp_slug_method', next.method); } catch (_) {}
+                    }
+                    if (typeof next.suffix === 'string') state.sectionSuffix = next.suffix;
+                    updateInputModeUI();
+                    updateSlugMethodUI();
+                    return preferences();
+                },
+                async generate(title, options, signal, onProgress) {
+                    const check = () => { if (signal.aborted) throw new DOMException('Отменено', 'AbortError'); };
+                    check();
+                    const suffix = options.type === 'category' ? options.suffix : '';
+                    const texts = [title, suffix].filter(Boolean);
+                    let source = 'транслитерация';
+                    let warning = '';
+                    if (options.method === 'translate') {
+                        const pending = [...new Set(texts.flatMap(text => wpTranslateSlugifyDetailed(text).toTranslate))];
+                        source = 'словарь / кэш';
+                        if (pending.length) {
+                            const progress = p => {
+                                if (!signal.aborted) onProgress(NMTManager.isReady
+                                    ? 'Перевод… Ctrl+C — отмена'
+                                    : `Загрузка модели: ${Math.round(p?.percent || 0)}%. Ctrl+C — отмена`);
+                            };
+                            let abort;
+                            NMTManager.addProgressListener(progress);
+                            try {
+                                onProgress('Перевод… Ctrl+C — отмена');
+                                await Promise.race([
+                                    NMTManager.translateBatch(pending),
+                                    new Promise((_, reject) => {
+                                        abort = () => reject(new DOMException('Отменено', 'AbortError'));
+                                        signal.addEventListener('abort', abort, { once: true });
+                                    })
+                                ]);
+                                check();
+                                if (pending.every(text => NMTManager.getCached(text))) source = 'NMT / словарь';
+                                else warning = 'NMT не вернул перевод. Использованы словарь и транслитерация.';
+                            } catch (error) {
+                                check();
+                                warning = 'NMT недоступен. Использованы словарь и транслитерация.';
+                            } finally {
+                                NMTManager.removeProgressListener(progress);
+                                if (abort) signal.removeEventListener('abort', abort);
+                            }
+                            if (warning) source = 'резервный перевод';
+                        }
+                    }
+                    check();
+                    const base = generateSlug(title, options.method);
+                    if (!base) throw new Error('В заголовке нет символов для слага. Введите буквы или цифры.');
+                    const tail = suffix ? generateSlug(suffix, options.method) : '';
+                    return { title, slug: tail ? `${base}-${tail}` : base, source, warning, ...options };
+                },
+                replaceUrl: updateHierarchicalPath,
+                docs() {
+                    return [...viewDocs.querySelectorAll('h3, p, li')]
+                        .map(element => normalize(element.textContent))
+                        .filter(Boolean).join('\n\n')
+                        + '\n\nПолная таблица: alphabet. Первоисточники: links.';
+                },
+                alphabet: () => ALPHABET_LIST.map(({ ru, lat }) => ({ ru, lat })),
+                code(language) {
+                    const snippet = { js: snippetJs, php: snippetPhp, py: snippetPy }[language];
+                    if (!snippet) throw new Error('Языки: js, php, py. Пример: code js');
+                    return snippet.textContent.trim();
+                },
+                links() {
+                    const seen = new Set();
+                    return [...viewDocs.querySelectorAll('a[href]')].filter(link => {
+                        if (seen.has(link.href)) return false;
+                        seen.add(link.href);
+                        return true;
+                    }).map(link => ({ title: normalize(link.textContent), url: link.href }));
+                },
+                examples: () => [...document.querySelectorAll('[data-portal-example]')].map(element => element.dataset.portalExample),
+                async copy(text) {
+                    if (!text) throw new Error('Нет текста для копирования.');
+                    try {
+                        if (navigator.clipboard?.writeText) {
+                            await navigator.clipboard.writeText(text);
+                            return;
+                        }
+                    } catch (_) {}
+                    const previous = document.activeElement;
+                    const field = document.createElement('textarea');
+                    field.value = text;
+                    field.setAttribute('readonly', '');
+                    field.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+                    retroTerminalView.append(field);
+                    try {
+                        field.select();
+                        if (!document.execCommand('copy')) throw new Error('Буфер обмена недоступен. Выделите результат и скопируйте вручную.');
+                    } finally {
+                        field.remove();
+                        previous?.focus({ preventScroll: true });
+                    }
+                }
+            };
+        }
+
         let activeNMTRequestId = 0;
 
         /**
@@ -5622,6 +5742,10 @@ def wp_slugify(text: str) -> str:
             }
 
             const cleanPath = trimmed.replace(/\/+$/, '');
+            // У URL без пути последний сегмент — домен, его заменять нельзя.
+            if (/^(?:https?:)?\/\/[^/]+$/i.test(cleanPath)) {
+                return cleanPath + '/' + leaf + '/' + suffix;
+            }
             const lastSlashIdx = cleanPath.lastIndexOf('/');
 
             if (lastSlashIdx !== -1) {
